@@ -1,5 +1,6 @@
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useState } from 'react'
+import { OWork } from './OGalleryPages'
 import { artworks, gallery } from '../../data/gallery'
 import { useT } from '../../lib/i18n'
 import { useVisitor, visitor } from '../../lib/store'
@@ -7,6 +8,12 @@ import { useSignIn } from '../../components/VisitorShell'
 import { Back, Chat, Heart } from '../../components/Icons'
 
 export default function Work() {
+  const { slug } = useParams()
+  if (slug === 'o-gallery') return <OWork />
+  return <RoozWork />
+}
+
+function RoozWork() {
   const { id } = useParams()
   const nav = useNavigate()
   const { t, price, status, artist, medium, size, year, title } = useT()

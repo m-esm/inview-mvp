@@ -1,11 +1,18 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
+import OGallerySite from './OGallerySite'
 import { artists, artworks, gallery, pastShows, show } from '../../data/gallery'
 import { normalizePhone } from '../../lib/store'
 
 // The gallery's own public website. Served at roozgallery.inview.ir,
 // or at /site/rooz-gallery on any host (useful before the domain is set up).
 export default function Website() {
+  const { slug } = useParams()
+  if (slug === 'o-gallery') return <OGallerySite />
+  return <RoozWebsite />
+}
+
+function RoozWebsite() {
   const [phone, setPhone] = useState('')
   const [msg, setMsg] = useState('')
   const available = artworks.filter((a) => a.status !== 'sold')

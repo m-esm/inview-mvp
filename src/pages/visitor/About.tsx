@@ -1,11 +1,18 @@
 import { useEffect } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useParams } from 'react-router-dom'
+import { OAbout } from './OGalleryPages'
 import { artworks, artists, gallery } from '../../data/gallery'
 import { useT } from '../../lib/i18n'
 import { useVisitor, visitor } from '../../lib/store'
 import { useSignIn } from '../../components/VisitorShell'
 
 export default function About() {
+  const { slug } = useParams()
+  if (slug === 'o-gallery') return <OAbout />
+  return <RoozAbout />
+}
+
+function RoozAbout() {
   const { t, n, showText, artist } = useT()
   const { follows } = useVisitor()
   const { requireSignIn } = useSignIn()

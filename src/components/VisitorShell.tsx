@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from 'rea
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { gallery } from '../data/gallery'
 import { useT } from '../lib/i18n'
+import { pick, recordLandingScan, usePilotRecord } from '../lib/pilot'
 import { visitor, useVisitor } from '../lib/store'
 import { SignInSheet, type SheetKind } from './SignInSheet'
 import { Grid, Home, User } from './Icons'
@@ -29,22 +30,37 @@ export function VisitorShell() {
     else setPending({ kind, action, subtitle })
   }, [phone])
 
-  const base = `/g/${gallery.slug}`
+  const slug = pathname.match(/^\/g\/([^/]+)/)?.[1] ?? ''
+  const isO = slug === 'o-gallery'
+  const { record } = usePilotRecord(isO)
+  const oName = pick(lang, record.name, record.nameFa)
+  const base = isO ? '/g/o-gallery' : `/g/${gallery.slug}`
+
+  useEffect(() => {
+    if (pathname === '/g/o-gallery') recordLandingScan()
+  }, [pathname])
+
   return (
     <SignInCtx.Provider value={{ requireSignIn }}>
       <div className={`visitor ${lang === 'fa' ? 'fa' : ''}`} dir={dir}>
         <header className="v-top">
-          <Link to={base} className="v-gallery">{galleryName}</Link>
+          {isO ? (
+            <Link to="/site/o-gallery" className="v-gallery v-wordmark">
+              {record.logo ? <img className="v-logo" src={record.logo} alt={oName} /> : oName}
+            </Link>
+          ) : (
+            <Link to={base} className="v-gallery">{galleryName}</Link>
+          )}
           <div className="lang" role="group" aria-label="Language">
             <button aria-pressed={lang === 'en'} onClick={() => visitor.setLang('en')}>EN</button>
             <button aria-pressed={lang === 'fa'} onClick={() => visitor.setLang('fa')} className="fa-btn">فا</button>
           </div>
         </header>
         <main className="v-main"><Outlet /></main>
-        <nav className="v-tabs" aria-label="Visitor">
-          <NavLink to={base} end><Home /><span>{galleryName}</span></NavLink>
+        <nav className={`v-tabs${isO ? ' tabs-2' : ''}`} aria-label="Visitor">
+          <NavLink to={base} end><Home /><span>{isO ? oName : galleryName}</span></NavLink>
           <NavLink to={`${base}/works`}><Grid /><span>{t.artworks}</span></NavLink>
-          <NavLink to="/me"><User /><span>{t.profile}</span></NavLink>
+          {!isO && <NavLink to="/me"><User /><span>{t.profile}</span></NavLink>}
         </nav>
         {pending && (
           <SignInSheet kind={pending.kind} subtitle={pending.subtitle}

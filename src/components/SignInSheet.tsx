@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { reportLead } from '../lib/pilot'
 import { normalizePhone, visitor } from '../lib/store'
 import { useT } from '../lib/i18n'
 import { Heart, Lock } from './Icons'
@@ -44,6 +45,7 @@ export function SignInSheet({ kind, subtitle, onDone, onClose }: Props) {
     const c = code.replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
     if (!/^\d{4}$/.test(c)) return setError(t.badCode)
     visitor.signIn(phone)
+    reportLead(phone, kind)
     onDone()
   }
 

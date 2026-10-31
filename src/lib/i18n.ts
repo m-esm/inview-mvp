@@ -1,3 +1,4 @@
+import { useLocation } from 'react-router-dom'
 import { useVisitor } from './store'
 import type { Artwork, Status } from '../data/gallery'
 import { gallery, show } from '../data/gallery'
@@ -138,12 +139,15 @@ export function toFa(v: number | string): string {
 }
 
 export function useT() {
-  const { lang } = useVisitor()
-  const t = lang === 'fa' ? fa : en
-  const fa_ = lang === 'fa'
+  const { lang, langChosen } = useVisitor()
+  const { pathname } = useLocation()
+  const onOGallery = pathname.startsWith('/g/o-gallery') || pathname.startsWith('/site/o-gallery')
+  const effective: 'en' | 'fa' = langChosen ? lang : onOGallery ? 'fa' : lang
+  const t = effective === 'fa' ? fa : en
+  const fa_ = effective === 'fa'
   return {
     t,
-    lang,
+    lang: effective,
     dir: (fa_ ? 'rtl' : 'ltr') as 'rtl' | 'ltr',
     n: (v: number | string) => (fa_ ? toFa(typeof v === 'number' ? v.toLocaleString('en-US') : v) : typeof v === 'number' ? v.toLocaleString('en-US') : v),
     price: (a: Artwork) =>

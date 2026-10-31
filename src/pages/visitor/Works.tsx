@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
+import { OWorks } from './OGalleryPages'
 import { artworks, gallery, type Status } from '../../data/gallery'
 import { useT } from '../../lib/i18n'
 import { ArtworkCard } from '../../components/ArtworkCard'
@@ -7,6 +8,12 @@ import { ArtworkCard } from '../../components/ArtworkCard'
 type Filter = 'all' | Status
 
 export default function Works() {
+  const { slug } = useParams()
+  if (slug === 'o-gallery') return <OWorks />
+  return <RoozWorks />
+}
+
+function RoozWorks() {
   const { t, n, showTitle, showKind } = useT()
   const [filter, setFilter] = useState<Filter>('all')
   const list = filter === 'all' ? artworks : artworks.filter((a) => a.status === filter)

@@ -11,6 +11,7 @@ import GalleryLayout from './pages/gallery/GalleryLayout'
 import { ArtworkInterest, Audience, Overview } from './pages/gallery/Dashboard'
 import Import from './pages/gallery/Import'
 import Plans from './pages/gallery/Plans'
+import OGalleryEditor from './pages/gallery/OGalleryEditor'
 import Website from './pages/site/Website'
 
 // On roozgallery.inview.ir the home page is the gallery's website.
@@ -47,6 +48,7 @@ export default function App() {
         <Route path="audience" element={<Audience />} />
         <Route path="website" element={<Import />} />
         <Route path="plans" element={<Plans />} />
+        <Route path="o-gallery" element={<OGalleryEditor />} />
       </Route>
     </Routes>
   )

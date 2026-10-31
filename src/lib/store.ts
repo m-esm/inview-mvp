@@ -7,10 +7,11 @@ export interface VisitorState {
   follows: string[]
   stamps: string[]
   lang: 'en' | 'fa'
+  langChosen: boolean
 }
 
 const KEY = 'inview-demo-v1'
-const empty: VisitorState = { phone: null, saved: [], follows: [], stamps: [], lang: 'en' }
+const empty: VisitorState = { phone: null, saved: [], follows: [], stamps: [], lang: 'en', langChosen: false }
 
 function load(): VisitorState {
   try {
@@ -53,8 +54,8 @@ export const visitor = {
   save: (id: string) => !state.saved.includes(id) && set({ saved: [...state.saved, id] }),
   toggleFollow: (artist: string) => set({ follows: toggle(state.follows, artist) }),
   stamp: (slug: string) => !state.stamps.includes(slug) && set({ stamps: [...state.stamps, slug] }),
-  setLang: (lang: 'en' | 'fa') => set({ lang }),
-  reset: () => set({ ...empty, lang: state.lang }),
+  setLang: (lang: 'en' | 'fa') => set({ lang, langChosen: true }),
+  reset: () => set({ ...empty, lang: state.lang, langChosen: state.langChosen }),
 }
 
 // Iranian mobile numbers: 09xxxxxxxxx (also accepts Persian digits and +98)

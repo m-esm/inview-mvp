@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
+import { OWelcome } from './OGalleryPages'
 import { artworks, artists, gallery } from '../../data/gallery'
 import { useT } from '../../lib/i18n'
 import { useVisitor, visitor } from '../../lib/store'
@@ -6,6 +7,12 @@ import { useSignIn } from '../../components/VisitorShell'
 import { Check, Chevron } from '../../components/Icons'
 
 export default function Welcome() {
+  const { slug } = useParams()
+  if (slug === 'o-gallery') return <OWelcome />
+  return <RoozWelcome />
+}
+
+function RoozWelcome() {
   const { t, n, lang, galleryName, showTitle, showKind, showDates } = useT()
   const { stamps } = useVisitor()
   const { requireSignIn } = useSignIn()

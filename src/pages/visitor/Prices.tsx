@@ -1,8 +1,15 @@
-import { Link } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
+import { OPrices } from './OGalleryPages'
 import { artworks, gallery } from '../../data/gallery'
 import { useT } from '../../lib/i18n'
 
 export default function Prices() {
+  const { slug } = useParams()
+  if (slug === 'o-gallery') return <OPrices />
+  return <RoozPrices />
+}
+
+function RoozPrices() {
   const { t, price, status, artist, medium, size, showTitle, galleryName } = useT()
   return (
     <div className="pad prices">

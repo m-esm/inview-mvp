@@ -11,7 +11,8 @@ export default function GalleryLayout() {
   const [pw, setPw] = useState('')
   const [error, setError] = useState('')
   const { pathname } = useLocation()
-  const page = pathname.endsWith('/website') ? 'Website and import' : pathname.endsWith('/plans') ? 'Plans' : null
+  const oGalleryPage = pathname.endsWith('/o-gallery')
+  const page = pathname.endsWith('/website') ? 'Website and import' : pathname.endsWith('/plans') ? 'Plans' : oGalleryPage ? 'O Gallery landing page' : null
 
   useEffect(() => {
     document.documentElement.lang = 'en'
@@ -46,6 +47,7 @@ export default function GalleryLayout() {
         <div className="side-gallery"><span className="avatar sq">RG</span><span><strong>{gallery.name}</strong><span className="muted small">Growth plan</span></span></div>
         <nav aria-label="Dashboard">
           <NavLink to="/dashboard" end>Show report</NavLink>
+          <NavLink to="/dashboard/o-gallery">O Gallery</NavLink>
           <NavLink to="/dashboard/artworks">Artworks</NavLink>
           <NavLink to="/dashboard/audience">Audience and leads</NavLink>
           <NavLink to="/dashboard/website">Website and import</NavLink>
@@ -56,7 +58,7 @@ export default function GalleryLayout() {
       <main className="dash-main">
         <header className="dash-head">
           {page ? (
-            <div><p className="muted small">{gallery.name}</p><h1>{page}</h1></div>
+            <div><p className="muted small">{oGalleryPage ? 'O Gallery' : gallery.name}</p><h1>{page}</h1></div>
           ) : (
             <>
               <div>
