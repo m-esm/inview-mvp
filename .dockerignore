@@ -1,0 +1,10 @@
+.react-router
+build
+node_modules
+.data
+.git
+.github
+README.md
+.env
+.env.*
+uploads

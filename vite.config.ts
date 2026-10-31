@@ -1,33 +1,67 @@
+import { reactRouter } from '@react-router/dev/vite'
 import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import tsconfigPaths from 'vite-tsconfig-paths'
 import { VitePWA } from 'vite-plugin-pwa'
 
-export default defineConfig({
+export default defineConfig(({ isSsrBuild }) => ({
+  build: {
+    rollupOptions: isSsrBuild
+      ? {
+          input: './server/app.ts',
+        }
+      : undefined,
+  },
   plugins: [
-    react(),
-    VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['icons/favicon.svg', 'icons/apple-touch-icon.png'],
-      manifest: {
-        name: 'Inview',
-        short_name: 'Inview',
-        description: 'The show, the works and the prices, in your pocket.',
-        theme_color: '#203F3B',
-        background_color: '#E7E3D9',
-        display: 'standalone',
-        start_url: '/g/rooz-gallery',
-        scope: '/',
-        icons: [
-          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
-        ]
-      },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,jpg,woff2}'],
-        navigateFallback: '/index.html',
-        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024
-      }
-    })
-  ]
-})
+    reactRouter(),
+    tsconfigPaths(),
+    !isSsrBuild &&
+      VitePWA({
+        registerType: 'autoUpdate',
+        includeAssets: ['icons/favicon.svg', 'icons/apple-touch-icon.png'],
+        manifest: {
+          name: 'Inview',
+          short_name: 'Inview',
+          description: 'The show, the works and the prices, in your pocket.',
+          theme_color: '#203F3B',
+          background_color: '#E7E3D9',
+          display: 'standalone',
+          start_url: '/g/o-gallery',
+          scope: '/',
+          icons: [
+            { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+            { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+            {
+              src: '/icons/icon-maskable-512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'maskable',
+            },
+          ],
+        },
+        workbox: {
+          globPatterns: ['**/*.{js,css,html,svg,png,jpg,woff2}'],
+          navigateFallback: null,
+          runtimeCaching: [
+            {
+              urlPattern: ({ request }) => request.mode === 'navigate',
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'pages',
+                networkTimeoutSeconds: 3,
+                expiration: { maxEntries: 64 },
+              },
+            },
+            {
+              urlPattern: ({ request }) => request.destination === 'image',
+              handler: 'StaleWhileRevalidate',
+              options: {
+                cacheName: 'media',
+                expiration: { maxEntries: 128 },
+              },
+            },
+          ],
+          maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        },
+      }),
+  ].filter(Boolean),
+}))

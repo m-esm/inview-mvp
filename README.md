@@ -1,123 +1,104 @@
-# Inview MVP demo
+# Inview
 
-A working demo of Inview for one gallery, built as a PWA (an installable web app).
-All content is mock data. Nothing is sent to a server: sign-ins, saved works and
-passport stamps are stored only in each visitor's own browser.
+Inview gives art galleries in Iran a visitor app, a price list and a gallery website.
+A visitor scans a QR code at a show. The visitor sees the works and the prices on a mobile phone.
 
-## What's inside
+This repository holds the O Gallery pilot and the multi-tenant base.
+See `docs/adr/0001-architecture.md` for the architecture decisions.
+
+## What you get
 
 | Address | What it shows |
 |---|---|
-| `/g/rooz-gallery` | Visitor welcome page (the QR code points here) |
-| `/g/rooz-gallery/works` | Artworks with filters |
-| `/g/rooz-gallery/works/<id>` | One artwork: save, ask, follow |
-| `/g/rooz-gallery/prices` | Price list |
-| `/g/rooz-gallery/about` | Artists, exhibition text, visit info |
-| `/me` | Visitor profile and gallery passport |
-| `/dashboard` | Gallery dashboard (demo password: `inview`) |
-| `/dashboard/website` | Website and import: drop files, AI organizes them (simulated), approve, publish |
-| `/dashboard/plans` | Plans and prices in Toman, compared with building a WordPress site |
-| `/site/rooz-gallery` | The gallery’s public website (also served at `roozgallery.inview.ir`) |
+| `/g/o-gallery` | O Gallery visitor welcome (QR target) |
+| `/g/o-gallery/works` | Works list |
+| `/g/o-gallery/works/<id>` | One work |
+| `/g/o-gallery/prices` | Price list |
+| `/site/o-gallery` | O Gallery public website |
+| `/dashboard/o-gallery` | Editor (gallery access code) |
+| `/g/rooz-gallery` | Rooz Gallery demo (mock data, unchanged) |
+| `/api/v1/health` | Health check |
+| `/api/v1/pilot` | O Gallery JSON resource route |
 
-The visitor side works in English and Persian (toggle at the top right).
-In the demo, any 4-digit SMS code is accepted.
+The visitor side works in English and Persian.
 
-## 1. Run it on your Mac
+## Stack
+
+- Node 22 LTS
+- React Router 7 (SSR, loaders, Vite, PWA)
+- Postgres with Drizzle ORM
+- S3-compatible image storage (Garage now; local disk in development)
+- One OCI container image: `ghcr.io/m-esm/inview-mvp`
+
+## Run it on your machine
+
+1. Install Node 22.
+2. Start Postgres (or use Docker Compose):
 
 ```bash
-cd inview-mvp
+docker compose up -d postgres
+```
+
+3. Copy the environment file and set the database URL:
+
+```bash
+cp .env.example .env
+```
+
+4. Install, migrate, seed and start:
+
+```bash
 npm install
+npm run db:migrate
+npm run db:seed
 npm run dev
 ```
 
-Open the address it prints, usually http://localhost:5173.
+Open the address it prints, usually http://localhost:3000.
 
-To try it on your phone, connect the phone to the same Wi-Fi and run:
+Default gallery access code: `inview` (change `O_GALLERY_ACCESS_CODE` before production).
 
-```bash
-npm run dev -- --host
-```
-
-Then open the "Network" address it prints on your phone.
-
-## 2. Change the content
-
-Everything lives in **`src/data/gallery.ts`**: gallery name, show title and dates,
-artworks, prices, statuses and the dashboard numbers. Artwork images go in
-`public/artworks/`. Save the file and the page updates.
-
-Change the dashboard password in the same file (`dashboardPassword`).
-
-## 3. Put it on GitHub
-
-1. On github.com, create a new empty repository named `inview-mvp`
-   (no README, no .gitignore).
-2. In Terminal, inside the project folder:
+## Tests
 
 ```bash
-git init
-git add .
-git commit -m "Inview MVP demo"
-git branch -M main
-git remote add origin https://github.com/YOUR-USERNAME/inview-mvp.git
-git push -u origin main
+npm test
 ```
 
-## 4. Put it online
+Tests use an in-process Postgres (PGlite). They do not need Docker.
 
-Pick one host and connect your GitHub repository. Every `git push` updates the site.
+## Build and run the container
 
-- **Vercel** (vercel.com): Add New Project → import `inview-mvp` → Deploy.
-  It detects Vite automatically. `vercel.json` already handles page refreshes.
-- **Cloudflare Pages**: Create project → connect GitHub → build command
-  `npm run build`, output folder `dist`. `public/_redirects` handles page refreshes.
-- **Liara or ArvanCloud** (Iranian hosts): use their static-site option with the
-  same build command and `dist` folder, and turn on single-page-app mode.
+```bash
+npm run build
+docker build -t ghcr.io/m-esm/inview-mvp:local .
+docker run --rm -p 3000:3000 \
+  -e DATABASE_URL=postgres://... \
+  -e O_GALLERY_ACCESS_CODE=... \
+  ghcr.io/m-esm/inview-mvp:local
+```
 
-Open the site from an Iranian mobile connection before showing it. If a foreign
-host is slow or blocked, use an Iranian host.
+CI runs tests and the build on each pull request.
+A push to `main` also pushes `ghcr.io/m-esm/inview-mvp:<short-sha>`.
 
-## 5. Connect your domain
+## Environment
 
-1. In your host's dashboard, add your domain (for example `app.yourdomain.com`).
-2. The host shows a DNS record to create (usually `CNAME`).
-3. Add that record at your domain registrar.
-4. HTTPS is issued automatically. A PWA needs HTTPS to install.
+| Name | Purpose |
+|---|---|
+| `DATABASE_URL` | Postgres URL (required) |
+| `PUBLIC_APP_URL` | Public site origin for QR links |
+| `O_GALLERY_ACCESS_CODE` | Pilot access code for O Gallery (hashed in the database) |
+| `MEDIA_DIR` | Local media folder when S3 is not set |
+| `S3_BUCKET`, `S3_ENDPOINT`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_PUBLIC_HOST` | Garage / S3 |
+| `KAVENEGAR_API_KEY`, `KAVENEGAR_SENDER` | SMS OTP (optional; console provider is the default) |
 
-## 6. Make the QR code
+## Deploy notes
 
-Create a QR code that opens `https://app.yourdomain.com/g/rooz-gallery`,
-print it and put it at the gallery entrance.
+- Production target: `inview.moshes.io` with media on `inview-media.moshes.io`.
+- Configure the app with environment variables only.
+- Run `npm run db:migrate` once for each new image tag (migration Job).
+- Keep `vercel.json` for the old static demo only.
 
-## 7. Gallery websites on subdomains (roozgallery.inview.ir)
+## Text style
 
-The app shows the gallery website at the home page when it is opened on
-`<subdomain>.inview.ir`, where `<subdomain>` is `gallery.subdomain` in
-`src/data/gallery.ts` (currently `roozgallery`). Until the domain is set up,
-use `/site/rooz-gallery` on any address.
-
-To set it up on Vercel:
-1. Buy `inview.ir` (through an Iranian registrar; `.ir` needs an Iranian registrant).
-2. In Vercel → project → Settings → Domains, add `inview.ir` and `*.inview.ir`.
-3. Wildcard domains need Vercel’s nameservers: at the registrar, change the
-   domain’s nameservers to the ones Vercel shows. HTTPS is then issued for
-   every subdomain automatically.
-4. Open `https://roozgallery.inview.ir`.
-
-On Iranian hosts (Liara, ArvanCloud), add a wildcard DNS record `*.inview.ir`
-pointing to the app and enable a wildcard SSL certificate.
-
-## 8. Test before the demo
-
-- iPhone: open in Safari → Share → Add to Home Screen.
-- Android: open in Chrome → Install app.
-- Chrome on desktop: DevTools → Lighthouse → check the PWA result.
-- On the profile page, "Reset demo" clears everything for the next person.
-
-## Notes
-
-- Prices and dashboard numbers are illustrative. Get the artists' permission
-  before showing their works publicly.
-- The AI import is simulated with sample results; nothing is uploaded. The real version will send files to an AI model and keep the approve-before-publish step.
-- This demo stores nothing on a server. Collecting real phone numbers needs a
-  backend, an SMS provider and a privacy policy (next stage).
+User-facing English text in this project follows ASD-STE100 rules:
+short sentences, clear verbs, and one idea per sentence.
