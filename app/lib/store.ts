@@ -11,9 +11,19 @@ export interface VisitorState {
 }
 
 const KEY = 'inview-demo-v1'
-const empty: VisitorState = { phone: null, saved: [], follows: [], stamps: [], lang: 'en', langChosen: false }
+
+/** Stable default for SSR and first client paint. Do not mutate. */
+const empty: VisitorState = {
+  phone: null,
+  saved: [],
+  follows: [],
+  stamps: [],
+  lang: 'en',
+  langChosen: false,
+}
 
 function load(): VisitorState {
+  if (typeof window === 'undefined') return empty
   try {
     const raw = localStorage.getItem(KEY)
     return raw ? { ...empty, ...JSON.parse(raw) } : empty
@@ -24,6 +34,21 @@ function load(): VisitorState {
 
 let state: VisitorState = load()
 const listeners = new Set<() => void>()
+
+function subscribe(listener: () => void) {
+  listeners.add(listener)
+  return () => {
+    listeners.delete(listener)
+  }
+}
+
+function getSnapshot() {
+  return state
+}
+
+function getServerSnapshot(): VisitorState {
+  return empty
+}
 
 function set(next: Partial<VisitorState>) {
   state = { ...state, ...next }
@@ -36,13 +61,7 @@ function set(next: Partial<VisitorState>) {
 }
 
 export function useVisitor() {
-  return useSyncExternalStore(
-    (l) => {
-      listeners.add(l)
-      return () => listeners.delete(l)
-    },
-    () => state,
-  )
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
 }
 
 const toggle = (list: string[], id: string) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id])
