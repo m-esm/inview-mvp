@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: inview
+      POSTGRES_PASSWORD: inview
+      POSTGRES_DB: inview
+    ports:
+      - "5432:5432"
+    volumes:
+      - inview_pg:/var/lib/postgresql/data
+
+volumes:
+  inview_pg:
