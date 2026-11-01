@@ -21,6 +21,7 @@ if (DEVELOPMENT) {
   app.use(async (req, res, next) => {
     try {
       const source = await viteDevServer.ssrLoadModule('./server/app.ts')
+      await source.oGalleryReady
       return await source.app(req, res, next)
     } catch (error) {
       if (typeof error === 'object' && error instanceof Error) {
@@ -43,7 +44,15 @@ if (DEVELOPMENT) {
   )
   app.use(morgan('tiny'))
   app.use(express.static('build/client', { maxAge: '1h' }))
-  app.use(await import(BUILD_PATH).then((mod) => mod.app))
+  try {
+    const mod = await import(BUILD_PATH)
+    await mod.oGalleryReady
+    app.use(mod.app)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Server failed to start.'
+    console.error(message)
+    process.exit(1)
+  }
 }
 
 app.listen(PORT, () => {

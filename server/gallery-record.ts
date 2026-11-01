@@ -12,7 +12,7 @@ import {
   visits,
   works,
 } from '../database/schema'
-import { verifySecret } from './crypto'
+import { hashSecret, verifySecret } from './crypto'
 import { decodeDataUrl, processAndStoreImage } from './images'
 import type { ObjectStorage } from './storage'
 
@@ -75,10 +75,34 @@ function publicQr(): string {
   return `${base.replace(/\/$/, '')}/g/o-gallery`
 }
 
+const DEV_ACCESS_CODE = 'inview'
+
+export function resolveOGalleryAccessCode(env: NodeJS.ProcessEnv = process.env): string {
+  const configured = env.O_GALLERY_ACCESS_CODE
+  if (typeof configured === 'string' && configured.trim() !== '') return configured
+  if (env.NODE_ENV === 'production') {
+    throw new Error('O_GALLERY_ACCESS_CODE is required in production.')
+  }
+  return DEV_ACCESS_CODE
+}
+
+function errorWithoutSecrets(error: unknown, secrets: string[]): Error {
+  let message = error instanceof Error ? error.message : 'Database request failed.'
+  for (const secret of secrets) {
+    if (secret) message = message.split(secret).join('[redacted]')
+  }
+  return new Error(`Could not store the O Gallery access code hash. ${message}`)
+}
+
 export async function ensureOGalleryTenant(
   db: Db,
-  accessCodePlain = process.env.O_GALLERY_ACCESS_CODE || 'inview',
+  accessCodePlain?: string,
+  env: NodeJS.ProcessEnv = process.env,
 ) {
+  const code =
+    typeof accessCodePlain === 'string' && accessCodePlain.trim() !== ''
+      ? accessCodePlain
+      : resolveOGalleryAccessCode(env)
   const [existing] = await db.select().from(galleries).where(eq(galleries.slug, O_SLUG)).limit(1)
   if (existing) {
     let [show] = await db
@@ -98,23 +122,47 @@ export async function ensureOGalleryTenant(
     return { gallery: existing, show }
   }
 
-  const { hashSecret } = await import('./crypto')
-  const [gallery] = await db
-    .insert(galleries)
-    .values({
-      slug: O_SLUG,
-      nameEn: 'O Gallery',
-      nameFa: 'گالری اُ',
-      subdomain: 'ogallery',
-      accessCodeHash: hashSecret(accessCodePlain),
-    })
-    .returning()
+  const accessCodeHash = hashSecret(code)
+  let gallery: typeof galleries.$inferSelect
+  try {
+    const [created] = await db
+      .insert(galleries)
+      .values({
+        slug: O_SLUG,
+        nameEn: 'O Gallery',
+        nameFa: 'گالری اُ',
+        subdomain: 'ogallery',
+        accessCodeHash,
+      })
+      .returning()
+    gallery = created
+  } catch (error) {
+    throw errorWithoutSecrets(error, [code, accessCodeHash])
+  }
   const [show] = await db
     .insert(shows)
     .values({ galleryId: gallery.id, titleEn: '', titleFa: '', status: 'published' })
     .returning()
   await db.insert(qrCodes).values({ showId: show.id, code: 'o-gallery-main', label: 'Entrance' })
   return { gallery, show }
+}
+
+// A row can already exist with a null or old hash. Replace that hash from the env code.
+export async function syncOGalleryAccessCode(db: Db, env: NodeJS.ProcessEnv = process.env) {
+  const code = resolveOGalleryAccessCode(env)
+  const { gallery, show } = await ensureOGalleryTenant(db, code, env)
+  if (verifySecret(code, gallery.accessCodeHash)) return { gallery, show }
+  const accessCodeHash = hashSecret(code)
+  try {
+    const [updated] = await db
+      .update(galleries)
+      .set({ accessCodeHash, updatedAt: new Date() })
+      .where(eq(galleries.id, gallery.id))
+      .returning()
+    return { gallery: updated ?? gallery, show }
+  } catch (error) {
+    throw errorWithoutSecrets(error, [code, accessCodeHash])
+  }
 }
 
 async function logoUrl(db: Db, logoMediaId: string | null): Promise<string | null> {

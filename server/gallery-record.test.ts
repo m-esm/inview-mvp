@@ -1,5 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+
+// Keep this file on the development default even when the runner sets NODE_ENV=production.
+process.env.NODE_ENV = 'test'
+delete process.env.O_GALLERY_ACCESS_CODE
 import { PGlite } from '@electric-sql/pglite'
 import { drizzle } from 'drizzle-orm/pglite'
 import { readFileSync } from 'node:fs'

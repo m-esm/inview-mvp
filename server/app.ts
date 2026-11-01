@@ -3,7 +3,7 @@ import express from 'express'
 import 'react-router'
 import { createDatabase } from '../database/client'
 import { DatabaseContext } from '../database/context'
-import { ensureOGalleryTenant } from './gallery-record'
+import { ensureOGalleryTenant, resolveOGalleryAccessCode, syncOGalleryAccessCode } from './gallery-record'
 import { processAndStoreImage } from './images'
 import { handlePilotApi } from './pilot-api'
 import { createObjectStorage, localMediaMiddleware } from './storage'
@@ -20,8 +20,12 @@ export const app = express()
 const databaseUrl = process.env.DATABASE_URL
 if (!databaseUrl) throw new Error('DATABASE_URL is required')
 
+resolveOGalleryAccessCode()
+
 const db = createDatabase(databaseUrl)
 const storage = createObjectStorage()
+
+export const oGalleryReady = syncOGalleryAccessCode(db).then(() => undefined)
 
 app.use(localMediaMiddleware())
 app.use(express.json({ limit: '12mb' }))
