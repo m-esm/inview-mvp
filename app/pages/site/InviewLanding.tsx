@@ -3,6 +3,8 @@ import { useLang } from '../../lib/i18n'
 import { langCookie, type Lang } from '../../lib/lang'
 import { landingContact } from '../../lib/landing-contact'
 
+const DEMO_PATH = '/g/sample'
+
 export const landingCopy = {
   fa: {
     title: 'اینویو | آثار گالری شما، در دست بازدیدکننده',
@@ -11,7 +13,7 @@ export const landingCopy = {
     forGalleries: 'برای گالری‌ها',
     hero: 'آثار گالری شما، در دست بازدیدکننده.',
     intro: 'اینویو با یک کد QR، آثار نمایشگاه و قیمت‌ها را روی گوشی بازدیدکننده می‌آورد.',
-    demo: 'دیدن نمونه گالری اُ',
+    demo: 'دیدن گالری نمونه',
     pilot: 'گالری پایلوت',
     persianDemo: 'اپلیکیشن نمونه به فارسی نمایش داده می‌شود',
     screensLabel: 'تصاویر نسخه آزمایشی گالری',
@@ -53,7 +55,7 @@ export const landingCopy = {
     forGalleries: 'For galleries',
     hero: 'Your gallery, in your visitor’s hands.',
     intro: 'Inview brings your exhibition’s works and prices to each visitor’s phone with one QR code.',
-    demo: 'Explore the O Gallery demo',
+    demo: 'Explore the sample gallery',
     pilot: 'pilot gallery',
     persianDemo: 'The demo app is shown in Persian',
     screensLabel: 'Gallery demo screenshots',
@@ -142,7 +144,7 @@ export default function InviewLanding({ contact = landingContact }: { contact?: 
             <h1 id="landing-title">{words.hero}</h1>
             <p className="landing-lead">{words.intro}</p>
             <div className="landing-actions">
-              <Link className="btn btn-primary" to="/g/o-gallery">{words.demo}</Link>
+              <Link className="btn btn-primary" to={DEMO_PATH}>{words.demo}</Link>
               {channels.length > 0 && <a className="btn btn-outline" href="#contact">{words.contact}</a>}
             </div>
             <p className="landing-note">{words.noApp}</p>
@@ -189,7 +191,7 @@ export default function InviewLanding({ contact = landingContact }: { contact?: 
               <p>{words.proofIntro}</p>
               {lang === 'en' && <p>{words.persianDemo}</p>}
             </div>
-            <Link className="btn btn-outline" to="/g/o-gallery">{words.demo}</Link>
+            <Link className="btn btn-outline" to={DEMO_PATH}>{words.demo}</Link>
           </div>
           <div className="landing-screens" tabIndex={0} role="region" aria-label={words.screensLabel}>
             {screens.map((screen, index) => (

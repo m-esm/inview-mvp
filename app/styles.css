@@ -2109,6 +2109,7 @@ td {
   color: var(--ink);
   font-size: 13px;
   border-block-end: 1px solid var(--line);
+}
 .landing { --landing-secondary: #45423C; background: var(--paper); }
 .landing.fa, .landing.fa button { font-family: var(--fa); }
 .landing-width { width: min(calc(100% - var(--space-7)), var(--visitor-max)); margin-inline: auto; }

@@ -74,7 +74,7 @@ test.describe('server rendering', () => {
     const body = await response.text()
     expect(body).toMatch(/<html[^>]*lang="fa"[^>]*dir="rtl"/)
     expect(body).toContain('آثار گالری شما، در\u00a0دست بازدیدکننده.')
-    expect(body).toContain('href="/g/o-gallery"')
+    expect(body).toContain('href="/g/sample"')
     const english = await request.get('/', { headers: { cookie: 'inview-lang=en' } })
     expect(await english.text()).toMatch(/<html[^>]*lang="en"[^>]*dir="ltr"/)
     expect(await english.text()).toContain('Your gallery, in your visitor')
