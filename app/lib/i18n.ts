@@ -143,6 +143,8 @@ export function toFa(v: number | string): string {
   return String(v).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)])
 }
 
+export const messages = { en, fa }
+
 export function useT() {
   const { lang, langChosen } = useVisitor()
   const { pathname } = useLocation()

@@ -63,6 +63,39 @@ async function mockCatalogue(page: Page) {
   })
 }
 
+const emptyRecord = {
+  slug: 'o-gallery',
+  name: 'O Gallery',
+  nameFa: 'گالری اُ',
+  logo: null,
+  showTitle: '',
+  showTitleFa: '',
+  dates: '',
+  datesFa: '',
+  hours: '',
+  hoursFa: '',
+  address: '',
+  addressFa: '',
+  text: '',
+  textFa: '',
+  pdfUrl: null,
+  works: [],
+}
+
+async function mockEmpty(page: Page) {
+  await page.route('**/api/pilot**', async (route) => {
+    if (route.request().method() !== 'GET') {
+      await route.continue()
+      return
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ record: emptyRecord }),
+    })
+  })
+}
+
 async function shot(page: Page, name: string, vp: (typeof viewports)[number], lang: (typeof langs)[number]) {
   await page.waitForTimeout(600)
   await expect(page.locator('body')).toBeVisible()
@@ -80,6 +113,7 @@ test.describe('visual empty', () => {
         test(`${route.name} ${vp.name} ${lang}`, async ({ page }) => {
           await page.setViewportSize({ width: vp.width, height: vp.height })
           await seedLang(page, lang)
+          await mockEmpty(page)
           await page.goto(route.path, { waitUntil: 'load' })
           await shot(page, route.name, vp, lang)
         })

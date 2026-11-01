@@ -28,6 +28,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <html lang="en">
       <head>
         <meta charSet="utf-8" />
+        <title>Inview</title>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="theme-color" content="#17332E" />
         <meta name="description" content="Inview: the show, the works and the prices, in your pocket." />

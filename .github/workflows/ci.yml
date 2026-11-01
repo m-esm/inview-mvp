@@ -42,7 +42,19 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
+      - run: npm run lint
       - run: npm test
+      - name: Server coverage
+        run: |
+          set -o pipefail
+          npm run test:coverage 2>&1 | tee /tmp/coverage.txt
+          {
+            echo "### Server coverage"
+            echo
+            echo '```'
+            sed -n '/start of coverage report/,/end of coverage report/p' /tmp/coverage.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
       - run: npm run typecheck
       - run: npm run build
       - name: Prepare database
