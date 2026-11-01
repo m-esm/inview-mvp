@@ -72,11 +72,13 @@ export async function readInvite(db: Pick<AccountDb, 'select'>, token: string) {
   const [invite] = await db.select({
     kind: invitations.kind,
     galleryName: galleries.nameEn,
+    galleryNameFa: galleries.nameFa,
+    gallerySlug: galleries.slug,
     role: invitations.role,
     platformRole: invitations.platformRole,
   }).from(invitations).leftJoin(galleries, eq(galleries.id, invitations.galleryId))
     .where(availableInvite(token)).limit(1)
-  return invite ? { kind: invite.kind, galleryName: invite.galleryName, role: invite.role ?? invite.platformRole } : null
+  return invite ? { kind: invite.kind, galleryName: invite.galleryName, galleryNameFa: invite.galleryNameFa, gallerySlug: invite.gallerySlug, role: invite.role ?? invite.platformRole } : null
 }
 
 export async function acceptInvite(db: AccountDb, token: string, name: string, password: string, secure = false) {

@@ -6,8 +6,8 @@ export const LANG_COOKIE = 'inview-lang'
 const ONE_YEAR = 60 * 60 * 24 * 365
 
 // O Gallery visitors and staff read Persian first. The Rooz demo is shown in English.
-const PERSIAN_FIRST = [`/g/${O_SLUG}`, `/site/${O_SLUG}`, `/dashboard/${O_SLUG}`, '/dashboard/sign-in']
-const BILINGUAL_STAFF = [`/dashboard/${O_SLUG}`, '/dashboard/sign-in']
+const PERSIAN_FIRST = [`/g/${O_SLUG}`, `/site/${O_SLUG}`, `/dashboard/${O_SLUG}`, '/dashboard/sign-in', '/ops', '/staff/invite']
+const BILINGUAL_STAFF = [`/dashboard/${O_SLUG}`, '/dashboard/sign-in', '/ops', '/staff/invite']
 
 function underPath(pathname: string, base: string): boolean {
   return pathname === base || pathname.startsWith(`${base}/`)

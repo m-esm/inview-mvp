@@ -96,7 +96,7 @@ test('invite HTTP metadata and acceptance reveal no secrets and set a session co
     const path = `/api/v1/invites/${invite.token}`
     const metadata = await request(app).get(path)
     assert.equal(metadata.status, 200)
-    assert.deepEqual(metadata.body, { kind: 'operator', galleryName: null, role: 'admin' })
+    assert.deepEqual(metadata.body, { kind: 'operator', galleryName: null, galleryNameFa: null, gallerySlug: null, role: 'admin' })
     const accepted = await request(app).post(`${path}/accept`).set('Origin', 'https://app.example.com')
       .send({ name: 'New Admin', password: 'new-password' })
     assert.equal(accepted.status, 200)

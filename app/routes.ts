@@ -8,6 +8,15 @@ import {
 export default [
   index('routes/home.tsx'),
   route('site/:slug', 'routes/site.$slug.tsx'),
+  route('ops/sign-in', 'routes/ops.sign-in.tsx'),
+  route('staff/invite/:token', 'routes/staff.invite.tsx'),
+  route('ops', 'routes/ops.tsx', [
+    index('routes/ops._index.tsx'),
+    route('sign-out', 'routes/ops.sign-out.tsx'),
+    route('galleries/new', 'routes/ops.galleries.new.tsx'),
+    route('galleries/:slug', 'routes/ops.galleries.profile.tsx'),
+    route('galleries/:slug/team', 'routes/ops.galleries.team.tsx'),
+  ]),
   layout('routes/g.tsx', [
     route('g/:slug', 'routes/g.$slug._index.tsx'),
     route('g/:slug/works', 'routes/g.$slug.works._index.tsx'),
