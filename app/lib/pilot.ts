@@ -44,11 +44,9 @@ export interface PilotLead {
   verified: false
 }
 
-export interface PilotState {
-  record: PilotRecord
+export interface StaffReport {
   visits: { scans: number; views: number }
   leads: PilotLead[]
-  qr: string
 }
 
 export const seed = seedJson as PilotRecord
@@ -102,10 +100,20 @@ export function pick(lang: 'en' | 'fa', en: string, fa: string) {
   return en || fa
 }
 
-export async function fetchPilot(): Promise<PilotState> {
+export async function fetchPilot(): Promise<{ record: PilotRecord }> {
   const res = await fetch('/api/pilot', { cache: 'no-store' })
   if (!res.ok) throw new Error('The gallery record did not load.')
   return res.json()
+}
+
+export async function fetchStaff(accessCode: string): Promise<StaffReport> {
+  const res = await fetch('/api/pilot/staff', {
+    cache: 'no-store',
+    headers: { 'X-Access-Code': accessCode },
+  })
+  const data = (await res.json().catch(() => ({}))) as { error?: string }
+  if (!res.ok) throw new Error(data.error || 'The visit report did not load.')
+  return data as StaffReport
 }
 
 export function usePilotRecord(enabled = true) {

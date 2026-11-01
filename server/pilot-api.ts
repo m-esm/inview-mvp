@@ -1,20 +1,21 @@
 import {
-  loadGalleryState,
+  loadPublicRecord,
   publishGalleryRecord,
+  readStaffReport,
   recordLead,
   recordVisit,
 } from './gallery-record'
 import type { ObjectStorage } from './storage'
 
 export async function handlePilotApi(
-  db: Parameters<typeof loadGalleryState>[0],
+  db: Parameters<typeof loadPublicRecord>[0],
   storage: ObjectStorage,
   method: string,
   body: unknown,
 ) {
   const verb = (method || 'GET').toUpperCase()
   if (verb === 'GET' || verb === 'HEAD') {
-    return { status: 200, body: await loadGalleryState(db) }
+    return { status: 200, body: await loadPublicRecord(db) }
   }
   if (verb === 'PUT') {
     const payload = (body || {}) as { password?: string; accessCode?: string; record?: unknown }
@@ -48,4 +49,11 @@ export async function handlePilotApi(
     )
   }
   return { status: 400, body: { error: 'Unknown action.' } }
+}
+
+export async function handleStaffApi(
+  db: Parameters<typeof loadPublicRecord>[0],
+  accessCode: string,
+) {
+  return readStaffReport(db, accessCode)
 }

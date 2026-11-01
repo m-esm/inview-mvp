@@ -5,7 +5,7 @@ import { createDatabase } from '../database/client'
 import { DatabaseContext } from '../database/context'
 import { ensureOGalleryTenant, resolveOGalleryAccessCode, syncOGalleryAccessCode } from './gallery-record'
 import { processAndStoreImage } from './images'
-import { handlePilotApi } from './pilot-api'
+import { handlePilotApi, handleStaffApi } from './pilot-api'
 import { createObjectStorage, localMediaMiddleware } from './storage'
 import { media } from '../database/schema'
 
@@ -61,6 +61,25 @@ app.all('/api/pilot', async (req, res) => {
     res.status(500).json({ error: 'The server could not complete the request.' })
   }
 })
+
+async function sendStaffReport(req: express.Request, res: express.Response) {
+  res.setHeader('Cache-Control', 'no-store')
+  const verb = (req.method || 'GET').toUpperCase()
+  if (verb !== 'GET' && verb !== 'HEAD') {
+    res.status(405).json({ error: 'Method not allowed.' })
+    return
+  }
+  try {
+    const result = await handleStaffApi(db, req.get('x-access-code') || '')
+    res.status(result.status).json(result.body)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'The server could not complete the request.' })
+  }
+}
+
+app.all('/api/v1/pilot/staff', sendStaffReport)
+app.all('/api/pilot/staff', sendStaffReport)
 
 app.post('/api/v1/uploads', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store')
