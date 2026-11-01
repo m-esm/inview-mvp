@@ -170,7 +170,7 @@ function isUniqueViolation(error: unknown): boolean {
   return false
 }
 
-async function peekBucket(db: Db, bucket: string, limit: number, windowSec: number, now: Date): Promise<ApiResult | null> {
+export async function peekBucket(db: Db, bucket: string, limit: number, windowSec: number, now: Date): Promise<ApiResult | null> {
   const [row] = await db.select().from(rateLimits).where(eq(rateLimits.bucket, bucket)).limit(1)
   if (!row) return null
   const end = asDate(row.windowStart).getTime() + windowSec * 1000
