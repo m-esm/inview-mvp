@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router'
 import { EmptyState } from '../../components/EmptyState'
 import { useSignIn } from '../../components/VisitorShell'
 import { useT } from '../../lib/i18n'
+import { CONSENT_TEXT_VERSION } from '../../lib/consent'
 import { oCopy, pick, recordWorkView, reportLead, usePilotRecord, type PilotRecord, type PilotWork } from '../../lib/pilot'
 import { useVisitor, visitor } from '../../lib/store'
 
@@ -222,7 +223,7 @@ export function OWork() {
   const { t, lang } = useT()
   const copy = oCopy(lang)
   const { record } = usePilotRecord(true)
-  const { saved, phone } = useVisitor()
+  const { saved, phone, consentVersion } = useVisitor()
   const { requireSignIn } = useSignIn()
   const [asked, setAsked] = useState(false)
   const work = record.works.find((item) => item.id === id)
@@ -282,16 +283,16 @@ export function OWork() {
           aria-pressed={isSaved}
           onClick={() => {
             if (isSaved) visitor.toggleSaved(work.id)
-            else if (phone) { visitor.save(work.id); reportLead(phone, 'save', work.id) }
-            else requireSignIn('save', () => visitor.save(work.id), work.title)
+            else if (phone && consentVersion === CONSENT_TEXT_VERSION) { visitor.save(work.id); reportLead(phone, 'save', work.id) }
+            else requireSignIn('save', () => visitor.save(work.id), work.title, work.id)
           }}>
           {isSaved ? t.saved : t.save}
         </button>
         {work.status !== 'sold' && (
           <button className="btn btn-outline" disabled={asked}
             onClick={() => {
-              if (phone) { setAsked(true); reportLead(phone, 'ask', work.id) }
-              else requireSignIn('ask', () => setAsked(true), work.title)
+              if (phone && consentVersion === CONSENT_TEXT_VERSION) { setAsked(true); reportLead(phone, 'ask', work.id) }
+              else requireSignIn('ask', () => setAsked(true), work.title, work.id)
             }}>
             {asked ? t.asked : t.ask}
           </button>

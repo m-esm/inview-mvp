@@ -118,7 +118,7 @@ Tables:
 - `qr_codes` (show, code, label). One show can have many QR codes.
 - `media` (gallery, S3 key, width, height, variants)
 - `visits` (show, qr_code, visitor id, kind: scan or view, day)
-- `leads` (gallery, show, work, phone, kind, consent time)
+- `leads` (gallery, show, work, phone, kind, consent time, consent text version)
 
 Prices are whole Toman in `bigint`. Times are UTC `timestamptz`.
 
@@ -197,6 +197,9 @@ Ali or his company owns.
 
 Decision: Postgres tables. A visitor id is a random value in the browser. We do not
 store IP addresses. Leads store a phone number only after the visitor agrees.
+The server stores the consent time and the consent text version. A Save lead and
+an Ask lead each include the work id. A lead without consent returns 400. The
+server stores no phone number in that case.
 
 ### D13. Operations
 

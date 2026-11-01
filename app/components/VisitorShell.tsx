@@ -2,21 +2,22 @@ import { createContext, useCallback, useContext, useEffect, useState } from 'rea
 import { Link, NavLink, Outlet, useLocation } from 'react-router'
 import { gallery } from '../data/gallery'
 import { useT } from '../lib/i18n'
+import { CONSENT_TEXT_VERSION } from '../lib/consent'
 import { pick, recordLandingScan, usePilotRecord } from '../lib/pilot'
 import { visitor, useVisitor } from '../lib/store'
 import { SignInSheet, type SheetKind } from './SignInSheet'
 import { Grid, Home, User } from './Icons'
 
 interface Ctx {
-  requireSignIn: (kind: SheetKind, action: () => void, subtitle?: string) => void
+  requireSignIn: (kind: SheetKind, action: () => void, subtitle?: string, workId?: string) => void
 }
 const SignInCtx = createContext<Ctx>({ requireSignIn: (_k, a) => a() })
 export const useSignIn = () => useContext(SignInCtx)
 
 export function VisitorShell() {
   const { t, lang, dir, galleryName } = useT()
-  const { phone } = useVisitor()
-  const [pending, setPending] = useState<{ kind: SheetKind; action: () => void; subtitle?: string } | null>(null)
+  const { phone, consentVersion } = useVisitor()
+  const [pending, setPending] = useState<{ kind: SheetKind; action: () => void; subtitle?: string; workId?: string } | null>(null)
   const { pathname } = useLocation()
 
   useEffect(() => {
@@ -25,10 +26,10 @@ export function VisitorShell() {
   }, [lang, dir])
   useEffect(() => window.scrollTo(0, 0), [pathname])
 
-  const requireSignIn = useCallback<Ctx['requireSignIn']>((kind, action, subtitle) => {
-    if (phone) action()
-    else setPending({ kind, action, subtitle })
-  }, [phone])
+  const requireSignIn = useCallback<Ctx['requireSignIn']>((kind, action, subtitle, workId) => {
+    if (phone && consentVersion === CONSENT_TEXT_VERSION) action()
+    else setPending({ kind, action, subtitle, workId })
+  }, [phone, consentVersion])
 
   const slug = pathname.match(/^\/g\/([^/]+)/)?.[1] ?? ''
   const isO = slug === 'o-gallery'
@@ -75,7 +76,7 @@ export function VisitorShell() {
             {!isO && <NavLink to="/me"><User /><span>{t.profile}</span></NavLink>}
           </nav>
           {pending && (
-            <SignInSheet kind={pending.kind} subtitle={pending.subtitle}
+            <SignInSheet kind={pending.kind} subtitle={pending.subtitle} workId={pending.workId}
               onClose={() => setPending(null)}
               onDone={() => { pending.action(); setPending(null) }} />
           )}
