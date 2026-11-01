@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq } from 'drizzle-orm'
+import { and, asc, count, desc, eq, gte, isNull } from 'drizzle-orm'
 /** Drizzle database handle (Postgres.js in production, PGlite in tests). */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Db = any
@@ -14,9 +14,9 @@ import {
 } from '../database/schema'
 import { CONSENT_TEXT_VERSION } from '../app/lib/consent'
 import { parseToman } from '../app/lib/price'
-import { QR_CODE_PATTERN, tehranDay } from '../app/lib/tehran-day'
+import { GALLERY_TIME_ZONE, QR_CODE_PATTERN, tehranDay } from '../app/lib/tehran-day'
 import { hashSecret, verifySecret } from './crypto'
-import { decodeDataUrl, processAndStoreImage } from './images'
+import { displayVariant } from './images'
 import type { ObjectStorage } from './storage'
 
 const SAMPLE_RE = /sample|نمونه/i
@@ -55,17 +55,43 @@ export interface GalleryRecordDto {
   updatedAt?: string
 }
 
+export interface StaffLeadDto {
+  phone: string
+  kind: 'save' | 'ask'
+  at: string
+  workId: string | null
+  workTitle: string | null
+  consentTextVersion: string
+  verified: false
+}
+
+export interface StaffDayDto {
+  day: string
+  scans: number
+  views: number
+}
+
+export interface StaffWorkDto {
+  workId: string
+  title: string
+  views: number
+  saves: number
+  asks: number
+}
+
 export interface GalleryStateDto {
   record: GalleryRecordDto
   visits: { scans: number; views: number }
-  leads: Array<{
-    phone: string
-    kind: 'save' | 'ask'
-    at: string
-    workId: string | null
-    consentTextVersion: string
-    verified: false
-  }>
+  days: StaffDayDto[]
+  works: StaffWorkDto[]
+  leads: StaffLeadDto[]
+}
+
+export const REPORT_TIME_ZONE = GALLERY_TIME_ZONE
+const REPORT_DAYS = 30
+
+export function tehranDate(at: Date): string {
+  return tehranDay(at)
 }
 
 function text(value: unknown, max: number): string {
@@ -167,8 +193,7 @@ async function logoUrl(db: Db, logoMediaId: string | null): Promise<string | nul
   if (!logoMediaId) return null
   const [row] = await db.select().from(media).where(eq(media.id, logoMediaId)).limit(1)
   if (!row) return null
-  const variants = row.variants || {}
-  return variants['w640.webp'] || variants['w640.jpeg'] || Object.values(variants)[0] || null
+  return displayVariant(row.variants)
 }
 
 async function readRecord(
@@ -246,21 +271,74 @@ async function readVisitCounts(db: Db, showId: string): Promise<GalleryStateDto[
   return { scans: Number(scanRow?.value || 0), views: Number(viewRow?.value || 0) }
 }
 
-async function readLeadList(db: Db, galleryId: string): Promise<GalleryStateDto['leads']> {
-  const leadRows = await db
-    .select()
+async function readLeadList(db: Db, galleryId: string, limit = 200): Promise<StaffLeadDto[]> {
+  const rows = await db
+    .select({ lead: leads, workTitle: works.title })
     .from(leads)
+    .leftJoin(works, eq(leads.workId, works.id))
     .where(eq(leads.galleryId, galleryId))
     .orderBy(desc(leads.createdAt))
-    .limit(200)
-  return leadRows.map((lead: typeof leads.$inferSelect) => ({
-    phone: lead.phone,
-    kind: lead.kind,
-    at: lead.consentAt.toISOString(),
-    workId: lead.workId,
-    consentTextVersion: lead.consentTextVersion,
+    .limit(limit)
+  return rows.map((row: { lead: typeof leads.$inferSelect; workTitle: string | null }) => ({
+    phone: row.lead.phone,
+    kind: row.lead.kind,
+    at: row.lead.consentAt.toISOString(),
+    workId: row.lead.workId,
+    workTitle: row.workTitle,
+    consentTextVersion: row.lead.consentTextVersion,
     verified: false as const,
   }))
+}
+
+async function readDays(db: Db, showId: string, now = new Date()): Promise<StaffDayDto[]> {
+  const since = new Date(now.getTime() - REPORT_DAYS * 24 * 60 * 60 * 1000)
+  const rows = await db
+    .select({ kind: visits.kind, createdAt: visits.createdAt })
+    .from(visits)
+    .where(and(eq(visits.showId, showId), gte(visits.createdAt, since)))
+  const byDay = new Map<string, StaffDayDto>()
+  for (const row of rows as Array<{ kind: 'scan' | 'view'; createdAt: Date }>) {
+    const day = tehranDate(new Date(row.createdAt))
+    const entry = byDay.get(day) ?? { day, scans: 0, views: 0 }
+    if (row.kind === 'scan') entry.scans += 1
+    else entry.views += 1
+    byDay.set(day, entry)
+  }
+  return [...byDay.values()].sort((a, b) => (a.day < b.day ? 1 : -1))
+}
+
+async function readWorkStats(db: Db, galleryId: string, showId: string): Promise<StaffWorkDto[]> {
+  const workRows = await db
+    .select({ id: works.id, title: works.title })
+    .from(works)
+    .where(eq(works.galleryId, galleryId))
+  const viewRows = await db
+    .select({ workId: visits.workId, value: count() })
+    .from(visits)
+    .where(and(eq(visits.showId, showId), eq(visits.kind, 'view')))
+    .groupBy(visits.workId)
+  const leadRows = await db
+    .select({ workId: leads.workId, kind: leads.kind, value: count() })
+    .from(leads)
+    .where(eq(leads.galleryId, galleryId))
+    .groupBy(leads.workId, leads.kind)
+  const stats = new Map<string, StaffWorkDto>()
+  for (const row of workRows as Array<{ id: string; title: string }>) {
+    stats.set(row.id, { workId: row.id, title: row.title, views: 0, saves: 0, asks: 0 })
+  }
+  for (const row of viewRows as Array<{ workId: string | null; value: number }>) {
+    const entry = row.workId ? stats.get(row.workId) : undefined
+    if (entry) entry.views = Number(row.value)
+  }
+  for (const row of leadRows as Array<{ workId: string | null; kind: 'save' | 'ask'; value: number }>) {
+    const entry = row.workId ? stats.get(row.workId) : undefined
+    if (!entry) continue
+    if (row.kind === 'save') entry.saves = Number(row.value)
+    else entry.asks = Number(row.value)
+  }
+  return [...stats.values()]
+    .filter((entry) => entry.views + entry.saves + entry.asks > 0)
+    .sort((a, b) => b.views + b.saves + b.asks - (a.views + a.saves + a.asks))
 }
 
 /** Public catalogue only. This function does not read visits or leads. */
@@ -269,8 +347,10 @@ export async function loadPublicRecord(db: Db): Promise<{ record: GalleryRecordD
   return { record: await readRecord(db, gallery, show) }
 }
 
+type StaffReportBody = Omit<GalleryStateDto, 'record'>
+
 type StaffReportResult =
-  | { status: 200; body: { visits: GalleryStateDto['visits']; leads: GalleryStateDto['leads'] } }
+  | { status: 200; body: StaffReportBody }
   | { status: 401; body: { error: string } }
 
 async function staffReportForTenant(
@@ -282,6 +362,8 @@ async function staffReportForTenant(
     status: 200,
     body: {
       visits: await readVisitCounts(db, showId),
+      days: await readDays(db, showId),
+      works: await readWorkStats(db, galleryId, showId),
       leads: await readLeadList(db, galleryId),
     },
   }
@@ -395,6 +477,7 @@ function sanitizeRecord(
 }
 
 const OWN_IMAGE_ERROR = 'Use an image you upload. Do not use another gallery’s images.'
+const OWN_IMAGE_ERROR_FA = 'از تصویری استفاده کنید که خودتان بارگذاری کرده‌اید.'
 
 function isOwnGalleryMedia(image: string, gallerySlug: string): boolean {
   return (
@@ -409,38 +492,34 @@ function isForeignImage(image: string, gallerySlug: string): boolean {
   return !isOwnGalleryMedia(image, gallerySlug)
 }
 
-async function resolveImageUrl(
-  db: Db,
-  storage: ObjectStorage,
-  galleryId: string,
-  gallerySlug: string,
-  image: string,
-): Promise<{ url: string; mediaId: string | null }> {
-  if (!image) return { url: '', mediaId: null }
-  if (isForeignImage(image, gallerySlug) || image.startsWith('/media/')) {
-    throw new Error(OWN_IMAGE_ERROR)
-  }
-  const decoded = decodeDataUrl(image)
-  if (!decoded) throw new Error('A work image must be a PNG, JPEG, or WebP upload.')
-  const processed = await processAndStoreImage(storage, gallerySlug, decoded.buffer, decoded.contentType)
-  const [row] = await db
-    .insert(media)
-    .values({
-      galleryId,
-      s3Key: processed.key,
-      width: processed.width,
-      height: processed.height,
-      variants: processed.variants,
-    })
-    .returning()
-  return { url: processed.variants['w640.webp'] || processed.primaryUrl, mediaId: row.id }
+const UPLOAD_FIRST = 'Upload the image with the upload button first.'
+const UPLOAD_FIRST_FA = 'ابتدا تصویر را با دکمه بارگذاری بفرستید.'
+
+function mediaUrls(variants: Record<string, string> | null | undefined): string[] {
+  return Object.values(variants || {})
 }
 
-type PublishResult = { status: number; body: { ok: true; record: GalleryRecordDto } | { error: string } }
+async function findOwnMedia(db: Db, galleryId: string, url: string): Promise<string | null> {
+  const rows = await db
+    .select({ id: media.id, variants: media.variants, s3Key: media.s3Key })
+    .from(media)
+    .where(eq(media.galleryId, galleryId))
+  const hit = rows.find(
+    (row: { variants: Record<string, string>; s3Key: string }) =>
+      mediaUrls(row.variants).includes(url) || url.endsWith(`/${row.s3Key}`),
+  )
+  return hit ? hit.id : null
+}
+
+function refuse(error: string, errorFa: string) {
+  return { status: 400, body: { error, errorFa } }
+}
+
+type PublishResult = { status: number; body: { ok: true; record: GalleryRecordDto } | { error: string; errorFa?: string } }
 
 export async function publishGalleryRecord(
   db: Db,
-  storage: ObjectStorage,
+  _storage: ObjectStorage,
   accessCode: string,
   input: unknown,
 ): Promise<PublishResult> {
@@ -448,12 +527,12 @@ export async function publishGalleryRecord(
   if (!verifySecret(accessCode, tenant.gallery.accessCodeHash)) {
     return { status: 401, body: { error: 'That access code does not match.' } }
   }
-  return writeGalleryRecord(db, storage, tenant, input)
+  return writeGalleryRecord(db, tenant, input)
 }
 
 export async function publishGalleryRecordForSession(
   db: Db,
-  storage: ObjectStorage,
+  _storage: ObjectStorage,
   galleryId: string,
   input: unknown,
 ): Promise<PublishResult> {
@@ -461,12 +540,11 @@ export async function publishGalleryRecordForSession(
   if (tenant.gallery.id !== galleryId) {
     return { status: 401, body: { error: 'Sign in to publish.' } }
   }
-  return writeGalleryRecord(db, storage, tenant, input)
+  return writeGalleryRecord(db, tenant, input)
 }
 
 async function writeGalleryRecord(
   db: Db,
-  storage: ObjectStorage,
   tenant: Awaited<ReturnType<typeof ensureOGalleryTenant>>,
   input: unknown,
 ): Promise<PublishResult> {
@@ -483,14 +561,14 @@ async function writeGalleryRecord(
     } else if (typeof logoInput === 'string' && logoInput.length > 0) {
       if (currentLogo && logoInput === currentLogo) {
         logoMediaId = gallery.logoMediaId
-      } else if (isForeignImage(logoInput, gallery.slug) || logoInput.startsWith('/media/')) {
-        return { status: 400, body: { error: 'Upload the logo again. A web address is not accepted.' } }
+      } else if (logoInput.startsWith('data:')) {
+        return refuse(UPLOAD_FIRST, UPLOAD_FIRST_FA)
+      } else if (isForeignImage(logoInput, gallery.slug) || !isOwnGalleryMedia(logoInput, gallery.slug)) {
+        return refuse('Upload the logo again. A web address is not accepted.', 'لوگو را دوباره بارگذاری کنید. نشانی وب پذیرفته نمی‌شود.')
       } else {
-        const logo = await resolveImageUrl(db, storage, gallery.id, gallery.slug, logoInput)
-        if (!logo.mediaId) {
-          return { status: 400, body: { error: 'The logo must be a PNG, JPEG, or WebP upload.' } }
-        }
-        logoMediaId = logo.mediaId
+        const found = await findOwnMedia(db, gallery.id, logoInput)
+        if (!found) return refuse('Upload the logo again. A web address is not accepted.', 'لوگو را دوباره بارگذاری کنید. نشانی وب پذیرفته نمی‌شود.')
+        logoMediaId = found
       }
     }
 
@@ -507,7 +585,7 @@ async function writeGalleryRecord(
         .where(eq(works.id, work.id))
         .limit(1)
       if (owner && owner.galleryId !== gallery.id) {
-        return { status: 400, body: { error: 'That work belongs to another gallery.' } }
+        return refuse('That work belongs to another gallery.', 'این اثر متعلق به گالری دیگری است.')
       }
       if (!work.image) {
         prepared.push({ work, imageUrl: '', mediaId: null })
@@ -517,15 +595,13 @@ async function writeGalleryRecord(
         prepared.push({ work, imageUrl: owner.imageUrl || '', mediaId: owner.mediaId })
         continue
       }
-      if (isForeignImage(work.image, gallery.slug)) {
-        return { status: 400, body: { error: OWN_IMAGE_ERROR } }
+      if (work.image.startsWith('data:')) return refuse(UPLOAD_FIRST, UPLOAD_FIRST_FA)
+      if (isForeignImage(work.image, gallery.slug) || !isOwnGalleryMedia(work.image, gallery.slug)) {
+        return refuse(OWN_IMAGE_ERROR, OWN_IMAGE_ERROR_FA)
       }
-      if (isOwnGalleryMedia(work.image, gallery.slug)) {
-        prepared.push({ work, imageUrl: work.image, mediaId: null })
-        continue
-      }
-      const image = await resolveImageUrl(db, storage, gallery.id, gallery.slug, work.image)
-      prepared.push({ work, imageUrl: image.url, mediaId: image.mediaId })
+      const mediaId = await findOwnMedia(db, gallery.id, work.image)
+      if (!mediaId) return refuse(OWN_IMAGE_ERROR, OWN_IMAGE_ERROR_FA)
+      prepared.push({ work, imageUrl: work.image, mediaId })
     }
 
     const keep = new Set(prepared.map((item) => item.work.id))
@@ -559,10 +635,14 @@ async function writeGalleryRecord(
         .where(eq(shows.id, show.id))
 
       await tx.delete(showWorks).where(eq(showWorks.showId, show.id))
-      const existingWorks = await tx.select({ id: works.id }).from(works).where(eq(works.galleryId, gallery.id))
+      const existingWorks = await tx
+        .select({ id: works.id })
+        .from(works)
+        .where(and(eq(works.galleryId, gallery.id), isNull(works.removedAt)))
+      const removedAt = new Date()
       for (const row of existingWorks) {
         if (!keep.has(row.id)) {
-          await tx.delete(works).where(and(eq(works.id, row.id), eq(works.galleryId, gallery.id)))
+          await tx.update(works).set({ removedAt }).where(and(eq(works.id, row.id), eq(works.galleryId, gallery.id)))
         }
       }
 
@@ -580,6 +660,7 @@ async function writeGalleryRecord(
           sample: item.work.sample,
           mediaId: item.mediaId,
           imageUrl: item.imageUrl,
+          removedAt: null,
           updatedAt: new Date(),
         }
         const [found] = await tx
@@ -599,8 +680,8 @@ async function writeGalleryRecord(
     const published = await loadPublicRecord(db)
     return { status: 200, body: { ok: true, record: published.record } }
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Publish did not complete.'
-    return { status: 400, body: { error: message } }
+    console.error(error)
+    return { status: 500, body: { error: 'Publish did not complete. Try again.', errorFa: 'انتشار انجام نشد. دوباره تلاش کنید.' } }
   }
 }
 
@@ -683,7 +764,11 @@ export async function recordLead(
     return { status: 400, body: { error: 'A work id is required.' } }
   }
   const { gallery, show } = await ensureOGalleryTenant(db)
-  const [found] = await db.select({ id: works.id }).from(works).where(eq(works.id, workId)).limit(1)
+  const [found] = await db
+    .select({ id: works.id })
+    .from(works)
+    .where(and(eq(works.id, workId), eq(works.galleryId, gallery.id), isNull(works.removedAt)))
+    .limit(1)
   if (!found) {
     return { status: 400, body: { error: 'That work was not found.' } }
   }
@@ -698,4 +783,25 @@ export async function recordLead(
     consentTextVersion: CONSENT_TEXT_VERSION,
   })
   return { status: 200, body: { ok: true } }
+}
+const CSV_HEADER = ['created_at', 'kind', 'phone', 'work_id', 'work_title', 'consent_text_version', 'verified']
+
+function csvCell(value: string): string {
+  const safe = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value
+  return /[",\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe
+}
+
+export async function leadsCsvForSession(db: Db, galleryId: string): Promise<{ status: 200; body: string } | { status: 401; body: { error: string } }> {
+  const { gallery } = await ensureOGalleryTenant(db)
+  if (gallery.id !== galleryId) return { status: 401, body: { error: 'Sign in to download the leads.' } }
+  const rows = await readLeadList(db, gallery.id, 10000)
+  const lines = [CSV_HEADER.join(',')]
+  for (const lead of rows) {
+    lines.push(
+      [lead.at, lead.kind, lead.phone, lead.workId ?? '', lead.workTitle ?? '', lead.consentTextVersion, 'no']
+        .map(csvCell)
+        .join(','),
+    )
+  }
+  return { status: 200, body: `\uFEFF${lines.join('\r\n')}\r\n` }
 }

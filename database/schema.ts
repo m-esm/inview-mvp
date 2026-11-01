@@ -156,6 +156,7 @@ export const works = pgTable('works', {
   mediaId: uuid('media_id').references(() => media.id, { onDelete: 'set null' }),
   // Pilot keeps a direct URL (local media or S3 public URL) for simple SSR pages.
   imageUrl: text('image_url'),
+  removedAt: timestamp('removed_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })

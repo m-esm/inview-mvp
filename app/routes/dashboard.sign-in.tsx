@@ -1,5 +1,5 @@
 import { data, redirect, useActionData } from 'react-router'
-import { StaffSignIn } from '~/pages/gallery/StaffSignIn'
+import { StaffSignIn, type SignInError } from '~/pages/gallery/StaffSignIn'
 import { redirectIfSignedIn, signInAction } from './staff-session.server'
 
 export function headers() {
@@ -18,12 +18,13 @@ export async function action({ request, context }: { request: Request; context: 
   if (!result.ok) {
     const headers: Record<string, string> = { 'Cache-Control': 'no-store' }
     if (result.retryAfterSeconds) headers['Retry-After'] = String(result.retryAfterSeconds)
-    return data({ error: result.error }, { status: result.status, headers })
+    const error: SignInError = result.status === 429 ? 'limited' : 'wrong'
+    return data({ error }, { status: result.status, headers })
   }
   return redirect(result.location, { headers: { 'Set-Cookie': result.cookie } })
 }
 
 export default function DashboardSignIn() {
-  const result = useActionData() as { error?: string } | undefined
+  const result = useActionData() as { error?: SignInError } | undefined
   return <StaffSignIn error={result?.error} />
 }

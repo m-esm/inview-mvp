@@ -70,9 +70,12 @@ test('the language comes from the cookie, then from the path', () => {
   assert.equal(resolveLang('/g/o-gallery', 'other=1; inview-lang=en; more=2'), 'en')
   assert.equal(resolveLang('/g/o-gallery', 'inview-lang=de'), 'fa')
 
-  // The staff UI has English labels only.
+  // The Rooz demo dashboard has English labels only. The O Gallery staff pages follow the cookie.
   assert.equal(resolveLang('/dashboard', 'inview-lang=fa'), 'en')
-  assert.equal(resolveLang('/dashboard/o-gallery', 'inview-lang=fa'), 'en')
+  assert.equal(resolveLang('/dashboard/artworks', 'inview-lang=fa'), 'en')
+  assert.equal(resolveLang('/dashboard/o-gallery', 'inview-lang=en'), 'en')
+  assert.equal(resolveLang('/dashboard/o-gallery', null), 'fa')
+  assert.equal(resolveLang('/dashboard/sign-in', 'inview-lang=fa'), 'fa')
 
   assert.equal(readLangCookie(null), null)
   assert.equal(readLangCookie('inview-langue=fa'), null)

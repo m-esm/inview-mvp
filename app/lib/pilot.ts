@@ -37,20 +37,6 @@ export interface PilotRecord {
   updatedAt?: string
 }
 
-export interface PilotLead {
-  phone: string
-  kind: 'save' | 'ask'
-  at: string
-  workId: string | null
-  consentTextVersion: string
-  verified: false
-}
-
-export interface StaffReport {
-  visits: { scans: number; views: number }
-  leads: PilotLead[]
-}
-
 /** What every `/g/:slug` and `/site/:slug` loader returns. `null` means the read failed. */
 export interface GalleryPageData {
   pilot: PilotRecord | null
@@ -115,13 +101,6 @@ export async function fetchPilot(): Promise<{ record: PilotRecord }> {
   const res = await fetch('/api/v1/pilot', { cache: 'no-store' })
   if (!res.ok) throw new Error('The gallery record did not load.')
   return res.json()
-}
-
-export async function fetchStaff(): Promise<StaffReport> {
-  const res = await fetch('/api/v1/pilot/staff', { cache: 'no-store' })
-  const data = (await res.json().catch(() => ({}))) as { error?: string }
-  if (!res.ok) throw new Error(data.error || 'The visit report did not load.')
-  return data as StaffReport
 }
 
 const sent = new Set<string>()

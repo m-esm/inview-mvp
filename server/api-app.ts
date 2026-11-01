@@ -1,10 +1,12 @@
 import express from 'express'
 import type { ErrorRequestHandler, Express, Request } from 'express'
 import { media } from '../database/schema'
-import { processAndStoreImage } from './images'
+import { leadsCsvForSession } from './gallery-record'
+import { displayVariant, processAndStoreImage, UploadError } from './images'
 import { beginUpload, clientIpFrom, runPilotRequest, runStaffRequest, writeApiResult } from './rate-limit'
 import { readStaffSession } from './staff-session'
 import type { ObjectStorage } from './storage'
+import { isMultipart, readMultipart } from './upload-body'
 
 // Drizzle handle: Postgres.js in production, PGlite in tests.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -26,6 +28,21 @@ function sendJson(res: express.Response, status: number, body: unknown) {
 async function sessionGallery(db: Db, req: Request): Promise<string | null> {
   const session = await readStaffSession(db, req.get('cookie'))
   return session?.galleryId ?? null
+}
+
+export const JSON_LIMIT = '256kb'
+
+const UPLOAD_MISSING = { error: 'Choose an image to upload.', errorFa: 'یک تصویر برای بارگذاری انتخاب کنید.' }
+const UPLOAD_FAILED = { error: 'The upload did not complete. Try again.', errorFa: 'بارگذاری انجام نشد. دوباره تلاش کنید.' }
+const BODY_TOO_LARGE = { error: 'The request is too large.', errorFa: 'درخواست بیش از حد بزرگ است.' }
+
+async function readUpload(req: Request): Promise<{ gallery: unknown; accessCode: unknown; file: Buffer | null }> {
+  if (isMultipart(req)) {
+    const body = await readMultipart(req)
+    return { gallery: body.fields.gallery, accessCode: body.fields.accessCode, file: body.file }
+  }
+  const { gallery, accessCode, dataBase64 } = req.body || {}
+  return { gallery, accessCode, file: typeof dataBase64 === 'string' ? Buffer.from(dataBase64, 'base64') : null }
 }
 
 const SERVER_ERROR = {
@@ -81,21 +98,48 @@ export function mountApi(app: Express, db: Db, storage: ObjectStorage) {
   app.all('/api/v1/pilot/staff', staff)
   app.all('/api/pilot/staff', staff)
 
+  app.get('/api/v1/pilot/staff/leads.csv', async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store')
+    try {
+      const sessionId = await sessionGallery(db, req)
+      if (!sessionId) {
+        sendJson(res, 401, { error: 'Sign in to download the leads.', errorFa: 'برای دریافت فهرست وارد شوید.' })
+        return
+      }
+      const result = await leadsCsvForSession(db, sessionId)
+      if (result.status !== 200) {
+        sendJson(res, result.status, result.body)
+        return
+      }
+      const day = new Date().toISOString().slice(0, 10)
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8')
+      res.setHeader('Content-Disposition', `attachment; filename="o-gallery-leads-${day}.csv"`)
+      res.status(200).send(result.body)
+    } catch (error) {
+      console.error(error)
+      sendJson(res, 500, SERVER_ERROR)
+    }
+  })
+
   app.post('/api/v1/uploads', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store')
     try {
-      const { gallery, accessCode, contentType, dataBase64 } = req.body || {}
-      const gate = await beginUpload(db, { gallery, accessCode, ip: clientKey(req), sessionGalleryId: await sessionGallery(db, req) })
+      const upload = await readUpload(req)
+      const gate = await beginUpload(db, {
+        gallery: upload.gallery,
+        accessCode: upload.accessCode,
+        ip: clientKey(req),
+        sessionGalleryId: await sessionGallery(db, req),
+      })
       if (!gate.ok) {
         writeApiResult(res, gate.result)
         return
       }
-      if (typeof dataBase64 !== 'string' || typeof contentType !== 'string') {
-        sendJson(res, 400, { error: 'Upload data is missing.' })
+      if (!upload.file || upload.file.byteLength === 0) {
+        sendJson(res, 400, UPLOAD_MISSING)
         return
       }
-      const buffer = Buffer.from(dataBase64, 'base64')
-      const processed = await processAndStoreImage(storage, 'o-gallery', buffer, contentType)
+      const processed = await processAndStoreImage(storage, 'o-gallery', upload.file)
       const [row] = await db
         .insert(media)
         .values({
@@ -108,12 +152,16 @@ export function mountApi(app: Express, db: Db, storage: ObjectStorage) {
         .returning()
       sendJson(res, 201, {
         id: row.id,
-        url: processed.variants['w640.webp'] || processed.primaryUrl,
+        url: displayVariant(processed.variants, processed.primaryUrl),
         variants: processed.variants,
       })
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Upload failed.'
-      sendJson(res, 400, { error: message })
+      if (error instanceof UploadError) {
+        sendJson(res, error.code === 'size' ? 413 : 400, { error: error.message, errorFa: error.errorFa })
+        return
+      }
+      console.error(error)
+      sendJson(res, 400, UPLOAD_FAILED)
     }
   })
 
@@ -121,27 +169,30 @@ export function mountApi(app: Express, db: Db, storage: ObjectStorage) {
     sendJson(res, 404, { error: 'Not found.' })
   })
 
-  const apiError: ErrorRequestHandler = (error, req, res, next) => {
-    if (!req.path.startsWith('/api') || res.headersSent) return next(error)
-    const type = (error as { type?: string }).type
-    if (type === 'entity.parse.failed') {
-      sendJson(res, 400, { error: 'The request body is not valid JSON.', errorFa: 'متن درخواست JSON معتبر نیست.' })
+  const bodyErrors: ErrorRequestHandler = (error, req, res, next) => {
+    if (!req.path.startsWith('/api') || res.headersSent) {
+      next(error)
       return
     }
+    const type = (error as { type?: string }).type
     if (type === 'entity.too.large') {
-      sendJson(res, 413, { error: 'The request body is too large.', errorFa: 'حجم درخواست بیش از حد است.' })
+      sendJson(res, 413, BODY_TOO_LARGE)
+      return
+    }
+    if (type === 'entity.parse.failed') {
+      sendJson(res, 400, { error: 'The request body is not valid JSON.', errorFa: 'بدنه درخواست معتبر نیست.' })
       return
     }
     console.error(error)
     sendJson(res, 500, SERVER_ERROR)
   }
-  app.use(apiError)
+  app.use(bodyErrors)
 }
 
 export function createApiApp(db: Db, storage: ObjectStorage) {
   const app = express()
   app.disable('x-powered-by')
-  app.use(express.json({ limit: '12mb' }))
+  app.use(express.json({ limit: JSON_LIMIT }))
   mountApi(app, db, storage)
   return app
 }
