@@ -163,3 +163,5 @@ jobs:
 # Trigger feed refresh after first merge to main.
 
 # Retrigger after Playwright install fix.
+
+# Retrigger on ubuntu-24.04.
