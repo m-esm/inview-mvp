@@ -1,6 +1,7 @@
 import compression from 'compression'
 import express from 'express'
 import { installProcessLog, logEvent, requestLog, setStatusRecorder } from './server/http-log.js'
+import { trustClusterProxy } from './server/proxy.js'
 
 const BUILD_PATH = './build/server/index.js'
 const DEVELOPMENT = process.env.NODE_ENV === 'development'
@@ -8,7 +9,7 @@ const PORT = Number.parseInt(process.env.PORT || '3000', 10)
 
 installProcessLog()
 
-const app = express()
+const app = trustClusterProxy(express())
 app.use(compression())
 app.disable('x-powered-by')
 app.use(requestLog())
