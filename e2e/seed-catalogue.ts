@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import * as schema from '../database/schema'
-import { ensureOGalleryTenant } from '../server/gallery-record'
+import { ensureOGalleryTenant } from '../server/gallery-bootstrap'
 
 /**
  * Writes an O Gallery catalogue straight into the database.

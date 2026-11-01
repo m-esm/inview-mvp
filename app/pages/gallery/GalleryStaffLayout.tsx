@@ -2,7 +2,7 @@ import { Link } from 'react-router'
 import { StaffLangSwitch } from '../../components/StaffLangSwitch'
 import { useStaffT } from '../../lib/i18n-staff'
 
-export function GalleryStaffLayout({ children, gallery, permissions = [] }: { children: React.ReactNode; gallery: { slug: string; nameEn: string; nameFa: string }; permissions?: string[] }) {
+export function GalleryStaffLayout({ children, gallery, permissions = [], titleKey = 'pageTitle' }: { children: React.ReactNode; gallery: { slug: string; nameEn: string; nameFa: string }; permissions?: string[]; titleKey?: 'pageTitle' | 'team' | 'createQr' | null }) {
   const { t, lang, dir } = useStaffT()
   return (
     <div className={`staff staff-${lang}`} dir={dir}>
@@ -30,12 +30,12 @@ export function GalleryStaffLayout({ children, gallery, permissions = [] }: { ch
         </div>
       </header>
       <main className="staff-main">
-        <header className="dash-head">
+        {titleKey && <header className="dash-head">
           <div>
             <p className="muted small">{t.pageEyebrow}</p>
-            <h1>{t.pageTitle}</h1>
+            <h1>{t[titleKey]}</h1>
           </div>
-        </header>
+        </header>}
         {children}
       </main>
     </div>

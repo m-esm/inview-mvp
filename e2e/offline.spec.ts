@@ -30,5 +30,6 @@ test('the manifest names the app in Persian order with valid icons', async ({ re
 test('the worker never handles staff pages', async ({ request }) => {
   const sw = await (await request.get('/sw.js')).text()
   expect(sw).toContain('/dashboard')
+  expect(sw).toContain('/staff')
   expect(sw).toContain('offline.html')
 })

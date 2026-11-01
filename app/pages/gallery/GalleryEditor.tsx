@@ -228,6 +228,7 @@ export default function GalleryEditor({ initialRecord, initialReport = null, rep
   }
 
   const noVisits = !!stats && stats.visits.scans === 0 && stats.visits.views === 0
+  const ReportHeading = reportOnly ? 'h1' : 'h2'
   const titleOf = (workId: string | null, fallback: string | null) =>
     fallback || (workId ? draft.works.find((work) => work.id === workId)?.title || workId : t.noWork)
 
@@ -235,7 +236,7 @@ export default function GalleryEditor({ initialRecord, initialReport = null, rep
     <div className="editor">
       <section className="box staff-report" id="report" aria-labelledby="report-title">
         <div className="row between wrap gap">
-          <h2 id="report-title">{t.reportTitle}</h2>
+          <ReportHeading id="report-title">{t.reportTitle}</ReportHeading>
           <div className="row gap wrap">
             <button className="btn btn-outline small-btn" type="button" onClick={() => {
               loadRecord().catch(() => setError(t.publishFailed))

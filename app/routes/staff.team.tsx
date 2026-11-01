@@ -47,11 +47,11 @@ export default function StaffTeam() {
   const { gallery, team } = useLoaderData<typeof loader>()
   const result = useActionData<typeof action>()
   const { t } = useStaffT()
-  return <GalleryStaffLayout gallery={gallery} permissions={['edit-catalogue', 'manage-staff', 'create-qr']}><h2>{t.team}</h2>
+  return <GalleryStaffLayout gallery={gallery} permissions={['edit-catalogue', 'manage-staff', 'create-qr']} titleKey="team">
     {result?.error && <p role="alert">{t.requestFailed}</p>}{result?.saved && <p role="status">{t.saved}</p>}
     {result?.invitePath && <label>{t.inviteLink}<input readOnly value={result.invitePath} dir="ltr" onFocus={(event) => event.currentTarget.select()} /></label>}
     <Form method="post"><label>{t.identifier}<input name="identifier" required maxLength={320} dir="ltr" /></label><RoleSelect /><button type="submit" name="intent" value="invite">{t.invite}</button></Form>
-    {team.map((member) => <section key={member.userId}><h3>{member.name}</h3><p>{t[member.role]}</p><Form method="post"><input type="hidden" name="userId" value={member.userId} /><RoleSelect value={member.role} />
+    {team.map((member) => <section key={member.userId}><h2>{member.name}</h2><p>{t[member.role]}</p><Form method="post"><input type="hidden" name="userId" value={member.userId} /><RoleSelect value={member.role} />
       {(['role', member.status === 'disabled' ? 'enable' : 'disable', 'remove', 'reset', 'sign-out'] as const).map((intent) => <button type="submit" name="intent" value={intent} key={intent}>{intent === 'role' ? t.changeRole : intent === 'sign-out' ? t.signOutUser : t[intent]}</button>)}
     </Form></section>)}{!team.length && <p>{t.noTeam}</p>}
   </GalleryStaffLayout>

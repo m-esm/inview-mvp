@@ -10,5 +10,6 @@ export async function loader({ request, params }: { request: Request; params: { 
 }
 export default function StaffGallery() {
   const { gallery, record, report, permissions } = useLoaderData<typeof loader>()
-  return <GalleryStaffLayout gallery={gallery} permissions={permissions}><GalleryEditor key={gallery.slug} initialRecord={record} initialReport={report} canExport={permissions.includes('export-leads')} reportOnly={!permissions.includes('edit-catalogue')} /></GalleryStaffLayout>
+  const reportOnly = !permissions.includes('edit-catalogue')
+  return <GalleryStaffLayout gallery={gallery} permissions={permissions} titleKey={reportOnly ? null : 'pageTitle'}><GalleryEditor key={gallery.slug} initialRecord={record} initialReport={report} canExport={permissions.includes('export-leads')} reportOnly={reportOnly} /></GalleryStaffLayout>
 }

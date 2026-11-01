@@ -34,7 +34,7 @@ export default function StaffQr() {
   const { gallery, codes, permissions } = useLoaderData<typeof loader>()
   const result = useActionData<typeof action>()
   const { t } = useStaffT()
-  return <GalleryStaffLayout gallery={gallery} permissions={permissions}><h2>{t.createQr}</h2>{result?.error && <p role="alert">{t.requestFailed}</p>}
+  return <GalleryStaffLayout gallery={gallery} permissions={permissions} titleKey="createQr">{result?.error && <p role="alert">{t.requestFailed}</p>}
     <Form method="post"><label>{t.qrLabel}<input name="label" required maxLength={120} /></label><button type="submit">{t.createQr}</button></Form>
     <ul>{codes.map((qr) => <li key={qr.code}>{qr.label} <a href={`/staff/${gallery.slug}/qr/${encodeURIComponent(qr.code)}.svg`} download>{t.downloadSvg}</a></li>)}</ul>
   </GalleryStaffLayout>
