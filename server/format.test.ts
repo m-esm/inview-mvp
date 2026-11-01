@@ -20,9 +20,9 @@ test('Persian dates use the Jalali calendar', () => {
 })
 
 test('a date range shows both ends', () => {
-  const plain = (text: string) => text.replace(/\s+/g, ' ')
-  assert.equal(plain(formatDateRange('en', '2026-11-01', '2026-11-20')), 'November 1 \u2013 20, 2026')
-  assert.equal(plain(formatDateRange('fa', '2026-11-01', '2026-11-20')), '۱۰ تا ۲۹ آبان ۱۴۰۵')
+  // Exact match: the browser renders the same plain spaces, or hydration fails.
+  assert.equal(formatDateRange('en', '2026-11-01', '2026-11-20'), 'November 1 \u2013 20, 2026')
+  assert.equal(formatDateRange('fa', '2026-11-01', '2026-11-20'), '۱۰ تا ۲۹ آبان ۱۴۰۵')
   assert.equal(formatDateRange('en', '2026-11-01', null), 'November 1, 2026')
   assert.equal(formatDateRange('en', null, null), '')
 })
