@@ -1,14 +1,16 @@
 import express from 'express'
 import type { ErrorRequestHandler, Express, Request } from 'express'
 import { media } from '../database/schema'
-import { leadsCsvForSession, tenantById } from './gallery-record'
+import { clearPublicRecordCache, loadStaffRecord, publishGalleryRecordForSession, tenantBySlug } from './gallery-record'
 import { displayVariant, processAndStoreImage, UploadError } from './images'
-import { beginUpload, clientIpFrom, runPilotRequest, runStaffRequest, writeApiResult } from './rate-limit'
-import { readStaffSession, requestIsSecure } from './staff-session'
+import { beginUpload, clientIpFrom, principalFromCode, runPilotRequest, writeApiResult } from './rate-limit'
+import { requestIsSecure } from './staff-session'
 import type { ObjectStorage } from './storage'
 import { isMultipart, readMultipart } from './upload-body'
 import { AccountInputError, signIn, signOut } from './accounts'
-import { principalFor } from './authz'
+import { can, principalFor, type Action } from './authz'
+import { auditActor, staffCsv, staffReport } from './staff'
+import { writeAudit } from './audit'
 import { acceptInvite, InvalidInviteError, readInvite } from './invitations'
 import { originCheck } from './origin-check'
 
@@ -29,9 +31,28 @@ function sendJson(res: express.Response, status: number, body: unknown) {
   res.status(status).json(body)
 }
 
-async function sessionGallery(db: Db, req: Request): Promise<string | null> {
-  const session = await readStaffSession(db, req.get('cookie'))
-  return session?.galleryId ?? null
+async function apiTenant(db: Db, req: Request, slug: unknown, action: Action, code?: unknown) {
+  if (typeof slug !== 'string' || !slug) throw new Response('A gallery slug is required.', { status: 400 })
+  const tenant = await tenantBySlug(db, slug)
+  if (!tenant) throw new Response('Not found', { status: 404 })
+  let principal = await principalFor(db, req.get('cookie'))
+  if (!principal && typeof code === 'string' && code) {
+    const authenticated = await principalFromCode(db, slug, code, clientKey(req))
+    if (authenticated.result) throw new Response('Too many requests', { status: authenticated.result.status, headers: { 'Retry-After': String(authenticated.result.retryAfterSeconds ?? 1) } })
+    principal = authenticated.principal
+  }
+  if (!principal) throw new Response('Sign in to continue.', { status: 401 })
+  if (!can(principal, action, tenant.gallery.id)) throw new Response('Forbidden', { status: 403 })
+  if (!['GET', 'HEAD'].includes(req.method) && !req.get('origin')) throw new Response('Forbidden', { status: 403 })
+  return { tenant, principal }
+}
+
+function apiFailure(res: express.Response, error: unknown): boolean {
+  if (!(error instanceof Response)) return false
+  const retry = error.headers.get('Retry-After')
+  if (retry) res.setHeader('Retry-After', retry)
+  sendJson(res, error.status, { error: error.status === 429 ? 'Too many requests. Try again later.' : error.status === 403 ? 'Forbidden' : error.status === 404 ? 'Not found' : error.status === 400 ? 'A gallery slug is required.' : 'Sign in to continue.' })
+  return true
 }
 
 export const JSON_LIMIT = '256kb'
@@ -139,14 +160,25 @@ export function mountApi(app: Express, db: Db, storage: ObjectStorage) {
   const pilot = async (req: Request, res: express.Response) => {
     res.setHeader('Cache-Control', 'no-store')
     try {
-      const sessionId = await sessionGallery(db, req)
       const verb = (req.method || 'GET').toUpperCase()
-      const body = verb === 'GET' || verb === 'HEAD' ? { gallery: req.query.gallery } : req.body
+      const body = verb === 'GET' || verb === 'HEAD' ? { gallery: req.query.gallery } : { ...req.body, gallery: req.body?.gallery ?? req.query.gallery }
+      if (verb === 'PUT') {
+        const { tenant, principal } = await apiTenant(db, req, body.gallery, 'edit-catalogue', body.accessCode || body.password)
+        const result = await db.transaction(async (tx: Db) => {
+          const saved = await publishGalleryRecordForSession(tx, storage, tenant.gallery.id, body.record)
+          if (saved.status === 200) await writeAudit(tx, { ...auditActor(principal), galleryId: tenant.gallery.id, action: 'publish', targetType: 'show', targetId: tenant.show.id })
+          return saved
+        })
+        if (result.status === 200) clearPublicRecordCache(db)
+        writeApiResult(res, result)
+        return
+      }
       writeApiResult(
         res,
-        await runPilotRequest(db, storage, verb, body, clientKey(req), undefined, undefined, sessionId),
+        await runPilotRequest(db, storage, verb, body, clientKey(req)),
       )
     } catch (error) {
+      if (apiFailure(res, error)) return
       console.error(error)
       sendJson(res, 500, SERVER_ERROR)
     }
@@ -167,12 +199,10 @@ export function mountApi(app: Express, db: Db, storage: ObjectStorage) {
       return
     }
     try {
-      const sessionId = await sessionGallery(db, req)
-      writeApiResult(
-        res,
-        await runStaffRequest(db, req.get('x-access-code') || '', clientKey(req), undefined, undefined, sessionId),
-      )
+      const { tenant, principal } = await apiTenant(db, req, req.query.gallery, 'view-report', req.get('x-access-code'))
+      sendJson(res, 200, await staffReport(db, principal, tenant.gallery.id))
     } catch (error) {
+      if (apiFailure(res, error)) return
       console.error(error)
       sendJson(res, 500, SERVER_ERROR)
     }
@@ -181,24 +211,30 @@ export function mountApi(app: Express, db: Db, storage: ObjectStorage) {
   app.all('/api/v1/pilot/staff', staff)
   app.all('/api/pilot/staff', staff)
 
+  app.get('/api/v1/pilot/staff/record', async (req, res) => {
+    try {
+      const { tenant } = await apiTenant(db, req, req.query.gallery, 'view-report')
+      sendJson(res, 200, await loadStaffRecord(db, tenant))
+    } catch (error) {
+      if (!apiFailure(res, error)) sendJson(res, 500, SERVER_ERROR)
+    }
+  })
+
   app.get('/api/v1/pilot/staff/leads.csv', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store')
     try {
-      const sessionId = await sessionGallery(db, req)
-      if (!sessionId) {
-        sendJson(res, 401, { error: 'Sign in to download the leads.', errorFa: 'برای دریافت فهرست وارد شوید.' })
-        return
-      }
-      const result = await leadsCsvForSession(db, sessionId)
+      const { tenant, principal } = await apiTenant(db, req, req.query.gallery, 'export-leads')
+      const result = await staffCsv(db, principal, tenant.gallery.id)
       if (result.status !== 200) {
         sendJson(res, result.status, result.body)
         return
       }
       const day = new Date().toISOString().slice(0, 10)
       res.setHeader('Content-Type', 'text/csv; charset=utf-8')
-      res.setHeader('Content-Disposition', `attachment; filename="${(await tenantById(db, sessionId))!.gallery.slug}-leads-${day}.csv"`)
+      res.setHeader('Content-Disposition', `attachment; filename="${tenant.gallery.slug}-leads-${day}.csv"`)
       res.status(200).send(result.body)
     } catch (error) {
+      if (apiFailure(res, error)) return
       console.error(error)
       sendJson(res, 500, SERVER_ERROR)
     }
@@ -208,11 +244,12 @@ export function mountApi(app: Express, db: Db, storage: ObjectStorage) {
     res.setHeader('Cache-Control', 'no-store')
     try {
       const upload = await readUpload(req)
+      const { tenant, principal } = await apiTenant(db, req, upload.gallery ?? req.query.gallery, 'upload-images', upload.accessCode)
       const gate = await beginUpload(db, {
-        gallery: upload.gallery,
+        gallery: tenant.gallery.slug,
         accessCode: upload.accessCode,
         ip: clientKey(req),
-        sessionGalleryId: await sessionGallery(db, req),
+        sessionGalleryId: tenant.gallery.id,
       })
       if (!gate.ok) {
         writeApiResult(res, gate.result)
@@ -223,22 +260,27 @@ export function mountApi(app: Express, db: Db, storage: ObjectStorage) {
         return
       }
       const processed = await processAndStoreImage(storage, gate.gallerySlug, upload.file)
-      const [row] = await db
-        .insert(media)
-        .values({
-          galleryId: gate.galleryId,
-          s3Key: processed.key,
-          width: processed.width,
-          height: processed.height,
-          variants: processed.variants,
-        })
-        .returning()
+      const row = await db.transaction(async (tx: Db) => {
+        const [saved] = await tx
+          .insert(media)
+          .values({
+            galleryId: gate.galleryId,
+            s3Key: processed.key,
+            width: processed.width,
+            height: processed.height,
+            variants: processed.variants,
+          })
+          .returning()
+        await writeAudit(tx, { ...auditActor(principal), galleryId: tenant.gallery.id, action: 'upload-images', targetType: 'media', targetId: saved.id })
+        return saved
+      })
       sendJson(res, 201, {
         id: row.id,
         url: displayVariant(processed.variants, processed.primaryUrl),
         variants: processed.variants,
       })
     } catch (error) {
+      if (apiFailure(res, error)) return
       if (error instanceof UploadError) {
         sendJson(res, error.code === 'size' ? 413 : 400, { error: error.message, errorFa: error.errorFa })
         return

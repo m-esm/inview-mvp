@@ -2,11 +2,65 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { eq } from 'drizzle-orm'
 import type { AppDatabase } from '../database/context'
-import { auditLogs, sessions, users } from '../database/schema'
-import { createUser, signIn, signOut, signOutAll } from './accounts'
+import { auditLogs, rateLimits, sessions, users } from '../database/schema'
+import { createUser, normalizePhone, signIn, signOut, signOutAll } from './accounts'
 import { sha256 } from './crypto'
 import { rateLimitConfig } from './rate-limit'
 import { createTestDb } from './test-db'
+
+test('phone normalization covers Persian and Arabic digits and Iranian prefixes', async () => {
+  for (const phone of ['۰۹۱۲۳۴۵۶۷۸۹', '٠٩١٢٣٤٥٦٧٨٩', '+۹۸۹۱۲۳۴۵۶۷۸۹', '۰۰۹۸۹۱۲۳۴۵۶۷۸۹', ' 09123456789 ']) {
+    assert.equal(normalizePhone(phone), '09123456789')
+  }
+  const fixture = await createTestDb()
+  const db = fixture.db as unknown as AppDatabase
+  try {
+    const user = await createUser(db, { phone: '+۹۸۹۱۲۳۴۵۶۷۸۹', password: 'long-password' })
+    assert.equal(user.phone, '09123456789')
+    assert.ok((await signIn(db, { identifier: '٠٠٩٨٩١٢٣٤٥٦٧٨٩', password: 'long-password', ip: 'one', secure: false })).ok)
+  } finally { await fixture.close() }
+})
+
+test('successful sign-ins never consume the account failure bucket, but failures do', async () => {
+  const fixture = await createTestDb()
+  const db = fixture.db as unknown as AppDatabase
+  try {
+    const user = await createUser(db, { email: 'success@example.com', password: 'long-password' })
+    const config = { ...rateLimitConfig({ NODE_ENV: 'test' }), accessFailIpMax: 20, accessFailGalleryMax: 2 }
+    const attempt = (password: string) => signIn(db, { identifier: 'success@example.com', password, ip: 'one', secure: false }, new Date(), config)
+    for (let index = 0; index < 4; index++) assert.ok((await attempt('long-password')).ok)
+    const bucket = `user-sign-in:account:${sha256(user.id)}`
+    assert.equal((await db.select().from(rateLimits).where(eq(rateLimits.bucket, bucket))).length, 0)
+    assert.equal((await attempt('incorrect')).ok, false)
+    assert.ok((await attempt('long-password')).ok)
+    assert.equal((await db.select().from(rateLimits).where(eq(rateLimits.bucket, bucket)))[0].hits, 1)
+    assert.equal((await attempt('incorrect')).ok, false)
+    const limited = await attempt('incorrect')
+    assert.ok(!limited.ok && limited.result.status === 429)
+  } finally { await fixture.close() }
+})
+
+test('many staff signing in from one office address are not locked out', async () => {
+  const fixture = await createTestDb()
+  const db = fixture.db as unknown as AppDatabase
+  try {
+    const config = { ...rateLimitConfig({ NODE_ENV: 'test' }), accessFailIpMax: 3, accessFailGalleryMax: 5 }
+    for (let index = 0; index < 6; index++) {
+      await createUser(db, { email: `staff${index}@example.com`, password: 'long-password' })
+    }
+    for (let round = 0; round < 2; round++) {
+      for (let index = 0; index < 6; index++) {
+        const result = await signIn(db, { identifier: `staff${index}@example.com`, password: 'long-password', ip: 'office', secure: false }, new Date(), config)
+        assert.ok(result.ok, `staff${index} round ${round}`)
+      }
+    }
+    for (let index = 0; index < 3; index++) {
+      await signIn(db, { identifier: 'staff0@example.com', password: 'wrong', ip: 'office', secure: false }, new Date(), config)
+    }
+    const blocked = await signIn(db, { identifier: 'staff1@example.com', password: 'long-password', ip: 'office', secure: false }, new Date(), config)
+    assert.ok(!blocked.ok && blocked.result.status === 429)
+  } finally { await fixture.close() }
+})
 
 test('accounts sign in by normalized email or phone, store hashes, set TTLs and revoke sessions', async () => {
   const fixture = await createTestDb()

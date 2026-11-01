@@ -173,6 +173,15 @@
       "noteFa": "همراه با انتشار بخش کارکنان در دسترس قرار می‌گیرد."
     },
     {
+      "id": "staff-home",
+      "group": "staff",
+      "label": "Staff: my galleries",
+      "labelFa": "کارکنان: گالری‌های من",
+      "path": "/staff",
+      "access": "staff",
+      "screenshot": false
+    },
+    {
       "id": "staff-o-gallery",
       "group": "staff",
       "label": "O Gallery staff area",
@@ -205,6 +214,15 @@
       "label": "Create gallery",
       "labelFa": "ایجاد گالری",
       "path": "/ops/galleries/new",
+      "access": "operator",
+      "screenshot": false
+    },
+    {
+      "id": "ops-operators",
+      "group": "operator",
+      "label": "Operators",
+      "labelFa": "اپراتورها",
+      "path": "/ops/operators",
       "access": "operator",
       "screenshot": false
     },

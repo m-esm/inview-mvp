@@ -10,23 +10,29 @@ import { eq } from 'drizzle-orm'
 import sharp from 'sharp'
 import request from 'supertest'
 import { CONSENT_TEXT_VERSION } from '../app/lib/consent.ts'
-import { leads, visits, works } from '../database/schema.ts'
+import { leads, memberships, visits, works } from '../database/schema.ts'
 import { createApiApp } from './api-app.ts'
 import { ensureOGalleryTenant } from './gallery-bootstrap.ts'
 import { tehranDate } from './gallery-record.ts'
-import { STAFF_COOKIE, signInWithAccessCode } from './staff-session.ts'
+import { STAFF_COOKIE } from './staff-session.ts'
+import { createUser, createUserSession } from './accounts.ts'
+import type { AppDatabase } from '../database/context.ts'
 import { createTestDb } from './test-db.ts'
+
+process.env.PUBLIC_APP_URL = 'http://localhost'
 
 type TestDb = Awaited<ReturnType<typeof createTestDb>>
 
 async function withStaff(fn: (args: { app: ReturnType<typeof createApiApp>; db: TestDb['db']; mediaRoot: string; cookie: string }) => Promise<void>) {
   const testDb = await createTestDb()
-  await ensureOGalleryTenant(testDb.db)
+  const { gallery } = await ensureOGalleryTenant(testDb.db)
   const app = createApiApp(testDb.db, testDb.storage)
   try {
-    const session = await signInWithAccessCode(testDb.db, 'inview', 'o-gallery')
-    assert.ok(session)
-    await fn({ app, db: testDb.db, mediaRoot: testDb.mediaRoot, cookie: `${STAFF_COOKIE}=${encodeURIComponent(session.token)}` })
+    const db = testDb.db as unknown as AppDatabase
+    const user = await createUser(db, { email: 'report-owner@example.com', password: 'report-password' })
+    await db.insert(memberships).values({ galleryId: gallery.id, userId: user.id, role: 'owner' })
+    const session = await createUserSession(db, user.id, false)
+    await fn({ app, db: testDb.db, mediaRoot: testDb.mediaRoot, cookie: session.cookie })
   } finally {
     await testDb.close()
   }
@@ -40,13 +46,15 @@ async function publish(app: ReturnType<typeof createApiApp>, cookie: string, lis
   const current = await request(app).get('/api/v1/pilot')
   return request(app)
     .put('/api/v1/pilot')
+    .set('Host', 'localhost').set('Origin', 'http://localhost')
     .set('Cookie', cookie)
-    .send({ record: { ...current.body.record, works: list, ...patch } })
+    .send({ gallery: 'o-gallery', record: { ...current.body.record, works: list, ...patch } })
 }
 
 function upload(app: ReturnType<typeof createApiApp>, cookie: string, file: Buffer, filename: string, contentType: string) {
   return request(app)
     .post('/api/v1/uploads')
+    .set('Host', 'localhost').set('Origin', 'http://localhost')
     .set('Cookie', cookie)
     .field('gallery', 'o-gallery')
     .attach('file', file, { filename, contentType })
@@ -58,10 +66,10 @@ async function png(width = 40, height = 30) {
 
 test('HAD-35 the leads CSV needs a staff session', async () => {
   await withStaff(async ({ app }) => {
-    const anonymous = await request(app).get('/api/v1/pilot/staff/leads.csv')
+    const anonymous = await request(app).get('/api/v1/pilot/staff/leads.csv?gallery=o-gallery')
     assert.equal(anonymous.status, 401)
     assert.equal(anonymous.headers['content-type']?.includes('text/csv'), false)
-    const forged = await request(app).get('/api/v1/pilot/staff/leads.csv').set('Cookie', `${STAFF_COOKIE}=not-a-token`)
+    const forged = await request(app).get('/api/v1/pilot/staff/leads.csv?gallery=o-gallery').set('Cookie', `${STAFF_COOKIE}=not-a-token`)
     assert.equal(forged.status, 401)
   })
 })
@@ -75,7 +83,7 @@ test('HAD-35 the CSV lists each lead with the work title and blocks spreadsheet 
       { galleryId: gallery.id, showId: show.id, workId: 'csvwork01', phone: '09120000001', kind: 'ask', consentAt: new Date(), consentTextVersion: CONSENT_TEXT_VERSION },
       { galleryId: gallery.id, showId: show.id, workId: 'csvwork02', phone: '09120000002', kind: 'save', consentAt: new Date(), consentTextVersion: CONSENT_TEXT_VERSION },
     ])
-    const csv = await request(app).get('/api/v1/pilot/staff/leads.csv').set('Cookie', cookie)
+    const csv = await request(app).get('/api/v1/pilot/staff/leads.csv?gallery=o-gallery').set('Cookie', cookie)
     assert.equal(csv.status, 200)
     assert.match(csv.headers['content-type'], /text\/csv/)
     assert.match(csv.headers['content-disposition'], /attachment; filename="o-gallery-leads-\d{4}-\d{2}-\d{2}\.csv"/)
@@ -103,7 +111,7 @@ test('HAD-35 the staff report counts days in Tehran time, views per work and lea
       { galleryId: gallery.id, showId: show.id, workId: 'reportwk01', phone: '09120000003', kind: 'ask', consentAt: new Date(), consentTextVersion: CONSENT_TEXT_VERSION },
       { galleryId: gallery.id, showId: show.id, workId: 'reportwk01', phone: '09120000004', kind: 'save', consentAt: new Date(), consentTextVersion: CONSENT_TEXT_VERSION },
     ])
-    const report = await request(app).get('/api/v1/pilot/staff').set('Cookie', cookie)
+    const report = await request(app).get('/api/v1/pilot/staff?gallery=o-gallery').set('Cookie', cookie)
     assert.equal(report.status, 200)
     const tehran = tehranDate(lateEvening)
     assert.notEqual(tehran, lateEvening.toISOString().slice(0, 10))
@@ -127,7 +135,7 @@ test('HAD-31 removing a work keeps its lead history', async () => {
     assert.ok(gone.removedAt instanceof Date)
     const [lead] = await db.select().from(leads).where(eq(leads.phone, '09120000005'))
     assert.equal(lead.workId, 'gonework01')
-    const report = await request(app).get('/api/v1/pilot/staff').set('Cookie', cookie)
+    const report = await request(app).get('/api/v1/pilot/staff?gallery=o-gallery').set('Cookie', cookie)
     assert.equal(report.body.leads[0].workTitle, 'Removed work')
     const newLead = await request(app).post('/api/v1/pilot').send({
       op: 'lead', kind: 'ask', phone: '09120000006', visitorId: 'visitor-003', workId: 'gonework01', consent: true, consentTextVersion: CONSENT_TEXT_VERSION,

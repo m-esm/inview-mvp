@@ -1,6 +1,6 @@
 import type { RequestHandler } from 'express'
 
-const LEGACY_PATHS = new Set(['/api/pilot', '/api/v1/pilot', '/api/v1/uploads', '/dashboard/sign-in'])
+const LEGACY_PATHS = new Set(['/api/pilot', '/api/v1/pilot', '/api/v1/uploads'])
 
 export const originCheck: RequestHandler = (req, res, next) => {
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method.toUpperCase())) {

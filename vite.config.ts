@@ -54,6 +54,8 @@ export default defineConfig(({ isSsrBuild }) => ({
               urlPattern: ({ request, url }) =>
                 request.mode === 'navigate' &&
                 !url.pathname.startsWith('/dashboard') &&
+                !url.pathname.startsWith('/ops') &&
+                !url.pathname.startsWith('/staff') &&
                 !url.pathname.startsWith('/api'),
               handler: 'NetworkFirst',
               options: {

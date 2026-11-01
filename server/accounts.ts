@@ -3,7 +3,7 @@ import type { AppDatabase } from '../database/context'
 import { memberships, sessions, users } from '../database/schema'
 import { writeAudit } from './audit'
 import { hashSecret, randomToken, sha256, verifySecret } from './crypto'
-import { consumeBucket, hashClientAddress, rateLimitConfig, tooMany } from './rate-limit'
+import { consumeBucket, hashClientAddress, peekBucket, rateLimitConfig, tooMany } from './rate-limit'
 import type { ApiResult } from './rate-limit'
 import { readCookie } from './staff-session'
 
@@ -12,6 +12,12 @@ export const USER_COOKIE = 'inview_session'
 const DUMMY_HASH = hashSecret(randomToken())
 
 export class AccountInputError extends Error {}
+
+export function normalizePhone(value: string): string {
+  return value.trim().replace(/[۰-۹]/g, (digit) => String(digit.charCodeAt(0) - 1776))
+    .replace(/[٠-٩]/g, (digit) => String(digit.charCodeAt(0) - 1632))
+    .replace(/^(\+98|0098)/, '0')
+}
 
 export function passwordHash(password: string): string {
   if (typeof password !== 'string' || password.length < 10 || password.length > 1024) {
@@ -36,7 +42,7 @@ export async function createUser(
   },
 ) {
   const email = input.email?.trim().toLowerCase() || null
-  const phone = input.phone?.trim() || null
+  const phone = input.phone ? normalizePhone(input.phone) || null : null
   if (!email && !phone) throw new AccountInputError('An email or phone number is required.')
   if ((email && (email.length > 320 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)))
     || (phone && (phone.length > 20 || !/^\+?[0-9]{7,20}$/.test(phone)))) {
@@ -84,21 +90,26 @@ export async function signIn(
   now = new Date(),
   config = rateLimitConfig(),
 ): Promise<{ ok: true; user: ReturnType<typeof userSummary>; cookie: string } | { ok: false; result: ApiResult }> {
-  const identifier = input.identifier.trim().toLowerCase()
-  const client = await consumeBucket(db, `user-sign-in:ip:${hashClientAddress(input.ip, now, config.ipSalt)}`,
-    config.accessFailIpMax, config.accessFailIpWindowSec, now)
+  const identifier = input.identifier.includes('@') ? input.identifier.trim().toLowerCase() : normalizePhone(input.identifier)
+  const clientKey = `user-sign-in:ip:${hashClientAddress(input.ip, now, config.ipSalt)}`
+  const client = await peekBucket(db, clientKey, config.accessFailIpMax, config.accessFailIpWindowSec, now)
+  if (client) return { ok: false, result: client }
   const [user] = await db.select().from(users)
     .where(identifier.includes('@') ? sql`lower(${users.email}) = ${identifier}` : eq(users.phone, identifier)).limit(1)
-  const account = await consumeBucket(db, `user-sign-in:account:${sha256(user?.id ?? identifier)}`,
+  const accountKey = `user-sign-in:account:${sha256(user?.id ?? identifier)}`
+  const account = await peekBucket(db, accountKey,
     config.accessFailGalleryMax, config.accessFailGalleryWindowSec, now)
-  if (!client.allowed || !account.allowed) {
-    return { ok: false, result: tooMany(Math.max(
-      client.allowed ? 0 : client.retryAfterSeconds,
-      account.allowed ? 0 : account.retryAfterSeconds,
-    )) }
-  }
+  if (account) return { ok: false, result: account }
   const valid = verifySecret(input.password.length <= 1024 ? input.password : '', user?.passwordHash ?? DUMMY_HASH)
   if (!valid || !user || user.status !== 'active') {
+    const clientFailure = await consumeBucket(db, clientKey, config.accessFailIpMax, config.accessFailIpWindowSec, now)
+    const failure = await consumeBucket(db, accountKey, config.accessFailGalleryMax, config.accessFailGalleryWindowSec, now)
+    if (!clientFailure.allowed || !failure.allowed) {
+      return { ok: false, result: tooMany(Math.max(
+        clientFailure.allowed ? 0 : clientFailure.retryAfterSeconds,
+        failure.allowed ? 0 : failure.retryAfterSeconds,
+      )) }
+    }
     return { ok: false, result: { status: 401, body: { error: 'The sign-in details do not match.' } } }
   }
   const session = await db.transaction(async (tx) => {

@@ -11,7 +11,7 @@ console.error = (...args: unknown[]) => {
   reactError(...args)
 }
 
-export function renderStaff(element: React.ReactElement, lang: 'en' | 'fa', location = '/dashboard/sign-in') {
+export function renderStaff(element: React.ReactElement, lang: 'en' | 'fa', location = '/staff/sign-in') {
   const Stub = createRoutesStub([{ id: 'root', path: '*', Component: () => element }])
   return renderToString(
     createElement(Stub, {
@@ -20,4 +20,3 @@ export function renderStaff(element: React.ReactElement, lang: 'en' | 'fa', loca
     }),
   )
 }
-

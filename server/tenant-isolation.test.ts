@@ -5,8 +5,9 @@ import { eq } from 'drizzle-orm'
 import request from 'supertest'
 import { CONSENT_TEXT_VERSION, leadBody } from '../app/lib/consent.ts'
 import { loadGalleryPage, loadWorkPage } from '../app/routes/pilot.server.ts'
-import { DatabaseContext } from '../database/context.ts'
-import { galleries, leads, media, qrCodes, shows, showWorks, visits, works } from '../database/schema.ts'
+import { DatabaseContext, type AppDatabase } from '../database/context.ts'
+import { auditLogs, galleries, leads, media, memberships, qrCodes, shows, showWorks, visits, works } from '../database/schema.ts'
+import { createUser, createUserSession } from './accounts.ts'
 import { createApiApp } from './api-app.ts'
 import { hashSecret } from './crypto.ts'
 import {
@@ -24,6 +25,8 @@ import {
 import { rateLimitConfig, runPilotRequest } from './rate-limit.ts'
 import { signInWithAccessCode } from './staff-session.ts'
 import { createTestDb } from './test-db.ts'
+
+process.env.PUBLIC_APP_URL = 'http://localhost'
 
 const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
 
@@ -79,13 +82,11 @@ for (const index of [0, 1]) {
       assert.ok(String(csv.body).includes(own.workId))
       assert.equal(String(csv.body).includes(other.phone), false)
       assert.equal(String(csv.body).includes(other.workId), false)
-      const httpReport = await request(f.app).get('/api/v1/pilot/staff').set('Cookie', own.cookie)
+      const httpReport = await request(f.app).get('/api/v1/pilot/staff').query({ gallery: own.tenant.gallery.slug }).set('Cookie', own.cookie)
       assert.equal(httpReport.status, 200)
-      assert.deepEqual(httpReport.body, report.body)
-      const httpCsv = await request(f.app).get('/api/v1/pilot/staff/leads.csv').set('Cookie', own.cookie)
-      assert.equal(httpCsv.status, 200)
-      assert.equal(httpCsv.text, csv.body)
-      assert.ok(httpCsv.headers['content-disposition'].includes(`${own.tenant.gallery.slug}-leads-`))
+      assert.deepEqual(httpReport.body, { ...report.body, leads: report.body.leads.map((lead) => ({ ...lead, phone: '' })) })
+      const httpCsv = await request(f.app).get('/api/v1/pilot/staff/leads.csv').query({ gallery: own.tenant.gallery.slug }).set('Cookie', own.cookie)
+      assert.equal(httpCsv.status, 403)
       const publicApi = await request(f.app).get(`/api/v1/pilot?gallery=${own.tenant.gallery.slug}`)
       assert.equal(publicApi.status, 200)
       assert.deepEqual(publicApi.body, record)
@@ -112,13 +113,13 @@ for (const index of [0, 1]) {
       assert.equal(crossed.status, 400)
       assert.equal((await publishGalleryRecordForSession(f.db, f.storage, own.tenant.gallery.id, otherBefore.record)).status, 400)
       const crossApi = await request(f.app).put('/api/v1/pilot').set('Cookie', own.cookie).send({ gallery: other.tenant.gallery.slug, record: otherBefore.record })
-      assert.equal(crossApi.status, 401)
+      assert.equal(crossApi.status, 403)
       const wrongCode = await request(f.app).put('/api/v1/pilot').send({ gallery: other.tenant.gallery.slug, accessCode: own.code, record: otherBefore.record })
       assert.equal(wrongCode.status, 401)
       const foreignUpload = await request(f.app).post('/api/v1/uploads').set('Cookie', own.cookie).send({ gallery: other.tenant.gallery.slug, dataBase64: PNG })
-      assert.equal(foreignUpload.status, 401)
+      assert.equal(foreignUpload.status, 403)
       assert.equal((await f.db.select().from(media)).length, 0)
-      const ownUpload = await request(f.app).post('/api/v1/uploads').set('Cookie', own.cookie).send({ dataBase64: PNG })
+      const ownUpload = await request(f.app).post('/api/v1/uploads').set('Host', 'localhost').set('Origin', 'http://localhost').set('Cookie', own.cookie).send({ gallery: own.tenant.gallery.slug, dataBase64: PNG })
       assert.equal(ownUpload.status, 201)
       const [uploaded] = await f.db.select().from(media)
       assert.equal(uploaded.galleryId, own.tenant.gallery.id)
@@ -141,6 +142,88 @@ for (const index of [0, 1]) {
     } finally {
       await f.close()
     }
+  })
+}
+
+for (const index of [0, 1]) {
+  test(`slug-aware staff APIs authorize every role and isolate tenant ${index}`, async () => {
+    const f = await fixture()
+    const db = f.db as unknown as AppDatabase
+    try {
+      const own = f.tenants[index]
+      const other = f.tenants[1 - index]
+      const slug = own.tenant.gallery.slug
+      const record = (await loadStaffRecord(db, own.tenant)).record
+      const cookies: Record<string, string> = { anonymous: '', shared: own.cookie, foreignShared: other.cookie }
+      const ids: Record<string, string> = {}
+      for (const role of ['owner', 'editor', 'viewer', 'other', 'admin', 'support'] as const) {
+        const user = await createUser(db, { email: `${role}@isolation.test`, password: 'account-password', platformRole: role === 'admin' || role === 'support' ? role : null })
+        ids[role] = user.id
+        if (role !== 'admin' && role !== 'support') await db.insert(memberships).values({ userId: user.id, galleryId: role === 'other' ? other.tenant.gallery.id : own.tenant.gallery.id, role: role === 'other' ? 'owner' : role })
+        cookies[role] = (await createUserSession(db, user.id, false)).cookie
+      }
+      const otherBefore = await loadPublicRecord(db, other.tenant)
+      for (const [role, cookie] of Object.entries(cookies)) {
+        const allowedWrite = ['owner', 'editor', 'admin', 'support', 'shared'].includes(role)
+        const allowedRead = allowedWrite || role === 'viewer'
+        const expectedDenied = role === 'anonymous' ? 401 : 403
+        for (const path of ['/api/v1/pilot', '/api/pilot']) {
+          const result = await request(f.app).put(path).set('Host', 'localhost').set('Origin', 'http://localhost').set('Cookie', cookie).send({ gallery: slug, record })
+          assert.equal(result.status, allowedWrite ? 200 : expectedDenied, `${role} ${path}`)
+          if (allowedWrite) assert.equal(result.body.record.slug, slug)
+        }
+        const upload = await request(f.app).post(`/api/v1/uploads?gallery=${slug}`).set('Host', 'localhost').set('Origin', 'http://localhost').set('Cookie', cookie).send({ dataBase64: PNG })
+        assert.equal(upload.status, allowedWrite ? 201 : expectedDenied, `${role} upload`)
+        if (allowedWrite) assert.ok(upload.body.url.includes(`/galleries/${slug}/`))
+        const report = await request(f.app).get('/api/v1/pilot/staff').query({ gallery: slug }).set('Cookie', cookie)
+        assert.equal(report.status, allowedRead ? 200 : expectedDenied, `${role} report`)
+        const staffRecord = await request(f.app).get('/api/v1/pilot/staff/record').query({ gallery: slug }).set('Cookie', cookie)
+        assert.equal(staffRecord.status, allowedRead ? 200 : expectedDenied, `${role} record`)
+        if (allowedRead) assert.equal(staffRecord.body.record.slug, slug)
+        if (allowedRead) {
+          const expectedPhone = role === 'support' ? `${own.phone.slice(0, 4)}•••••${own.phone.slice(-2)}` : role === 'viewer' || role === 'shared' ? '' : own.phone
+          assert.equal(report.body.leads[0].phone, expectedPhone)
+          assert.equal(JSON.stringify(report.body).includes(other.phone), false)
+          assert.equal(JSON.stringify(report.body).includes(other.workId), false)
+        }
+        const csv = await request(f.app).get('/api/v1/pilot/staff/leads.csv').query({ gallery: slug }).set('Cookie', cookie)
+        const allowedCsv = ['owner', 'editor', 'admin'].includes(role)
+        assert.equal(csv.status, allowedCsv ? 200 : expectedDenied, `${role} csv`)
+        if (allowedCsv) {
+          assert.ok(csv.text.includes(own.phone))
+          assert.equal(csv.text.includes(other.phone), false)
+          assert.ok(csv.headers['content-disposition'].includes(`${slug}-leads-`))
+        }
+      }
+      for (const cookie of [cookies.owner, cookies.shared]) {
+        const missing = await request(f.app).put('/api/v1/pilot').set('Cookie', cookie).send({ record })
+        assert.equal(missing.status, 400)
+        assert.equal((await request(f.app).post('/api/v1/uploads').set('Cookie', cookie).send({ dataBase64: PNG })).status, 400)
+        assert.equal((await request(f.app).put('/api/v1/pilot').set('Cookie', cookie).send({ gallery: slug, record })).status, 403)
+        assert.equal((await request(f.app).post('/api/v1/uploads').set('Cookie', cookie).send({ gallery: slug, dataBase64: PNG })).status, 403)
+        assert.equal((await request(f.app).get('/api/v1/pilot/staff').query({ gallery: 'missing' }).set('Cookie', cookie)).status, 404)
+      }
+      assert.equal((await request(f.app).put('/api/v1/pilot').set('Host', 'localhost').set('Origin', 'http://localhost').set('Cookie', cookies.viewer).send({ gallery: slug, accessCode: own.code, record })).status, 403)
+      const rows = await db.select().from(media)
+      assert.equal(rows.length, 5)
+      assert.ok(rows.every((row) => row.galleryId === own.tenant.gallery.id))
+      assert.deepEqual(await loadPublicRecord(db, other.tenant), otherBefore)
+      const logs = await db.select().from(auditLogs)
+      assert.equal(logs.filter((row) => row.action === 'publish').length, 10)
+      assert.equal(logs.filter((row) => row.action === 'upload-images').length, 5)
+      assert.equal(logs.filter((row) => row.action === 'export-leads').length, 3)
+      assert.ok(logs.every((row) => row.galleryId === own.tenant.gallery.id))
+      assert.ok(logs.some((row) => row.actorUserId === ids.owner && row.action === 'publish'))
+      assert.equal(logs.filter((row) => row.actorUserId === null && row.summary.kind === 'shared-code').length, 3)
+      assert.equal(JSON.stringify(logs).includes(own.phone), false)
+      await db.update(galleries).set({ sharedCodeEnabled: false }).where(eq(galleries.id, own.tenant.gallery.id))
+      for (const path of ['/api/v1/pilot', '/api/pilot']) {
+        assert.equal((await request(f.app).put(path).set('Cookie', cookies.shared).send({ gallery: slug, record })).status, 401)
+        assert.equal((await request(f.app).put(path).send({ gallery: slug, record, accessCode: own.code })).status, 401)
+      }
+      assert.equal((await request(f.app).post('/api/v1/uploads').set('Cookie', cookies.shared).send({ gallery: slug, dataBase64: PNG })).status, 401)
+      assert.equal((await request(f.app).get('/api/v1/pilot/staff').query({ gallery: slug }).set('Cookie', cookies.shared)).status, 401)
+    } finally { await f.close() }
   })
 }
 

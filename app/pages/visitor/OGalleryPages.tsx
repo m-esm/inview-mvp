@@ -84,6 +84,7 @@ function OLanding({ record, preview = false, lang }: { record: PilotRecord, prev
 
   const brand = pick(language, record.name, record.nameFa)
   const cover = preview ? undefined : coverWork(record)
+  const ShowHeading = preview ? 'h2' : 'h1'
   const initial = (language === 'fa' ? (record.nameFa || record.name) : (record.name || record.nameFa)).trim().slice(0, 1) || 'O'
 
   return (
@@ -92,13 +93,13 @@ function OLanding({ record, preview = false, lang }: { record: PilotRecord, prev
         <p className="eyebrow">{copy.currentShow}</p>
         {title ? (
           <>
-            <h1 className="show-title">{title}</h1>
+            <ShowHeading className="show-title">{title}</ShowHeading>
             <span className="ink-rule" aria-hidden />
             {empty && <p className="muted">{copy.emptyBody}</p>}
           </>
         ) : (
           <>
-            <h1 className="show-title">{brand}</h1>
+            <ShowHeading className="show-title">{brand}</ShowHeading>
             <span className="ink-rule" aria-hidden />
             {empty && <p className="show-kind">{copy.emptyBody}</p>}
           </>

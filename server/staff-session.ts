@@ -1,7 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { sessions } from '../database/schema'
 import { tenantBySlug } from './gallery-record'
-import { O_SLUG } from '../app/lib/galleries'
 import { randomToken, sha256, verifySecret } from './crypto'
 
 // Drizzle database handle (Postgres.js in production, PGlite in tests).
@@ -9,8 +8,8 @@ import { randomToken, sha256, verifySecret } from './crypto'
 type Db = any
 
 export const STAFF_COOKIE = 'inview_staff'
-export const SIGN_IN_PATH = '/dashboard/sign-in'
-export const EDITOR_PATH = `/dashboard/${O_SLUG}`
+export const SIGN_IN_PATH = '/staff/sign-in'
+export const EDITOR_PATH = '/staff'
 export const STAFF_SESSION_TTL_MS = 12 * 60 * 60 * 1000
 
 const TTL_SECONDS = STAFF_SESSION_TTL_MS / 1000
