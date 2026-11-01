@@ -1,18 +1,18 @@
 {
-  "fetchedAt": "2026-11-01T13:17:36.884Z",
+  "fetchedAt": "2026-11-01T21:59:57.160Z",
   "apps": [
     {
       "id": "inview",
       "status": "live",
-      "imageTag": "main-44-24d6ea4",
-      "commitSha": "24d6ea4",
+      "imageTag": "main-77-488ba00",
+      "commitSha": "488ba00",
       "clusterHadCommitSha": null,
       "health": {
         "url": "https://inview.moshes.io/api/v1/health",
         "ok": true,
         "statusCode": 200,
         "bodySnippet": "{\"ok\":true,\"service\":\"inview-mvp\"}",
-        "checkedAt": "2026-11-01T13:17:52.489Z",
+        "checkedAt": "2026-11-01T22:00:13.489Z",
         "error": null
       },
       "screenshots": [
@@ -23,7 +23,7 @@
           "viewport": "desktop",
           "width": 1280,
           "height": 800,
-          "takenAt": "2026-11-01T13:17:36.884Z",
+          "takenAt": "2026-11-01T21:59:57.160Z",
           "url": "screenshots/inview/o-gallery-desktop.jpg"
         },
         {
@@ -33,7 +33,7 @@
           "viewport": "desktop",
           "width": 1280,
           "height": 800,
-          "takenAt": "2026-11-01T13:17:36.884Z",
+          "takenAt": "2026-11-01T21:59:57.160Z",
           "url": "screenshots/inview/works-desktop.jpg"
         },
         {
@@ -43,7 +43,7 @@
           "viewport": "desktop",
           "width": 1280,
           "height": 800,
-          "takenAt": "2026-11-01T13:17:36.884Z",
+          "takenAt": "2026-11-01T21:59:57.160Z",
           "url": "screenshots/inview/dashboard-desktop.jpg"
         },
         {
@@ -53,7 +53,7 @@
           "viewport": "mobile",
           "width": 390,
           "height": 844,
-          "takenAt": "2026-11-01T13:17:36.884Z",
+          "takenAt": "2026-11-01T21:59:57.160Z",
           "url": "screenshots/inview/o-gallery-mobile.jpg"
         },
         {
@@ -63,7 +63,7 @@
           "viewport": "mobile",
           "width": 390,
           "height": 844,
-          "takenAt": "2026-11-01T13:17:36.884Z",
+          "takenAt": "2026-11-01T21:59:57.160Z",
           "url": "screenshots/inview/works-mobile.jpg"
         },
         {
@@ -73,7 +73,7 @@
           "viewport": "mobile",
           "width": 390,
           "height": 844,
-          "takenAt": "2026-11-01T13:17:36.884Z",
+          "takenAt": "2026-11-01T21:59:57.160Z",
           "url": "screenshots/inview/dashboard-mobile.jpg"
         }
       ]
@@ -89,7 +89,7 @@
         "ok": true,
         "statusCode": 200,
         "bodySnippet": "ok",
-        "checkedAt": "2026-11-01T13:17:52.720Z",
+        "checkedAt": "2026-11-01T22:00:13.779Z",
         "error": null
       },
       "screenshots": []
