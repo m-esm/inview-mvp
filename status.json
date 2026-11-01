@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-11-01T21:59:57.160Z",
+  "fetchedAt": "2026-11-01T22:05:14.872Z",
   "apps": [
     {
       "id": "inview",
@@ -12,69 +12,710 @@
         "ok": true,
         "statusCode": 200,
         "bodySnippet": "{\"ok\":true,\"service\":\"inview-mvp\"}",
-        "checkedAt": "2026-11-01T22:00:13.489Z",
+        "checkedAt": "2026-11-01T22:05:46.285Z",
         "error": null
       },
       "screenshots": [
         {
+          "pageId": "landing",
+          "label": "Inview landing",
+          "path": "/",
+          "viewport": "desktop",
+          "width": 1440,
+          "height": 900,
+          "takenAt": "2026-11-01T22:05:14.872Z",
+          "url": "screenshots/inview/landing-desktop.jpg"
+        },
+        {
           "pageId": "o-gallery",
-          "label": "Welcome /g/o-gallery",
+          "label": "o-gallery: Welcome",
           "path": "/g/o-gallery",
           "viewport": "desktop",
-          "width": 1280,
-          "height": 800,
-          "takenAt": "2026-11-01T21:59:57.160Z",
+          "width": 1440,
+          "height": 900,
+          "takenAt": "2026-11-01T22:05:14.872Z",
           "url": "screenshots/inview/o-gallery-desktop.jpg"
         },
         {
-          "pageId": "works",
-          "label": "Works /g/o-gallery/works",
+          "pageId": "o-gallery-works",
+          "label": "o-gallery: Works",
           "path": "/g/o-gallery/works",
           "viewport": "desktop",
-          "width": 1280,
-          "height": 800,
-          "takenAt": "2026-11-01T21:59:57.160Z",
-          "url": "screenshots/inview/works-desktop.jpg"
+          "width": 1440,
+          "height": 900,
+          "takenAt": "2026-11-01T22:05:14.872Z",
+          "url": "screenshots/inview/o-gallery-works-desktop.jpg"
         },
         {
-          "pageId": "dashboard",
-          "label": "Editor /dashboard/o-gallery",
-          "path": "/dashboard/o-gallery",
+          "pageId": "o-gallery-prices",
+          "label": "o-gallery: Prices",
+          "path": "/g/o-gallery/prices",
           "viewport": "desktop",
-          "width": 1280,
-          "height": 800,
-          "takenAt": "2026-11-01T21:59:57.160Z",
-          "url": "screenshots/inview/dashboard-desktop.jpg"
+          "width": 1440,
+          "height": 900,
+          "takenAt": "2026-11-01T22:05:14.872Z",
+          "url": "screenshots/inview/o-gallery-prices-desktop.jpg"
+        },
+        {
+          "pageId": "o-gallery-about",
+          "label": "o-gallery: About",
+          "path": "/g/o-gallery/about",
+          "viewport": "desktop",
+          "width": 1440,
+          "height": 900,
+          "takenAt": "2026-11-01T22:05:14.872Z",
+          "url": "screenshots/inview/o-gallery-about-desktop.jpg"
+        },
+        {
+          "pageId": "sample",
+          "label": "sample: Welcome",
+          "path": "/g/sample",
+          "viewport": "desktop",
+          "width": 1440,
+          "height": 900,
+          "takenAt": "2026-11-01T22:05:14.872Z",
+          "url": "screenshots/inview/sample-desktop.jpg"
+        },
+        {
+          "pageId": "sample-works",
+          "label": "sample: Works",
+          "path": "/g/sample/works",
+          "viewport": "desktop",
+          "width": 1440,
+          "height": 900,
+          "takenAt": "2026-11-01T22:05:14.872Z",
+          "url": "screenshots/inview/sample-works-desktop.jpg"
+        },
+        {
+          "pageId": "sample-prices",
+          "label": "sample: Prices",
+          "path": "/g/sample/prices",
+          "viewport": "desktop",
+          "width": 1440,
+          "height": 900,
+          "takenAt": "2026-11-01T22:05:14.872Z",
+          "url": "screenshots/inview/sample-prices-desktop.jpg"
+        },
+        {
+          "pageId": "sample-about",
+          "label": "sample: About",
+          "path": "/g/sample/about",
+          "viewport": "desktop",
+          "width": 1440,
+          "height": 900,
+          "takenAt": "2026-11-01T22:05:14.872Z",
+          "url": "screenshots/inview/sample-about-desktop.jpg"
+        },
+        {
+          "pageId": "o-gallery-site",
+          "label": "O Gallery website",
+          "path": "/site/o-gallery",
+          "viewport": "desktop",
+          "width": 1440,
+          "height": 900,
+          "takenAt": "2026-11-01T22:05:14.872Z",
+          "url": "screenshots/inview/o-gallery-site-desktop.jpg"
+        },
+        {
+          "pageId": "me",
+          "label": "Saved works",
+          "path": "/me",
+          "viewport": "desktop",
+          "width": 1440,
+          "height": 900,
+          "takenAt": "2026-11-01T22:05:14.872Z",
+          "url": "screenshots/inview/me-desktop.jpg"
+        },
+        {
+          "pageId": "dashboard-sign-in",
+          "label": "Gallery sign-in",
+          "path": "/dashboard/sign-in",
+          "viewport": "desktop",
+          "width": 1440,
+          "height": 900,
+          "takenAt": "2026-11-01T22:05:14.872Z",
+          "url": "screenshots/inview/dashboard-sign-in-desktop.jpg"
+        },
+        {
+          "pageId": "demo-dashboard",
+          "label": "Demo dashboard",
+          "path": "/dashboard",
+          "viewport": "desktop",
+          "width": 1440,
+          "height": 900,
+          "takenAt": "2026-11-01T22:05:14.872Z",
+          "url": "screenshots/inview/demo-dashboard-desktop.jpg"
+        },
+        {
+          "pageId": "demo-artworks",
+          "label": "Demo artworks",
+          "path": "/dashboard/artworks",
+          "viewport": "desktop",
+          "width": 1440,
+          "height": 900,
+          "takenAt": "2026-11-01T22:05:14.872Z",
+          "url": "screenshots/inview/demo-artworks-desktop.jpg"
+        },
+        {
+          "pageId": "landing",
+          "label": "Inview landing",
+          "path": "/",
+          "viewport": "mobile",
+          "width": 390,
+          "height": 844,
+          "takenAt": "2026-11-01T22:05:14.872Z",
+          "url": "screenshots/inview/landing-mobile.jpg"
         },
         {
           "pageId": "o-gallery",
-          "label": "Welcome /g/o-gallery",
+          "label": "o-gallery: Welcome",
           "path": "/g/o-gallery",
           "viewport": "mobile",
           "width": 390,
           "height": 844,
-          "takenAt": "2026-11-01T21:59:57.160Z",
+          "takenAt": "2026-11-01T22:05:14.872Z",
           "url": "screenshots/inview/o-gallery-mobile.jpg"
         },
         {
-          "pageId": "works",
-          "label": "Works /g/o-gallery/works",
+          "pageId": "o-gallery-works",
+          "label": "o-gallery: Works",
           "path": "/g/o-gallery/works",
           "viewport": "mobile",
           "width": 390,
           "height": 844,
-          "takenAt": "2026-11-01T21:59:57.160Z",
-          "url": "screenshots/inview/works-mobile.jpg"
+          "takenAt": "2026-11-01T22:05:14.872Z",
+          "url": "screenshots/inview/o-gallery-works-mobile.jpg"
         },
         {
-          "pageId": "dashboard",
-          "label": "Editor /dashboard/o-gallery",
-          "path": "/dashboard/o-gallery",
+          "pageId": "o-gallery-prices",
+          "label": "o-gallery: Prices",
+          "path": "/g/o-gallery/prices",
           "viewport": "mobile",
           "width": 390,
           "height": 844,
-          "takenAt": "2026-11-01T21:59:57.160Z",
-          "url": "screenshots/inview/dashboard-mobile.jpg"
+          "takenAt": "2026-11-01T22:05:14.872Z",
+          "url": "screenshots/inview/o-gallery-prices-mobile.jpg"
+        },
+        {
+          "pageId": "o-gallery-about",
+          "label": "o-gallery: About",
+          "path": "/g/o-gallery/about",
+          "viewport": "mobile",
+          "width": 390,
+          "height": 844,
+          "takenAt": "2026-11-01T22:05:14.872Z",
+          "url": "screenshots/inview/o-gallery-about-mobile.jpg"
+        },
+        {
+          "pageId": "sample",
+          "label": "sample: Welcome",
+          "path": "/g/sample",
+          "viewport": "mobile",
+          "width": 390,
+          "height": 844,
+          "takenAt": "2026-11-01T22:05:14.872Z",
+          "url": "screenshots/inview/sample-mobile.jpg"
+        },
+        {
+          "pageId": "sample-works",
+          "label": "sample: Works",
+          "path": "/g/sample/works",
+          "viewport": "mobile",
+          "width": 390,
+          "height": 844,
+          "takenAt": "2026-11-01T22:05:14.872Z",
+          "url": "screenshots/inview/sample-works-mobile.jpg"
+        },
+        {
+          "pageId": "sample-prices",
+          "label": "sample: Prices",
+          "path": "/g/sample/prices",
+          "viewport": "mobile",
+          "width": 390,
+          "height": 844,
+          "takenAt": "2026-11-01T22:05:14.872Z",
+          "url": "screenshots/inview/sample-prices-mobile.jpg"
+        },
+        {
+          "pageId": "sample-about",
+          "label": "sample: About",
+          "path": "/g/sample/about",
+          "viewport": "mobile",
+          "width": 390,
+          "height": 844,
+          "takenAt": "2026-11-01T22:05:14.872Z",
+          "url": "screenshots/inview/sample-about-mobile.jpg"
+        },
+        {
+          "pageId": "o-gallery-site",
+          "label": "O Gallery website",
+          "path": "/site/o-gallery",
+          "viewport": "mobile",
+          "width": 390,
+          "height": 844,
+          "takenAt": "2026-11-01T22:05:14.872Z",
+          "url": "screenshots/inview/o-gallery-site-mobile.jpg"
+        },
+        {
+          "pageId": "me",
+          "label": "Saved works",
+          "path": "/me",
+          "viewport": "mobile",
+          "width": 390,
+          "height": 844,
+          "takenAt": "2026-11-01T22:05:14.872Z",
+          "url": "screenshots/inview/me-mobile.jpg"
+        },
+        {
+          "pageId": "dashboard-sign-in",
+          "label": "Gallery sign-in",
+          "path": "/dashboard/sign-in",
+          "viewport": "mobile",
+          "width": 390,
+          "height": 844,
+          "takenAt": "2026-11-01T22:05:14.872Z",
+          "url": "screenshots/inview/dashboard-sign-in-mobile.jpg"
+        },
+        {
+          "pageId": "demo-dashboard",
+          "label": "Demo dashboard",
+          "path": "/dashboard",
+          "viewport": "mobile",
+          "width": 390,
+          "height": 844,
+          "takenAt": "2026-11-01T22:05:14.872Z",
+          "url": "screenshots/inview/demo-dashboard-mobile.jpg"
+        },
+        {
+          "pageId": "demo-artworks",
+          "label": "Demo artworks",
+          "path": "/dashboard/artworks",
+          "viewport": "mobile",
+          "width": 390,
+          "height": 844,
+          "takenAt": "2026-11-01T22:05:14.872Z",
+          "url": "screenshots/inview/demo-artworks-mobile.jpg"
+        }
+      ],
+      "surfaces": [
+        {
+          "id": "landing",
+          "group": "marketing",
+          "label": "Inview landing",
+          "path": "/",
+          "url": "https://inview.moshes.io/",
+          "access": "public",
+          "httpStatus": 200,
+          "checkedAt": "2026-11-01T22:05:14.873Z",
+          "note": null
+        },
+        {
+          "id": "o-gallery",
+          "group": "visitor-pilot",
+          "label": "o-gallery: Welcome",
+          "path": "/g/o-gallery",
+          "url": "https://inview.moshes.io/g/o-gallery",
+          "access": "public",
+          "httpStatus": 200,
+          "checkedAt": "2026-11-01T22:05:14.930Z",
+          "note": null
+        },
+        {
+          "id": "o-gallery-works",
+          "group": "visitor-pilot",
+          "label": "o-gallery: Works",
+          "path": "/g/o-gallery/works",
+          "url": "https://inview.moshes.io/g/o-gallery/works",
+          "access": "public",
+          "httpStatus": 200,
+          "checkedAt": "2026-11-01T22:05:14.932Z",
+          "note": null
+        },
+        {
+          "id": "o-gallery-prices",
+          "group": "visitor-pilot",
+          "label": "o-gallery: Prices",
+          "path": "/g/o-gallery/prices",
+          "url": "https://inview.moshes.io/g/o-gallery/prices",
+          "access": "public",
+          "httpStatus": 200,
+          "checkedAt": "2026-11-01T22:05:14.933Z",
+          "note": null
+        },
+        {
+          "id": "o-gallery-about",
+          "group": "visitor-pilot",
+          "label": "o-gallery: About",
+          "path": "/g/o-gallery/about",
+          "url": "https://inview.moshes.io/g/o-gallery/about",
+          "access": "public",
+          "httpStatus": 200,
+          "checkedAt": "2026-11-01T22:05:14.934Z",
+          "note": null
+        },
+        {
+          "id": "sample",
+          "group": "visitor-sample",
+          "label": "sample: Welcome",
+          "path": "/g/sample",
+          "url": "https://inview.moshes.io/g/sample",
+          "access": "public",
+          "httpStatus": 200,
+          "checkedAt": "2026-11-01T22:05:14.935Z",
+          "note": null
+        },
+        {
+          "id": "sample-works",
+          "group": "visitor-sample",
+          "label": "sample: Works",
+          "path": "/g/sample/works",
+          "url": "https://inview.moshes.io/g/sample/works",
+          "access": "public",
+          "httpStatus": 200,
+          "checkedAt": "2026-11-01T22:05:14.936Z",
+          "note": null
+        },
+        {
+          "id": "sample-prices",
+          "group": "visitor-sample",
+          "label": "sample: Prices",
+          "path": "/g/sample/prices",
+          "url": "https://inview.moshes.io/g/sample/prices",
+          "access": "public",
+          "httpStatus": 200,
+          "checkedAt": "2026-11-01T22:05:14.937Z",
+          "note": null
+        },
+        {
+          "id": "sample-about",
+          "group": "visitor-sample",
+          "label": "sample: About",
+          "path": "/g/sample/about",
+          "url": "https://inview.moshes.io/g/sample/about",
+          "access": "public",
+          "httpStatus": 200,
+          "checkedAt": "2026-11-01T22:05:14.938Z",
+          "note": null
+        },
+        {
+          "id": "o-gallery-site",
+          "group": "visitor-pilot",
+          "label": "O Gallery website",
+          "path": "/site/o-gallery",
+          "url": "https://inview.moshes.io/site/o-gallery",
+          "access": "public",
+          "httpStatus": 200,
+          "checkedAt": "2026-11-01T22:05:14.940Z",
+          "note": null
+        },
+        {
+          "id": "me",
+          "group": "visitor-pilot",
+          "label": "Saved works",
+          "path": "/me",
+          "url": "https://inview.moshes.io/me",
+          "access": "public",
+          "httpStatus": 200,
+          "checkedAt": "2026-11-01T22:05:14.941Z",
+          "note": null
+        },
+        {
+          "id": "dashboard-sign-in",
+          "group": "staff",
+          "label": "Gallery sign-in",
+          "path": "/dashboard/sign-in",
+          "url": "https://inview.moshes.io/dashboard/sign-in",
+          "access": "public",
+          "httpStatus": 200,
+          "checkedAt": "2026-11-01T22:05:14.942Z",
+          "note": null
+        },
+        {
+          "id": "dashboard-o-gallery",
+          "group": "staff",
+          "label": "O Gallery dashboard",
+          "path": "/dashboard/o-gallery",
+          "url": "https://inview.moshes.io/dashboard/o-gallery",
+          "access": "staff",
+          "httpStatus": 302,
+          "checkedAt": "2026-11-01T22:05:14.943Z",
+          "note": null
+        },
+        {
+          "id": "staff-sign-in",
+          "group": "staff",
+          "label": "Staff sign-in",
+          "path": "/staff/sign-in",
+          "url": "https://inview.moshes.io/staff/sign-in",
+          "access": "public",
+          "httpStatus": 404,
+          "checkedAt": "2026-11-01T22:05:14.943Z",
+          "note": "Arrives with the staff area release."
+        },
+        {
+          "id": "staff-o-gallery",
+          "group": "staff",
+          "label": "O Gallery staff area",
+          "path": "/staff/o-gallery",
+          "url": "https://inview.moshes.io/staff/o-gallery",
+          "access": "staff",
+          "httpStatus": 404,
+          "checkedAt": "2026-11-01T22:05:14.944Z",
+          "note": null
+        },
+        {
+          "id": "ops-sign-in",
+          "group": "operator",
+          "label": "Operator sign-in",
+          "path": "/ops/sign-in",
+          "url": "https://inview.moshes.io/ops/sign-in",
+          "access": "public",
+          "httpStatus": 404,
+          "checkedAt": "2026-11-01T22:05:14.945Z",
+          "note": null
+        },
+        {
+          "id": "ops",
+          "group": "operator",
+          "label": "Operator panel",
+          "path": "/ops",
+          "url": "https://inview.moshes.io/ops",
+          "access": "operator",
+          "httpStatus": 404,
+          "checkedAt": "2026-11-01T22:05:14.945Z",
+          "note": null
+        },
+        {
+          "id": "ops-galleries-new",
+          "group": "operator",
+          "label": "Create gallery",
+          "path": "/ops/galleries/new",
+          "url": "https://inview.moshes.io/ops/galleries/new",
+          "access": "operator",
+          "httpStatus": 404,
+          "checkedAt": "2026-11-01T22:05:14.946Z",
+          "note": null
+        },
+        {
+          "id": "ops-audit",
+          "group": "operator",
+          "label": "Audit log",
+          "path": "/ops/audit",
+          "url": "https://inview.moshes.io/ops/audit",
+          "access": "operator",
+          "httpStatus": 404,
+          "checkedAt": "2026-11-01T22:05:14.946Z",
+          "note": null
+        },
+        {
+          "id": "ops-health",
+          "group": "operator",
+          "label": "Service health",
+          "path": "/ops/health",
+          "url": "https://inview.moshes.io/ops/health",
+          "access": "operator",
+          "httpStatus": 404,
+          "checkedAt": "2026-11-01T22:05:14.947Z",
+          "note": null
+        },
+        {
+          "id": "demo-dashboard",
+          "group": "demo",
+          "label": "Demo dashboard",
+          "path": "/dashboard",
+          "url": "https://inview.moshes.io/dashboard",
+          "access": "public",
+          "httpStatus": 200,
+          "checkedAt": "2026-11-01T22:05:14.948Z",
+          "note": null
+        },
+        {
+          "id": "demo-artworks",
+          "group": "demo",
+          "label": "Demo artworks",
+          "path": "/dashboard/artworks",
+          "url": "https://inview.moshes.io/dashboard/artworks",
+          "access": "public",
+          "httpStatus": 200,
+          "checkedAt": "2026-11-01T22:05:14.948Z",
+          "note": null
+        },
+        {
+          "id": "demo-audience",
+          "group": "demo",
+          "label": "Demo audience",
+          "path": "/dashboard/audience",
+          "url": "https://inview.moshes.io/dashboard/audience",
+          "access": "public",
+          "httpStatus": 200,
+          "checkedAt": "2026-11-01T22:05:14.949Z",
+          "note": null
+        },
+        {
+          "id": "demo-website",
+          "group": "demo",
+          "label": "Demo website",
+          "path": "/dashboard/website",
+          "url": "https://inview.moshes.io/dashboard/website",
+          "access": "public",
+          "httpStatus": 200,
+          "checkedAt": "2026-11-01T22:05:14.950Z",
+          "note": null
+        },
+        {
+          "id": "demo-plans",
+          "group": "demo",
+          "label": "Demo plans",
+          "path": "/dashboard/plans",
+          "url": "https://inview.moshes.io/dashboard/plans",
+          "access": "public",
+          "httpStatus": 200,
+          "checkedAt": "2026-11-01T22:05:14.950Z",
+          "note": null
+        },
+        {
+          "id": "api-health",
+          "group": "health",
+          "label": "API health",
+          "path": "/api/v1/health",
+          "url": "https://inview.moshes.io/api/v1/health",
+          "access": "public",
+          "httpStatus": 200,
+          "checkedAt": "2026-11-01T22:05:14.955Z",
+          "note": null
+        },
+        {
+          "id": "api-ready",
+          "group": "health",
+          "label": "API readiness",
+          "path": "/api/v1/ready",
+          "url": "https://inview.moshes.io/api/v1/ready",
+          "access": "public",
+          "httpStatus": 200,
+          "checkedAt": "2026-11-01T22:05:14.955Z",
+          "note": null
+        },
+        {
+          "id": "grafana",
+          "group": "ops-tools",
+          "label": "Grafana",
+          "url": "https://grafana.moshes.io",
+          "access": "internal",
+          "httpStatus": 302,
+          "checkedAt": "2026-11-01T22:05:14.956Z",
+          "note": null
+        },
+        {
+          "id": "had-board",
+          "group": "ops-tools",
+          "label": "HAD board",
+          "url": "https://paper.moshes.io/HAD/issues",
+          "access": "internal",
+          "httpStatus": 200,
+          "checkedAt": "2026-11-01T22:05:14.956Z",
+          "note": null
+        },
+        {
+          "id": "had-docs",
+          "group": "ops-tools",
+          "label": "HAD docs",
+          "url": "https://paper.moshes.io/HAD/docs",
+          "access": "internal",
+          "httpStatus": 200,
+          "checkedAt": "2026-11-01T22:05:14.957Z",
+          "note": null
+        },
+        {
+          "id": "had-deployments",
+          "group": "ops-tools",
+          "label": "HAD deployments",
+          "url": "https://paper.moshes.io/HAD/deployments",
+          "access": "internal",
+          "httpStatus": 200,
+          "checkedAt": "2026-11-01T22:05:14.958Z",
+          "note": null
+        },
+        {
+          "id": "github-actions",
+          "group": "ops-tools",
+          "label": "GitHub Actions",
+          "url": "https://github.com/m-esm/inview-mvp/actions",
+          "access": "internal",
+          "httpStatus": 200,
+          "checkedAt": "2026-11-01T22:05:14.958Z",
+          "note": null
+        },
+        {
+          "id": "ghcr-image",
+          "group": "ops-tools",
+          "label": "GHCR image",
+          "url": "https://github.com/m-esm/inview-mvp/pkgs/container/inview-mvp",
+          "access": "internal",
+          "httpStatus": 200,
+          "checkedAt": "2026-11-01T22:05:14.959Z",
+          "note": null
+        },
+        {
+          "id": "cluster-had-app",
+          "group": "ops-tools",
+          "label": "cluster-had app",
+          "url": "https://github.com/m-esm/cluster-had/tree/main/apps/inview",
+          "access": "internal",
+          "httpStatus": 404,
+          "checkedAt": "2026-11-01T22:05:14.959Z",
+          "note": null
+        },
+        {
+          "id": "media-host",
+          "group": "ops-tools",
+          "label": "Media bucket host",
+          "url": "https://inview-media.moshes.io",
+          "access": "internal",
+          "httpStatus": 404,
+          "checkedAt": "2026-11-01T22:05:14.960Z",
+          "note": "Image host with no index page."
+        }
+      ],
+      "groups": [
+        {
+          "id": "marketing",
+          "label": "Marketing site",
+          "labelFa": "سایت اینویو"
+        },
+        {
+          "id": "visitor-pilot",
+          "label": "Visitor app, O Gallery pilot",
+          "labelFa": "اپ بازدیدکننده، پایلوت گالری اُ"
+        },
+        {
+          "id": "visitor-sample",
+          "label": "Visitor app, sample gallery",
+          "labelFa": "اپ بازدیدکننده، گالری نمونه"
+        },
+        {
+          "id": "staff",
+          "label": "Gallery staff dashboard",
+          "labelFa": "داشبورد کارکنان گالری"
+        },
+        {
+          "id": "operator",
+          "label": "Operator panel (Mohsen and Ali)",
+          "labelFa": "پنل مدیریت (محسن و علی)"
+        },
+        {
+          "id": "demo",
+          "label": "Sales demo (Rooz)",
+          "labelFa": "دموی فروش (روز)"
+        },
+        {
+          "id": "health",
+          "label": "Health and API",
+          "labelFa": "سلامت سرویس و API"
+        },
+        {
+          "id": "ops-tools",
+          "label": "Engineering dashboards",
+          "labelFa": "داشبوردهای مهندسی"
         }
       ]
     },
@@ -89,7 +730,7 @@
         "ok": true,
         "statusCode": 200,
         "bodySnippet": "ok",
-        "checkedAt": "2026-11-01T22:00:13.779Z",
+        "checkedAt": "2026-11-01T22:05:46.506Z",
         "error": null
       },
       "screenshots": []
