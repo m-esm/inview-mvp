@@ -177,7 +177,7 @@ for (const viewport of viewports) {
       expect(response.status()).toBe(201)
       expect(response.request().headers()['content-type']).toContain('multipart/form-data')
       await expect(page.locator('.work-edit .upload-thumb img').first()).toHaveAttribute('src', /^\/media\//)
-      const publish = page.waitForRequest((request) => request.method() === 'PUT' && request.url().includes('/api/pilot'))
+      const publish = page.waitForRequest((request) => request.method() === 'PUT' && request.url().includes('/api/v1/pilot'))
       await page.getByRole('button', { name: 'Publish' }).click()
       expect((await publish).postData() || '').not.toContain('data:')
       await expect(page.getByRole('status')).toHaveText('Published. The QR path is still /g/o-gallery.')

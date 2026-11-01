@@ -78,7 +78,8 @@ for (const viewport of viewports) {
       })
     }
 
-    test('the signed-in editor has no serious or critical violation', async ({ page }) => {
+    test('the signed-in editor has no serious or critical violation', async ({ page, baseURL }) => {
+      await page.context().addCookies([{ name: 'inview-lang', value: 'en', url: baseURL || 'http://127.0.0.1:3000' }])
       await page.goto('/dashboard/sign-in')
       await page.getByLabel('Gallery access code').fill(accessCode)
       await page.getByRole('button', { name: 'Open the editor' }).click()
