@@ -82,6 +82,15 @@ test('tenantBySlug finds a gallery row by slug and refuses unknown or malformed 
   })
 })
 
+test('tenantBySlug keeps the published show when a newer draft exists', async () => {
+  await withGalleries(async ({ db, sample }) => {
+    await db
+      .insert(shows)
+      .values({ galleryId: sample.gallery.id, titleEn: 'Next season', titleFa: 'فصل بعد', status: 'draft', updatedAt: new Date(Date.now() + 60_000) })
+    assert.equal((await tenantBySlug(db, 'sample'))?.show.id, sample.show.id)
+  })
+})
+
 test('the /g/:slug loader serves a database gallery by slug and marks a demo', async () => {
   await withGalleries(async ({ db }) => {
     const run = <T>(task: () => Promise<T>) => DatabaseContext.run(db, task)

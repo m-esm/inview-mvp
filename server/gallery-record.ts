@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, gte, isNull } from 'drizzle-orm'
+import { and, asc, count, desc, eq, gte, isNull, sql } from 'drizzle-orm'
 /** Drizzle database handle (Postgres.js in production, PGlite in tests). */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Db = any
@@ -131,7 +131,7 @@ async function withLatestShow(db: Db, gallery: typeof galleries.$inferSelect): P
     .select()
     .from(shows)
     .where(eq(shows.galleryId, gallery.id))
-    .orderBy(desc(shows.updatedAt))
+    .orderBy(sql`${shows.status} = 'published' DESC`, desc(shows.updatedAt))
     .limit(1)
   if (!show) return null
   return { gallery, show }
