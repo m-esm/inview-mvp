@@ -40,6 +40,28 @@ test('successful sign-ins never consume the account failure bucket, but failures
   } finally { await fixture.close() }
 })
 
+test('many staff signing in from one office address are not locked out', async () => {
+  const fixture = await createTestDb()
+  const db = fixture.db as unknown as AppDatabase
+  try {
+    const config = { ...rateLimitConfig({ NODE_ENV: 'test' }), accessFailIpMax: 3, accessFailGalleryMax: 5 }
+    for (let index = 0; index < 6; index++) {
+      await createUser(db, { email: `staff${index}@example.com`, password: 'long-password' })
+    }
+    for (let round = 0; round < 2; round++) {
+      for (let index = 0; index < 6; index++) {
+        const result = await signIn(db, { identifier: `staff${index}@example.com`, password: 'long-password', ip: 'office', secure: false }, new Date(), config)
+        assert.ok(result.ok, `staff${index} round ${round}`)
+      }
+    }
+    for (let index = 0; index < 3; index++) {
+      await signIn(db, { identifier: 'staff0@example.com', password: 'wrong', ip: 'office', secure: false }, new Date(), config)
+    }
+    const blocked = await signIn(db, { identifier: 'staff1@example.com', password: 'long-password', ip: 'office', secure: false }, new Date(), config)
+    assert.ok(!blocked.ok && blocked.result.status === 429)
+  } finally { await fixture.close() }
+})
+
 test('accounts sign in by normalized email or phone, store hashes, set TTLs and revoke sessions', async () => {
   const fixture = await createTestDb()
   const db = fixture.db as unknown as AppDatabase

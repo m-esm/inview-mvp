@@ -91,9 +91,9 @@ export async function signIn(
   config = rateLimitConfig(),
 ): Promise<{ ok: true; user: ReturnType<typeof userSummary>; cookie: string } | { ok: false; result: ApiResult }> {
   const identifier = input.identifier.includes('@') ? input.identifier.trim().toLowerCase() : normalizePhone(input.identifier)
-  const client = await consumeBucket(db, `user-sign-in:ip:${hashClientAddress(input.ip, now, config.ipSalt)}`,
-    config.accessFailIpMax, config.accessFailIpWindowSec, now)
-  if (!client.allowed) return { ok: false, result: tooMany(client.retryAfterSeconds) }
+  const clientKey = `user-sign-in:ip:${hashClientAddress(input.ip, now, config.ipSalt)}`
+  const client = await peekBucket(db, clientKey, config.accessFailIpMax, config.accessFailIpWindowSec, now)
+  if (client) return { ok: false, result: client }
   const [user] = await db.select().from(users)
     .where(identifier.includes('@') ? sql`lower(${users.email}) = ${identifier}` : eq(users.phone, identifier)).limit(1)
   const accountKey = `user-sign-in:account:${sha256(user?.id ?? identifier)}`
@@ -102,8 +102,14 @@ export async function signIn(
   if (account) return { ok: false, result: account }
   const valid = verifySecret(input.password.length <= 1024 ? input.password : '', user?.passwordHash ?? DUMMY_HASH)
   if (!valid || !user || user.status !== 'active') {
+    const clientFailure = await consumeBucket(db, clientKey, config.accessFailIpMax, config.accessFailIpWindowSec, now)
     const failure = await consumeBucket(db, accountKey, config.accessFailGalleryMax, config.accessFailGalleryWindowSec, now)
-    if (!failure.allowed) return { ok: false, result: tooMany(failure.retryAfterSeconds) }
+    if (!clientFailure.allowed || !failure.allowed) {
+      return { ok: false, result: tooMany(Math.max(
+        clientFailure.allowed ? 0 : clientFailure.retryAfterSeconds,
+        failure.allowed ? 0 : failure.retryAfterSeconds,
+      )) }
+    }
     return { ok: false, result: { status: 401, body: { error: 'The sign-in details do not match.' } } }
   }
   const session = await db.transaction(async (tx) => {
