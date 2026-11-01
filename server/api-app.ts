@@ -1,5 +1,5 @@
 import express from 'express'
-import type { Express, Request } from 'express'
+import type { ErrorRequestHandler, Express, Request } from 'express'
 import { media } from '../database/schema'
 import { processAndStoreImage } from './images'
 import { beginUpload, clientIpFrom, runPilotRequest, runStaffRequest, writeApiResult } from './rate-limit'
@@ -53,7 +53,11 @@ export function mountApi(app: Express, db: Db, storage: ObjectStorage) {
   }
 
   app.all('/api/v1/pilot', pilot)
-  app.all('/api/pilot', pilot)
+  app.all('/api/pilot', (req, res) => {
+    res.setHeader('Deprecation', 'true')
+    res.setHeader('Link', '</api/v1/pilot>; rel="successor-version"')
+    return pilot(req, res)
+  })
 
   const staff = async (req: Request, res: express.Response) => {
     res.setHeader('Cache-Control', 'no-store')
@@ -116,6 +120,22 @@ export function mountApi(app: Express, db: Db, storage: ObjectStorage) {
   app.use('/api', (_req, res) => {
     sendJson(res, 404, { error: 'Not found.' })
   })
+
+  const apiError: ErrorRequestHandler = (error, req, res, next) => {
+    if (!req.path.startsWith('/api') || res.headersSent) return next(error)
+    const type = (error as { type?: string }).type
+    if (type === 'entity.parse.failed') {
+      sendJson(res, 400, { error: 'The request body is not valid JSON.', errorFa: 'متن درخواست JSON معتبر نیست.' })
+      return
+    }
+    if (type === 'entity.too.large') {
+      sendJson(res, 413, { error: 'The request body is too large.', errorFa: 'حجم درخواست بیش از حد است.' })
+      return
+    }
+    console.error(error)
+    sendJson(res, 500, SERVER_ERROR)
+  }
+  app.use(apiError)
 }
 
 export function createApiApp(db: Db, storage: ObjectStorage) {

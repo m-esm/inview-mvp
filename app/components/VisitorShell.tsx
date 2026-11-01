@@ -52,7 +52,7 @@ export function VisitorShell() {
   const brand = isO ? oName : galleryName
 
   useEffect(() => {
-    if (pathname === '/g/o-gallery') recordLandingScan()
+    if (pathname === '/g/o-gallery') recordLandingScan(new URLSearchParams(window.location.search).get('q'))
   }, [pathname])
 
   return (

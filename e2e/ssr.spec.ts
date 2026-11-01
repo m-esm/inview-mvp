@@ -89,7 +89,7 @@ test.describe('server rendering', () => {
   test('the first page load does not ask the API for the record again', async ({ page }) => {
     const pilotReads: string[] = []
     page.on('request', (request) => {
-      if (request.method() === 'GET' && request.url().includes('/api/pilot')) {
+      if (request.method() === 'GET' && request.url().includes('/api/v1/pilot')) {
         pilotReads.push(request.url())
       }
     })

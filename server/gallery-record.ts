@@ -14,6 +14,7 @@ import {
 } from '../database/schema'
 import { CONSENT_TEXT_VERSION } from '../app/lib/consent'
 import { parseToman } from '../app/lib/price'
+import { QR_CODE_PATTERN, tehranDay } from '../app/lib/tehran-day'
 import { hashSecret, verifySecret } from './crypto'
 import { decodeDataUrl, processAndStoreImage } from './images'
 import type { ObjectStorage } from './storage'
@@ -608,19 +609,32 @@ export async function recordVisit(
   kind: 'scan' | 'view',
   visitorId: string,
   workId?: string | null,
+  qrCode?: string | null,
+  now: Date = new Date(),
 ): Promise<{ status: number; body: { ok: true; counted: boolean; duplicate: boolean } | { error: string } }> {
   if (!/^[a-zA-Z0-9-]{8,80}$/.test(visitorId)) {
     return { status: 400, body: { error: 'Visitor id is not valid.' } }
   }
   const { show } = await ensureOGalleryTenant(db)
-  const day = new Date().toISOString().slice(0, 10)
+  const day = tehranDay(now)
   if (kind === 'scan') {
+    let qrCodeId: string | null = null
+    if (typeof qrCode === 'string' && QR_CODE_PATTERN.test(qrCode)) {
+      const [qr] = await db
+        .select({ id: qrCodes.id })
+        .from(qrCodes)
+        .where(and(eq(qrCodes.code, qrCode), eq(qrCodes.showId, show.id)))
+        .limit(1)
+      qrCodeId = qr?.id ?? null
+    }
     try {
       await db.insert(visits).values({
         showId: show.id,
         visitorId,
         kind: 'scan',
         day,
+        qrCodeId,
+        createdAt: now,
       })
       return { status: 200, body: { ok: true, counted: true, duplicate: false } }
     } catch {
@@ -639,6 +653,7 @@ export async function recordVisit(
     kind: 'view',
     day,
     workId: resolvedWorkId,
+    createdAt: now,
   })
   return { status: 200, body: { ok: true, counted: true, duplicate: false } }
 }

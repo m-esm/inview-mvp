@@ -1,5 +1,6 @@
 import seedJson from '../data/o-gallery-seed.json'
 import { leadBody } from './consent'
+import { QR_CODE_PATTERN, tehranDay } from './tehran-day'
 
 export type PilotStatus = 'available' | 'reserved' | 'sold'
 
@@ -111,13 +112,13 @@ export function pick(lang: 'en' | 'fa', en: string, fa: string) {
 }
 
 export async function fetchPilot(): Promise<{ record: PilotRecord }> {
-  const res = await fetch('/api/pilot', { cache: 'no-store' })
+  const res = await fetch('/api/v1/pilot', { cache: 'no-store' })
   if (!res.ok) throw new Error('The gallery record did not load.')
   return res.json()
 }
 
 export async function fetchStaff(): Promise<StaffReport> {
-  const res = await fetch('/api/pilot/staff', { cache: 'no-store' })
+  const res = await fetch('/api/v1/pilot/staff', { cache: 'no-store' })
   const data = (await res.json().catch(() => ({}))) as { error?: string }
   if (!res.ok) throw new Error(data.error || 'The visit report did not load.')
   return data as StaffReport
@@ -129,8 +130,8 @@ function readBody(res: Response) {
   return res.text().then(() => res)
 }
 
-export function recordLandingScan() {
-  const day = new Date().toISOString().slice(0, 10)
+export function recordLandingScan(qrCode?: string | null) {
+  const day = tehranDay()
   const localKey = `inview-o-scan-${day}`
   try {
     if (localStorage.getItem(localKey) === '1') return
@@ -138,10 +139,15 @@ export function recordLandingScan() {
   const mark = `scan:${day}:${getVisitorId()}`
   if (sent.has(mark)) return
   sent.add(mark)
-  void fetch('/api/pilot', {
+  void fetch('/api/v1/pilot', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ op: 'visit', kind: 'scan', visitorId: getVisitorId() }),
+    body: JSON.stringify({
+      op: 'visit',
+      kind: 'scan',
+      visitorId: getVisitorId(),
+      qrCode: qrCode && QR_CODE_PATTERN.test(qrCode) ? qrCode : undefined,
+    }),
   }).then(readBody).then((res) => {
     if (!res.ok) throw new Error('scan failed')
     try { localStorage.setItem(localKey, '1') } catch { /* server still dedupes */ }
@@ -152,7 +158,7 @@ export function recordWorkView(workId: string) {
   const mark = `view:${workId}:${Math.floor(Date.now() / 500)}`
   if (sent.has(mark)) return
   sent.add(mark)
-  void fetch('/api/pilot', {
+  void fetch('/api/v1/pilot', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ op: 'visit', kind: 'view', visitorId: getVisitorId(), workId }),
@@ -163,7 +169,7 @@ export function reportLead(phone: string, kind: 'save' | 'ask' | 'follow' | 'sta
   if (kind !== 'save' && kind !== 'ask') return
   if (!workId) return
   if (!window.location.pathname.startsWith('/g/o-gallery')) return
-  void fetch('/api/pilot', {
+  void fetch('/api/v1/pilot', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(leadBody({ phone, kind, workId, visitorId: getVisitorId() })),

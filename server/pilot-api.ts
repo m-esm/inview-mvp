@@ -29,6 +29,7 @@ export async function handlePilotApi(
     visitorId?: string
     phone?: string
     workId?: string | null
+    qrCode?: string | null
     consent?: unknown
     consentTextVersion?: unknown
   }
@@ -36,7 +37,7 @@ export async function handlePilotApi(
     if (payload.kind !== 'scan' && payload.kind !== 'view') {
       return { status: 400, body: { error: 'Unknown visit kind.' } }
     }
-    return recordVisit(db, payload.kind, String(payload.visitorId || ''), payload.workId)
+    return recordVisit(db, payload.kind, String(payload.visitorId || ''), payload.workId, payload.qrCode)
   }
   if (payload.op === 'lead') {
     if (payload.kind !== 'save' && payload.kind !== 'ask') {

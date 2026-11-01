@@ -79,10 +79,10 @@ for (const viewport of viewports) {
     test('visitor scans, opens a work, saves and asks', async ({ page }) => {
       let scanFinished = false
       page.on('requestfinished', (request) => {
-        if (request.method() === 'POST' && request.url().includes('/api/pilot')) scanFinished = true
+        if (request.method() === 'POST' && request.url().includes('/api/v1/pilot')) scanFinished = true
       })
       const scan = page.waitForResponse(
-        (response) => response.url().includes('/api/pilot') && response.request().method() === 'POST',
+        (response) => response.url().includes('/api/v1/pilot') && response.request().method() === 'POST',
         { timeout: 8_000 },
       )
       await page.goto('/g/o-gallery')
@@ -106,7 +106,7 @@ for (const viewport of viewports) {
 
       const ask = page.waitForResponse(
         (response) =>
-          response.url().includes('/api/pilot') &&
+          response.url().includes('/api/v1/pilot') &&
           response.request().method() === 'POST' &&
           (response.request().postData() || '').includes('"kind":"ask"'),
       )
