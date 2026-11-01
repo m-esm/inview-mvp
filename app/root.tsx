@@ -10,6 +10,7 @@ import {
 } from 'react-router'
 import type { Route } from './+types/root'
 import { useT } from './lib/i18n'
+import { metaCopy } from './lib/meta'
 import { dirFor, resolveLang } from './lib/lang'
 import { ServiceWorker } from './components/ServiceWorker'
 import '@fontsource/fraunces/400.css'
@@ -30,9 +31,15 @@ export const links: Route.LinksFunction = () => [
 ]
 
 export function loader({ request }: Route.LoaderArgs) {
-  const { pathname } = new URL(request.url)
-  const lang = resolveLang(pathname, request.headers.get('cookie'))
-  return { lang, dir: dirFor(lang) }
+  const url = new URL(request.url)
+  const lang = resolveLang(url.pathname, request.headers.get('cookie'))
+  const origin = (process.env.PUBLIC_APP_URL || url.origin).replace(/\/$/, '')
+  return { lang, dir: dirFor(lang), origin }
+}
+
+export const meta: Route.MetaFunction = ({ data }) => {
+  const words = metaCopy(data?.lang ?? 'en')
+  return [{ title: words.site }, { name: 'description', content: words.tagline }]
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -41,10 +48,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <html lang={data?.lang ?? 'en'} dir={data?.dir ?? 'ltr'}>
       <head>
         <meta charSet="utf-8" />
-        <title>Inview</title>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="theme-color" content="#17332E" />
-        <meta name="description" content="Inview: the show, the works and the prices, in your pocket." />
         <Meta />
         <Links />
       </head>

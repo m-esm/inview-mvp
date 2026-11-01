@@ -59,7 +59,7 @@ export default function Profile() {
       </div>
       <section className="panel">
         <div className="row between"><h2 className="panel-title">{t.passport}</h2><span className="muted small">{n(filled)} / {n(passportGoal)}</span></div>
-        <div className="progress" role="progressbar" aria-valuenow={filled} aria-valuemin={0} aria-valuemax={passportGoal}>
+        <div className="progress" role="progressbar" aria-label={t.passport} aria-valuenow={filled} aria-valuemin={0} aria-valuemax={passportGoal}>
           <span style={{ width: `${(filled / passportGoal) * 100}%` }} />
         </div>
         <ul className="stamps" role="list">

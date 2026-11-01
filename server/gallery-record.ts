@@ -22,16 +22,25 @@ import type { ObjectStorage } from './storage'
 const SAMPLE_RE = /sample|نمونه/i
 const O_SLUG = 'o-gallery'
 
+export interface WorkImageSet {
+  webp: string
+  jpeg: string
+}
+
 export interface GalleryWorkDto {
   id: string
   artist: string
+  artistFa: string
   title: string
+  titleFa: string
   medium: string
+  mediumFa: string
   size: string
   year: string
   price: number | null
   status: 'available' | 'reserved' | 'sold'
   image: string
+  imageSet?: WorkImageSet | null
   sample: boolean
 }
 
@@ -51,6 +60,8 @@ export interface GalleryRecordDto {
   text: string
   textFa: string
   pdfUrl: string | null
+  startsOn: string | null
+  endsOn: string | null
   works: GalleryWorkDto[]
   updatedAt?: string
 }
@@ -196,6 +207,39 @@ async function logoUrl(db: Db, logoMediaId: string | null): Promise<string | nul
   return displayVariant(row.variants)
 }
 
+const VARIANT_NAME = /\/w(\d+)\.(webp|jpeg)$/
+
+function srcsetOf(entries: Array<[number, string]>): string {
+  return entries
+    .sort((a, b) => a[0] - b[0])
+    .map(([width, url]) => `${url} ${width}w`)
+    .join(', ')
+}
+
+export function imageSetFor(image: string, variants: Record<string, string> | null | undefined): WorkImageSet | null {
+  if (!image) return null
+  const webp: Array<[number, string]> = []
+  const jpeg: Array<[number, string]> = []
+  if (variants && Object.keys(variants).length > 0) {
+    for (const [name, url] of Object.entries(variants)) {
+      const match = /^w(\d+)\.(webp|jpeg)$/.exec(name)
+      if (!match) continue
+      ;(match[2] === 'webp' ? webp : jpeg).push([Number(match[1]), url])
+    }
+  } else {
+    const match = VARIANT_NAME.exec(image)
+    if (!match) return null
+    const base = image.slice(0, match.index)
+    const own = Number(match[1])
+    for (const width of new Set([...[320, 640, 1280].filter((value) => value < own), own])) {
+      webp.push([width, `${base}/w${width}.webp`])
+      jpeg.push([width, `${base}/w${width}.jpeg`])
+    }
+  }
+  if (webp.length === 0 && jpeg.length === 0) return null
+  return { webp: srcsetOf(webp), jpeg: srcsetOf(jpeg) }
+}
+
 async function readRecord(
   db: Db,
   gallery: { nameEn: string; nameFa: string; logoMediaId: string | null },
@@ -211,6 +255,8 @@ async function readRecord(
     textEn: string
     textFa: string
     pdfUrl: string | null
+    startsOn?: string | null
+    endsOn?: string | null
     updatedAt: Date
     id: string
   },
@@ -218,25 +264,32 @@ async function readRecord(
   const linked = await db
     .select({
       work: works,
-      sortOrder: showWorks.sortOrder,
+      variants: media.variants,
     })
     .from(showWorks)
     .innerJoin(works, eq(showWorks.workId, works.id))
+    .leftJoin(media, eq(works.mediaId, media.id))
     .where(eq(showWorks.showId, show.id))
     .orderBy(asc(showWorks.sortOrder))
 
-  const workDtos: GalleryWorkDto[] = linked.map((row: { work: typeof works.$inferSelect }) => ({
-    id: row.work.id,
-    artist: row.work.artist,
-    title: row.work.title,
-    medium: row.work.medium,
-    size: row.work.size,
-    year: row.work.year,
-    price: row.work.priceToman,
-    status: row.work.status,
-    image: row.work.imageUrl || '',
-    sample: row.work.sample,
-  }))
+  const workDtos: GalleryWorkDto[] = linked.map(
+    (row: { work: typeof works.$inferSelect; variants: Record<string, string> | null }) => ({
+      id: row.work.id,
+      artist: row.work.artist,
+      artistFa: row.work.artistFa,
+      title: row.work.title,
+      titleFa: row.work.titleFa,
+      medium: row.work.medium,
+      mediumFa: row.work.mediumFa,
+      size: row.work.size,
+      year: row.work.year,
+      price: row.work.priceToman,
+      status: row.work.status,
+      image: row.work.imageUrl || '',
+      imageSet: imageSetFor(row.work.imageUrl || '', row.variants),
+      sample: row.work.sample,
+    }),
+  )
 
   return {
     slug: 'o-gallery',
@@ -254,6 +307,8 @@ async function readRecord(
     text: show.textEn,
     textFa: show.textFa,
     pdfUrl: show.pdfUrl,
+    startsOn: show.startsOn ?? null,
+    endsOn: show.endsOn ?? null,
     works: workDtos,
     updatedAt: show.updatedAt.toISOString(),
   }
@@ -341,8 +396,35 @@ async function readWorkStats(db: Db, galleryId: string, showId: string): Promise
     .sort((a, b) => b.views + b.saves + b.asks - (a.views + a.saves + a.asks))
 }
 
+const publicRecordCache = new WeakMap<object, { stamp: string; value: { record: GalleryRecordDto } }>()
+
+export function clearPublicRecordCache(db: Db) {
+  publicRecordCache.delete(db)
+}
+
+async function recordStamp(db: Db): Promise<string | null> {
+  const [row] = await db
+    .select({ gallery: galleries.updatedAt, show: shows.updatedAt, showId: shows.id })
+    .from(galleries)
+    .innerJoin(shows, eq(shows.galleryId, galleries.id))
+    .where(eq(galleries.slug, O_SLUG))
+    .orderBy(desc(shows.updatedAt))
+    .limit(1)
+  if (!row) return null
+  return `${row.showId}:${new Date(row.gallery).getTime()}:${new Date(row.show).getTime()}`
+}
+
 /** Public catalogue only. This function does not read visits or leads. */
 export async function loadPublicRecord(db: Db): Promise<{ record: GalleryRecordDto }> {
+  const stamp = await recordStamp(db)
+  const cached = publicRecordCache.get(db)
+  if (stamp && cached && cached.stamp === stamp) return cached.value
+  const value = await readPublicRecord(db)
+  if (stamp) publicRecordCache.set(db, { stamp, value })
+  return value
+}
+
+async function readPublicRecord(db: Db): Promise<{ record: GalleryRecordDto }> {
   const { gallery, show } = await ensureOGalleryTenant(db)
   return { record: await readRecord(db, gallery, show) }
 }
@@ -426,8 +508,11 @@ function sanitizeRecord(
       id,
       sample,
       artist: text(work.artist, 80),
+      artistFa: text(work.artistFa, 80),
       title,
+      titleFa: text(work.titleFa, 120),
       medium: text(work.medium, 80),
+      mediumFa: text(work.mediumFa, 80),
       size: text(work.size, 80),
       year: text(work.year, 20),
       price,
@@ -471,9 +556,16 @@ function sanitizeRecord(
       text: text(body.text, 2000),
       textFa: text(body.textFa, 2000),
       pdfUrl,
+      startsOn: dayOrNull(body.startsOn),
+      endsOn: dayOrNull(body.endsOn),
       works: worksOut,
     },
   }
+}
+
+function dayOrNull(value: unknown): string | null {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null
+  return Number.isNaN(new Date(`${value}T00:00:00Z`).getTime()) ? null : value
 }
 
 const OWN_IMAGE_ERROR = 'Use an image you upload. Do not use another gallery’s images.'
@@ -630,6 +722,8 @@ async function writeGalleryRecord(
           textEn: cleaned.record.text,
           textFa: cleaned.record.textFa,
           pdfUrl: cleaned.record.pdfUrl,
+          startsOn: cleaned.record.startsOn,
+          endsOn: cleaned.record.endsOn,
           updatedAt: new Date(),
         })
         .where(eq(shows.id, show.id))
@@ -651,8 +745,11 @@ async function writeGalleryRecord(
         const values = {
           galleryId: gallery.id,
           artist: item.work.artist,
+          artistFa: item.work.artistFa,
           title: item.work.title,
+          titleFa: item.work.titleFa,
           medium: item.work.medium,
+          mediumFa: item.work.mediumFa,
           size: item.work.size,
           year: item.work.year,
           priceToman: item.work.price,
@@ -677,6 +774,7 @@ async function writeGalleryRecord(
       }
     })
 
+    clearPublicRecordCache(db)
     const published = await loadPublicRecord(db)
     return { status: 200, body: { ok: true, record: published.record } }
   } catch (error) {

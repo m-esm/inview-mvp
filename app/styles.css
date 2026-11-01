@@ -62,6 +62,7 @@ body {
   text-rendering: optimizeLegibility;
 }
 img { display: block; max-width: 100%; height: auto; }
+picture { display: contents; }
 a { color: var(--pine); }
 button { font: inherit; color: inherit; cursor: pointer; background: none; }
 :focus-visible {
@@ -1998,3 +1999,93 @@ td {
 }
 .plan ul { padding-inline-start: 18px; margin: 10px 0 14px; font-size: 14px; line-height: 1.6; flex: 1; }
 .compare { min-width: 640px; }
+
+/* ---------- O Gallery hero, filters, artists ---------- */
+.o-cover {
+  margin: 0 var(--space-5) var(--space-5);
+  position: relative;
+  background: var(--field);
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+}
+.o-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.o-cover figcaption {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-6) var(--space-4) var(--space-3);
+  color: var(--surface);
+  background: linear-gradient(180deg, rgba(18, 23, 20, 0), rgba(18, 23, 20, 0.72));
+  font-family: var(--serif);
+  font-size: 1.05rem;
+}
+.visitor.fa .o-cover figcaption { font-family: var(--fa); }
+.o-cover-meta {
+  font-family: var(--sans);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.86;
+}
+.visitor.fa .o-cover-meta { font-family: var(--fa); letter-spacing: 0; text-transform: none; }
+.o-no-match {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding-block: var(--space-4) var(--space-6);
+}
+.o-no-match p { margin: 0; }
+.artist-list {
+  list-style: none;
+  margin: var(--space-3) 0 var(--space-5);
+  padding: 0;
+  border-block: 1px solid var(--line);
+}
+.artist-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-4);
+  padding: 12px 0;
+  font-family: var(--serif);
+  font-size: 1.15rem;
+}
+.visitor.fa .artist-list li { font-family: var(--fa); font-size: 1rem; }
+.artist-list li + li { border-top: 1px solid var(--line); }
+.artist-list .muted { font-family: var(--sans); white-space: nowrap; }
+.visitor.fa .artist-list .muted { font-family: var(--fa); }
+.pl-price .status { font-weight: 400; font-size: 12px; }
+
+@media (min-width: 960px) {
+  .o-cover {
+    margin: 0;
+    aspect-ratio: auto;
+    min-height: 100%;
+  }
+  .o-cover figcaption {
+    padding: var(--space-7) clamp(28px, 4vw, 56px) clamp(24px, 3vw, 40px);
+    font-size: clamp(1.25rem, 2vw, 1.75rem);
+  }
+  .work:has(.work-figure) .work-figure {
+    grid-row: span 3;
+    position: sticky;
+    top: 0;
+  }
+  .work:has(.work-figure) .wall-label,
+  .work:has(.work-figure) .actions {
+    grid-column: 2;
+  }
+  .work:not(:has(.work-figure)) {
+    grid-template-columns: minmax(0, 42rem);
+    justify-content: center;
+  }
+}

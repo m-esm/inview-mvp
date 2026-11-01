@@ -14,8 +14,11 @@ import { ensureOGalleryTenant } from '../server/gallery-record'
 export interface SeedWork {
   id: string
   title: string
+  titleFa?: string
   artist?: string
+  artistFa?: string
   medium?: string
+  mediumFa?: string
   size?: string
   year?: string
   price?: number | null
@@ -38,6 +41,8 @@ export interface SeedRecord {
   text?: string
   textFa?: string
   pdfUrl?: string | null
+  startsOn?: string | null
+  endsOn?: string | null
   works?: SeedWork[]
 }
 
@@ -76,6 +81,8 @@ export async function seedCatalogue(record: SeedRecord): Promise<void> {
         textEn: record.text ?? '',
         textFa: record.textFa ?? '',
         pdfUrl: record.pdfUrl ?? null,
+        startsOn: record.startsOn ?? null,
+        endsOn: record.endsOn ?? null,
         updatedAt: now,
       })
       .where(eq(schema.shows.id, show.id))
@@ -88,8 +95,11 @@ export async function seedCatalogue(record: SeedRecord): Promise<void> {
         id: work.id,
         galleryId: gallery.id,
         artist: work.artist ?? '',
+        artistFa: work.artistFa ?? '',
         title: work.title,
+        titleFa: work.titleFa ?? '',
         medium: work.medium ?? '',
+        mediumFa: work.mediumFa ?? '',
         size: work.size ?? '',
         year: work.year ?? '',
         priceToman: work.price ?? null,

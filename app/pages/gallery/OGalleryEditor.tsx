@@ -368,9 +368,12 @@ export default function OGalleryEditor({ initialRecord }: { initialRecord: Pilot
                       onError={setError}
                     />
                     <div className="editor-grid">
-                      <label>{t.title}<input dir="auto" value={work.title} onChange={(e) => updateWork(work.id, { title: e.target.value })} /></label>
-                      <label>{t.artist}<input dir="auto" value={work.artist} onChange={(e) => updateWork(work.id, { artist: e.target.value })} /></label>
-                      <label>{t.medium}<input dir="auto" value={work.medium} onChange={(e) => updateWork(work.id, { medium: e.target.value })} /></label>
+                      <label>{t.title}<input dir="ltr" value={work.title} onChange={(e) => updateWork(work.id, { title: e.target.value })} /></label>
+                      <label>{t.titleFa}<input dir="rtl" value={work.titleFa ?? ''} onChange={(e) => updateWork(work.id, { titleFa: e.target.value })} /></label>
+                      <label>{t.artist}<input dir="ltr" value={work.artist} onChange={(e) => updateWork(work.id, { artist: e.target.value })} /></label>
+                      <label>{t.artistFa}<input dir="rtl" value={work.artistFa ?? ''} onChange={(e) => updateWork(work.id, { artistFa: e.target.value })} /></label>
+                      <label>{t.medium}<input dir="ltr" value={work.medium} onChange={(e) => updateWork(work.id, { medium: e.target.value })} /></label>
+                      <label>{t.mediumFa}<input dir="rtl" value={work.mediumFa ?? ''} onChange={(e) => updateWork(work.id, { mediumFa: e.target.value })} /></label>
                       <label>{t.size}<input dir="auto" value={work.size} onChange={(e) => updateWork(work.id, { size: e.target.value })} /></label>
                       <label>{t.year}<input dir="auto" value={work.year} onChange={(e) => updateWork(work.id, { year: e.target.value })} /></label>
                       <label htmlFor={priceId}>{t.price}
