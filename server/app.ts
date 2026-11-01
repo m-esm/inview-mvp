@@ -4,7 +4,7 @@ import type { ErrorRequestHandler } from 'express'
 import 'react-router'
 import { closeDatabase, createDatabase } from '../database/client'
 import { DatabaseContext } from '../database/context'
-import { resolveOGalleryAccessCode, syncOGalleryAccessCode } from './gallery-record'
+import { syncOGalleryAccessCode } from './gallery-bootstrap'
 import { clientKey, JSON_LIMIT, mountApi } from './api-app'
 import { metricsText, recordStatus } from './metrics'
 import { contentSecurityPolicy } from './csp'
@@ -24,8 +24,6 @@ app.disable('x-powered-by')
 
 const databaseUrl = process.env.DATABASE_URL
 if (!databaseUrl) throw new Error('DATABASE_URL is required')
-
-resolveOGalleryAccessCode()
 
 const db = createDatabase(databaseUrl)
 const storage = createObjectStorage()

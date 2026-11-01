@@ -12,7 +12,8 @@ import request from 'supertest'
 import { CONSENT_TEXT_VERSION } from '../app/lib/consent.ts'
 import { leads, visits, works } from '../database/schema.ts'
 import { createApiApp } from './api-app.ts'
-import { ensureOGalleryTenant, tehranDate } from './gallery-record.ts'
+import { ensureOGalleryTenant } from './gallery-bootstrap.ts'
+import { tehranDate } from './gallery-record.ts'
 import { STAFF_COOKIE, signInWithAccessCode } from './staff-session.ts'
 import { createTestDb } from './test-db.ts'
 
@@ -20,9 +21,10 @@ type TestDb = Awaited<ReturnType<typeof createTestDb>>
 
 async function withStaff(fn: (args: { app: ReturnType<typeof createApiApp>; db: TestDb['db']; mediaRoot: string; cookie: string }) => Promise<void>) {
   const testDb = await createTestDb()
+  await ensureOGalleryTenant(testDb.db)
   const app = createApiApp(testDb.db, testDb.storage)
   try {
-    const session = await signInWithAccessCode(testDb.db, 'inview')
+    const session = await signInWithAccessCode(testDb.db, 'inview', 'o-gallery')
     assert.ok(session)
     await fn({ app, db: testDb.db, mediaRoot: testDb.mediaRoot, cookie: `${STAFF_COOKIE}=${encodeURIComponent(session.token)}` })
   } finally {

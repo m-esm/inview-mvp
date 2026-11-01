@@ -1,3 +1,4 @@
+import { O_SLUG } from '../../lib/galleries'
 import { Link } from 'react-router'
 import { StaffLangSwitch } from '../../components/StaffLangSwitch'
 import { useStaffT } from '../../lib/i18n-staff'
@@ -17,7 +18,7 @@ export function OGalleryStaffLayout({ children }: { children: React.ReactNode })
         <nav className="staff-nav" aria-label={t.staffNav}>
           <a href="#report">{t.navReport}</a>
           <a href="#catalogue">{t.navEditor}</a>
-          <Link to="/g/o-gallery" target="_blank" rel="noopener">{t.viewLive}</Link>
+          <Link to={`/g/${O_SLUG}`} target="_blank" rel="noopener">{t.viewLive}</Link>
         </nav>
         <div className="staff-tools">
           <StaffLangSwitch />

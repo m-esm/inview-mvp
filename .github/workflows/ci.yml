@@ -43,6 +43,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
+      - run: npm run check:tenants
       - run: npm test
       - name: Server coverage
         run: |

@@ -1,7 +1,7 @@
 import express from 'express'
 import type { ErrorRequestHandler, Express, Request } from 'express'
 import { media } from '../database/schema'
-import { leadsCsvForSession } from './gallery-record'
+import { leadsCsvForSession, tenantById } from './gallery-record'
 import { displayVariant, processAndStoreImage, UploadError } from './images'
 import { beginUpload, clientIpFrom, runPilotRequest, runStaffRequest, writeApiResult } from './rate-limit'
 import { readStaffSession, requestIsSecure } from './staff-session'
@@ -196,7 +196,7 @@ export function mountApi(app: Express, db: Db, storage: ObjectStorage) {
       }
       const day = new Date().toISOString().slice(0, 10)
       res.setHeader('Content-Type', 'text/csv; charset=utf-8')
-      res.setHeader('Content-Disposition', `attachment; filename="o-gallery-leads-${day}.csv"`)
+      res.setHeader('Content-Disposition', `attachment; filename="${(await tenantById(db, sessionId))!.gallery.slug}-leads-${day}.csv"`)
       res.status(200).send(result.body)
     } catch (error) {
       console.error(error)
@@ -222,7 +222,7 @@ export function mountApi(app: Express, db: Db, storage: ObjectStorage) {
         sendJson(res, 400, UPLOAD_MISSING)
         return
       }
-      const processed = await processAndStoreImage(storage, 'o-gallery', upload.file)
+      const processed = await processAndStoreImage(storage, gate.gallerySlug, upload.file)
       const [row] = await db
         .insert(media)
         .values({

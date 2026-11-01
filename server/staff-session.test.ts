@@ -1,3 +1,4 @@
+import { ensureOGalleryTenant } from './gallery-bootstrap.ts'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { PGlite } from '@electric-sql/pglite'
@@ -10,7 +11,8 @@ import fs from 'node:fs'
 import * as schema from '../database/schema.ts'
 import { sessions } from '../database/schema.ts'
 import { sha256 } from './crypto.ts'
-import { resolveOGalleryAccessCode, publishGalleryRecordForSession, readStaffReportForSession } from './gallery-record.ts'
+import { resolveOGalleryAccessCode } from './gallery-bootstrap.ts'
+import { publishGalleryRecordForSession, readStaffReportForSession } from './gallery-record.ts'
 import { handlePilotApi } from './pilot-api.ts'
 import { LocalObjectStorage } from './storage.ts'
 import {
@@ -36,6 +38,7 @@ async function setup() {
     }
   }
   const db = drizzle(client, { schema })
+  await ensureOGalleryTenant(db)
   const mediaRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'inview-media-'))
   const storage = new LocalObjectStorage(mediaRoot)
   return { client, db, storage, mediaRoot }
@@ -49,7 +52,7 @@ test('sign-in stores only the token hash and sets an httpOnly cookie', async () 
   const { client, db, mediaRoot } = await setup()
   try {
     const code = resolveOGalleryAccessCode({ NODE_ENV: 'test' })
-    const created = await signInWithAccessCode(db, code)
+    const created = await signInWithAccessCode(db, code, 'o-gallery')
     assert.ok(created)
     const [row] = await db.select().from(sessions)
     assert.equal(row.userId, null)
@@ -59,7 +62,7 @@ test('sign-in stores only the token hash and sets an httpOnly cookie', async () 
     assert.equal(JSON.stringify(row).includes(created.token), false)
     assert.equal(JSON.stringify(row).includes(code), false)
 
-    const result = await completeSignIn(db, code, true)
+    const result = await completeSignIn(db, code, true, 'o-gallery')
     assert.equal(result.ok, true)
     if (!result.ok) return
     assert.match(result.cookie, /HttpOnly/)
@@ -69,7 +72,7 @@ test('sign-in stores only the token hash and sets an httpOnly cookie', async () 
     assert.equal(cookieValue === code, false)
     assert.equal(result.location, '/dashboard/o-gallery')
 
-    const open = await completeSignIn(db, code, false)
+    const open = await completeSignIn(db, code, false, 'o-gallery')
     assert.equal(open.ok, true)
     if (!open.ok) return
     assert.match(open.cookie, /HttpOnly/)
@@ -84,7 +87,7 @@ test('sign-in stores only the token hash and sets an httpOnly cookie', async () 
 test('a wrong access code does not create a session', async () => {
   const { client, db, mediaRoot } = await setup()
   try {
-    const denied = await completeSignIn(db, 'not-the-code', true)
+    const denied = await completeSignIn(db, 'not-the-code', true, 'o-gallery')
     assert.equal(denied.ok, false)
     if (denied.ok) return
     assert.equal(denied.error, 'That access code does not match.')
@@ -100,7 +103,7 @@ test('an expired session is deleted and does not open the editor', async () => {
   const { client, db, mediaRoot } = await setup()
   try {
     const code = resolveOGalleryAccessCode({ NODE_ENV: 'test' })
-    const created = await signInWithAccessCode(db, code)
+    const created = await signInWithAccessCode(db, code, 'o-gallery')
     assert.ok(created)
     await db
       .update(sessions)
@@ -124,7 +127,7 @@ test('sign-out deletes the session and clears the cookie', async () => {
   const { client, db, mediaRoot } = await setup()
   try {
     const code = resolveOGalleryAccessCode({ NODE_ENV: 'test' })
-    const created = await signInWithAccessCode(db, code)
+    const created = await signInWithAccessCode(db, code, 'o-gallery')
     assert.ok(created)
     const ended = await completeSignOut(db, cookieHeader(created.token), true)
     assert.equal(ended.location, '/dashboard/sign-in')
@@ -146,7 +149,7 @@ test('a staff session can publish and read the report without sending the access
   const { client, db, storage, mediaRoot } = await setup()
   try {
     const code = resolveOGalleryAccessCode({ NODE_ENV: 'test' })
-    const created = await signInWithAccessCode(db, code)
+    const created = await signInWithAccessCode(db, code, 'o-gallery')
     assert.ok(created)
     const session = await readStaffSession(db, cookieHeader(created.token))
     assert.ok(session)

@@ -53,6 +53,7 @@ export const galleries = pgTable(
     logoMediaId: uuid('logo_media_id'),
     accessCodeHash: text('access_code_hash'),
     status: galleryStatusEnum('status').notNull().default('live'),
+    isDemo: boolean('is_demo').notNull().default(false),
     notes: text('notes').notNull().default(''),
     sharedCodeEnabled: boolean('shared_code_enabled').notNull().default(true),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
