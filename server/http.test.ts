@@ -288,7 +288,29 @@ test('uploads require the access code and store a PNG', async () => {
     })
     assert.equal(saved.status, 201)
     assert.equal(typeof saved.body.id, 'string')
-    assert.match(saved.body.url, /^\/media\/galleries\/o-gallery\//)
+    assert.match(saved.body.url, /^\/media\/u\/galleries\/o-gallery\//)
+
+    const first = await api.get('/api/v1/pilot')
+    const published = await api.put('/api/v1/pilot').send({
+      accessCode: 'inview',
+      record: {
+        ...first.body.record,
+        works: [sampleWork({ title: 'Uploaded work', sample: false, image: saved.body.url })],
+      },
+    })
+    assert.equal(published.status, 200)
+    assert.equal(published.body.record.works[0].image, saved.body.url)
+
+    const foreign = await api.put('/api/v1/pilot').send({
+      accessCode: 'inview',
+      record: {
+        ...published.body.record,
+        works: [sampleWork({ title: 'Foreign file', sample: false, image: '/media/u/galleries/other-gallery/file/original.jpg' })],
+      },
+    })
+    assert.equal(foreign.status, 400)
+    const after = await api.get('/api/v1/pilot')
+    assert.equal(after.body.record.works[0].image, saved.body.url)
   })
 })
 

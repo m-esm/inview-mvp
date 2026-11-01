@@ -360,10 +360,17 @@ function sanitizeRecord(
 
 const OWN_IMAGE_ERROR = 'Use an image you upload. Do not use another gallery’s images.'
 
+function isOwnGalleryMedia(image: string, gallerySlug: string): boolean {
+  return (
+    image.startsWith(`/media/galleries/${gallerySlug}/`) ||
+    image.startsWith(`/media/u/galleries/${gallerySlug}/`)
+  )
+}
+
 function isForeignImage(image: string, gallerySlug: string): boolean {
   if (image.startsWith('/artworks/') || image.startsWith('http://') || image.startsWith('https://')) return true
   if (!image.startsWith('/media/')) return false
-  return !image.startsWith(`/media/galleries/${gallerySlug}/`)
+  return !isOwnGalleryMedia(image, gallerySlug)
 }
 
 async function resolveImageUrl(
@@ -452,7 +459,7 @@ export async function publishGalleryRecord(
       if (isForeignImage(work.image, gallery.slug)) {
         return { status: 400, body: { error: OWN_IMAGE_ERROR } }
       }
-      if (work.image.startsWith(`/media/galleries/${gallery.slug}/`)) {
+      if (isOwnGalleryMedia(work.image, gallery.slug)) {
         prepared.push({ work, imageUrl: work.image, mediaId: null })
         continue
       }
