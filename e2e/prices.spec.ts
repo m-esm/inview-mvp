@@ -109,7 +109,7 @@ for (const width of [390, 1440]) {
 
           await expect(page.locator('.pl-amount', { hasText: lang === 'fa' ? 'قیمت با تماس' : 'Price on request' }).first()).toBeVisible()
           const bottomNav = page.locator('.v-tabs')
-          await expect(bottomNav.locator('a')).toHaveCount(4)
+          await expect(bottomNav.locator('a')).toHaveCount(5)
           await expect(bottomNav.locator('[aria-current="page"]')).toHaveCount(1)
           await expect(bottomNav.locator('[aria-current="page"]')).toHaveAttribute('href', `/g/${slug}/prices`)
           expect(await bottomNav.locator('a').evaluateAll((links) => links.map((link) => link.getAttribute('href')))).toEqual(
