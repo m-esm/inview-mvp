@@ -34,6 +34,25 @@ const viewports = [
 
 const langs = ['fa', 'en'] as const
 
+test.describe('visual landing', () => {
+  for (const vp of viewports) {
+    for (const lang of langs) {
+      test(`landing ${vp.name} ${lang}`, async ({ page }) => {
+        await page.setViewportSize({ width: vp.width, height: vp.height })
+        await seedLang(page, lang)
+        await page.goto('/', { waitUntil: 'load' })
+        await page.evaluate(() => document.fonts.ready)
+        await expect(page.locator('.landing')).toBeVisible()
+        await expect(page).toHaveScreenshot(`landing-${vp.name}-${lang}.png`, {
+          animations: 'disabled',
+          fullPage: true,
+          maxDiffPixelRatio: 0.03,
+        })
+      })
+    }
+  }
+})
+
 // The server reads the language from this cookie before it renders the page.
 async function seedLang(page: Page, lang: 'fa' | 'en') {
   await page.context().addCookies([{ name: 'inview-lang', value: lang, url: baseURL }])

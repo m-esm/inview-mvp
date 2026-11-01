@@ -17,7 +17,7 @@ export function isStaffPath(pathname: string): boolean {
 }
 
 export function defaultLang(pathname: string): Lang {
-  return PERSIAN_FIRST.some((base) => underPath(pathname, base)) ? 'fa' : 'en'
+  return pathname === '/' || PERSIAN_FIRST.some((base) => underPath(pathname, base)) ? 'fa' : 'en'
 }
 
 export function readLangCookie(header: string | null | undefined): Lang | null {

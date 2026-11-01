@@ -14,6 +14,7 @@ const catalogue = (
 ).record
 
 const publicRoutes = [
+  '/',
   '/g/o-gallery',
   '/g/o-gallery/works',
   '/g/o-gallery/works/vis-work-01',
