@@ -202,8 +202,11 @@ export default function OGalleryEditor({ initialRecord }: { initialRecord: Pilot
                   <legend>{work.title || 'Work'}</legend>
                   <div className="editor-grid">
                     <label>Artist<input value={work.artist} onChange={(e) => updateWork(work.id, { artist: e.target.value })} /></label>
+                    <label>Artist in Persian<input dir="rtl" value={work.artistFa ?? ''} onChange={(e) => updateWork(work.id, { artistFa: e.target.value })} /></label>
                     <label>Title<input value={work.title} onChange={(e) => updateWork(work.id, { title: e.target.value })} /></label>
+                    <label>Title in Persian<input dir="rtl" value={work.titleFa ?? ''} onChange={(e) => updateWork(work.id, { titleFa: e.target.value })} /></label>
                     <label>Medium<input value={work.medium} onChange={(e) => updateWork(work.id, { medium: e.target.value })} /></label>
+                    <label>Medium in Persian<input dir="rtl" value={work.mediumFa ?? ''} onChange={(e) => updateWork(work.id, { mediumFa: e.target.value })} /></label>
                     <label>Size<input value={work.size} onChange={(e) => updateWork(work.id, { size: e.target.value })} /></label>
                     <label>Year<input value={work.year} onChange={(e) => updateWork(work.id, { year: e.target.value })} /></label>
                     <label>Price in Toman<input inputMode="numeric" value={work.price ?? ''} onChange={(e) => {

@@ -3,16 +3,25 @@ import { leadBody } from './consent'
 
 export type PilotStatus = 'available' | 'reserved' | 'sold'
 
+export interface PilotImageSet {
+  webp: string
+  jpeg: string
+}
+
 export interface PilotWork {
   id: string
   artist: string
+  artistFa?: string
   title: string
+  titleFa?: string
   medium: string
+  mediumFa?: string
   size: string
   year: string
   price: number | null
   status: PilotStatus
   image: string
+  imageSet?: PilotImageSet | null
   sample: boolean
 }
 
@@ -32,6 +41,8 @@ export interface PilotRecord {
   text: string
   textFa: string
   pdfUrl: string | null
+  startsOn?: string | null
+  endsOn?: string | null
   works: PilotWork[]
   updatedAt?: string
 }
@@ -89,6 +100,12 @@ export function oCopy(lang: 'en' | 'fa') {
       samplesTitle: 'نمونه‌ها',
       downloadPdf: 'دریافت PDF',
       worksTitle: 'آثار',
+      filterLabel: 'وضعیت آثار',
+      filterAll: 'همه',
+      artistsTitle: 'هنرمندان',
+      worksCount: (n: string) => `${n} اثر`,
+      noMatch: 'اثری با این وضعیت نیست.',
+      showAll: 'نمایش همه آثار',
     }
   }
   return {
@@ -102,6 +119,12 @@ export function oCopy(lang: 'en' | 'fa') {
     samplesTitle: 'Samples',
     downloadPdf: 'Download PDF',
     worksTitle: 'Works',
+    filterLabel: 'Work status',
+    filterAll: 'All',
+    artistsTitle: 'Artists',
+    worksCount: (n: string) => (n === '1' ? '1 work' : `${n} works`),
+    noMatch: 'No work has this status.',
+    showAll: 'Show all works',
   }
 }
 
