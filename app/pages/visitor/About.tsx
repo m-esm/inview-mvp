@@ -1,14 +1,17 @@
 import { useEffect } from 'react'
-import { useLocation, useParams } from 'react-router'
+import { useLoaderData, useLocation, useParams } from 'react-router'
 import { OAbout } from './OGalleryPages'
 import { artworks, artists, gallery } from '../../data/gallery'
 import { useT } from '../../lib/i18n'
+import { O_SLUG } from '../../lib/galleries'
+import { seed, type GalleryPageData } from '../../lib/pilot'
 import { useVisitor, visitor } from '../../lib/store'
 import { useSignIn } from '../../components/VisitorShell'
 
 export default function About() {
   const { slug } = useParams()
-  if (slug === 'o-gallery') return <OAbout />
+  const { pilot } = useLoaderData() as GalleryPageData
+  if (slug === O_SLUG) return <OAbout record={pilot ?? seed} />
   return <RoozAbout />
 }
 

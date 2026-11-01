@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, useLoaderData, useParams } from 'react-router'
 import OGallerySite from './OGallerySite'
 import { artists, artworks, gallery, pastShows, show } from '../../data/gallery'
+import { O_SLUG } from '../../lib/galleries'
+import { seed, type GalleryPageData } from '../../lib/pilot'
 import { normalizePhone } from '../../lib/store'
 
 // The gallery's own public website. Served at roozgallery.inview.ir,
 // or at /site/rooz-gallery on any host (useful before the domain is set up).
 export default function Website() {
   const { slug } = useParams()
-  if (slug === 'o-gallery') return <OGallerySite />
+  // `/` has no slug, so it carries no pilot record and shows the demo website.
+  const { pilot } = useLoaderData() as Partial<GalleryPageData>
+  if (slug === O_SLUG) return <OGallerySite record={pilot ?? seed} />
   return <RoozWebsite />
 }
 

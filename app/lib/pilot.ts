@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react'
 import seedJson from '../data/o-gallery-seed.json'
 import { leadBody } from './consent'
 
@@ -49,6 +48,11 @@ export interface PilotLead {
 export interface StaffReport {
   visits: { scans: number; views: number }
   leads: PilotLead[]
+}
+
+/** What every `/g/:slug` and `/site/:slug` loader returns. `null` means the read failed. */
+export interface GalleryPageData {
+  pilot: PilotRecord | null
 }
 
 export const seed = seedJson as PilotRecord
@@ -117,21 +121,6 @@ export async function fetchStaff(): Promise<StaffReport> {
   const data = (await res.json().catch(() => ({}))) as { error?: string }
   if (!res.ok) throw new Error(data.error || 'The visit report did not load.')
   return data as StaffReport
-}
-
-export function usePilotRecord(enabled = true) {
-  const [record, setRecord] = useState<PilotRecord>(seed)
-  const [ready, setReady] = useState(false)
-  useEffect(() => {
-    if (!enabled) return
-    let live = true
-    fetchPilot()
-      .then((state) => { if (live && state.record) setRecord(state.record) })
-      .catch(() => {})
-      .finally(() => { if (live) setReady(true) })
-    return () => { live = false }
-  }, [enabled])
-  return { record, ready, setRecord }
 }
 
 const sent = new Set<string>()

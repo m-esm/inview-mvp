@@ -1,15 +1,17 @@
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, useLoaderData, useNavigate, useParams } from 'react-router'
 import { useState } from 'react'
 import { OWork } from './OGalleryPages'
 import { artworks, gallery } from '../../data/gallery'
 import { useT } from '../../lib/i18n'
+import type { GalleryPageData, PilotWork } from '../../lib/pilot'
 import { useVisitor, visitor } from '../../lib/store'
 import { useSignIn } from '../../components/VisitorShell'
 import { Back, Chat, Heart } from '../../components/Icons'
 
 export default function Work() {
-  const { slug } = useParams()
-  if (slug === 'o-gallery') return <OWork />
+  const { work } = useLoaderData() as GalleryPageData & { work: PilotWork | null }
+  // Only the pilot catalogue resolves a work here. The demo reads its own data.
+  if (work) return <OWork work={work} />
   return <RoozWork />
 }
 

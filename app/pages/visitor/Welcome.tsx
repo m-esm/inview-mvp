@@ -1,14 +1,17 @@
-import { Link, useParams } from 'react-router'
+import { Link, useLoaderData, useParams } from 'react-router'
 import { OWelcome } from './OGalleryPages'
 import { artworks, artists, gallery } from '../../data/gallery'
 import { useT } from '../../lib/i18n'
+import { O_SLUG } from '../../lib/galleries'
+import { seed, type GalleryPageData } from '../../lib/pilot'
 import { useVisitor, visitor } from '../../lib/store'
 import { useSignIn } from '../../components/VisitorShell'
 import { Check, Chevron } from '../../components/Icons'
 
 export default function Welcome() {
   const { slug } = useParams()
-  if (slug === 'o-gallery') return <OWelcome />
+  const { pilot } = useLoaderData() as GalleryPageData
+  if (slug === O_SLUG) return <OWelcome record={pilot ?? seed} />
   return <RoozWelcome />
 }
 

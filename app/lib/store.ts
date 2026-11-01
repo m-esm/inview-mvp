@@ -6,8 +6,6 @@ export interface VisitorState {
   saved: string[]
   follows: string[]
   stamps: string[]
-  lang: 'en' | 'fa'
-  langChosen: boolean
   consentVersion: string | null
 }
 
@@ -19,8 +17,6 @@ const empty: VisitorState = {
   saved: [],
   follows: [],
   stamps: [],
-  lang: 'en',
-  langChosen: false,
   consentVersion: null,
 }
 
@@ -75,8 +71,7 @@ export const visitor = {
   save: (id: string) => !state.saved.includes(id) && set({ saved: [...state.saved, id] }),
   toggleFollow: (artist: string) => set({ follows: toggle(state.follows, artist) }),
   stamp: (slug: string) => !state.stamps.includes(slug) && set({ stamps: [...state.stamps, slug] }),
-  setLang: (lang: 'en' | 'fa') => set({ lang, langChosen: true }),
-  reset: () => set({ ...empty, lang: state.lang, langChosen: state.langChosen }),
+  reset: () => set({ ...empty }),
 }
 
 // Iranian mobile numbers: 09xxxxxxxxx (also accepts Persian digits and +98)

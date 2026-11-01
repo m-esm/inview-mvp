@@ -2,10 +2,15 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, test, type Page } from '@playwright/test'
+import { EMPTY_CATALOGUE, seedCatalogue, type SeedRecord } from './seed-catalogue'
 
-const catalogue = JSON.parse(
-  readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'fixtures/o-gallery-catalogue.json'), 'utf8'),
-) as unknown
+const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3000'
+
+const catalogue = (
+  JSON.parse(
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'fixtures/o-gallery-catalogue.json'), 'utf8'),
+  ) as { record: SeedRecord }
+).record
 
 const emptyPages = [
   { path: '/g/o-gallery', name: 'welcome' },
@@ -29,71 +34,9 @@ const viewports = [
 
 const langs = ['fa', 'en'] as const
 
+// The server reads the language from this cookie before it renders the page.
 async function seedLang(page: Page, lang: 'fa' | 'en') {
-  await page.addInitScript((l) => {
-    try {
-      localStorage.setItem(
-        'inview-demo-v1',
-        JSON.stringify({
-          lang: l,
-          langChosen: true,
-          phone: null,
-          saved: [],
-          follows: [],
-          stamps: [],
-        }),
-      )
-    } catch {
-      /* ignore */
-    }
-  }, lang)
-}
-
-async function mockCatalogue(page: Page) {
-  await page.route('**/api/pilot**', async (route) => {
-    if (route.request().method() !== 'GET') {
-      await route.continue()
-      return
-    }
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(catalogue),
-    })
-  })
-}
-
-const emptyRecord = {
-  slug: 'o-gallery',
-  name: 'O Gallery',
-  nameFa: 'گالری اُ',
-  logo: null,
-  showTitle: '',
-  showTitleFa: '',
-  dates: '',
-  datesFa: '',
-  hours: '',
-  hoursFa: '',
-  address: '',
-  addressFa: '',
-  text: '',
-  textFa: '',
-  pdfUrl: null,
-  works: [],
-}
-
-async function mockEmpty(page: Page) {
-  await page.route('**/api/pilot**', async (route) => {
-    if (route.request().method() !== 'GET') {
-      await route.continue()
-      return
-    }
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ record: emptyRecord }),
-    })
-  })
+  await page.context().addCookies([{ name: 'inview-lang', value: lang, url: baseURL }])
 }
 
 async function shot(page: Page, name: string, vp: (typeof viewports)[number], lang: (typeof langs)[number]) {
@@ -113,7 +56,7 @@ test.describe('visual empty', () => {
         test(`${route.name} ${vp.name} ${lang}`, async ({ page }) => {
           await page.setViewportSize({ width: vp.width, height: vp.height })
           await seedLang(page, lang)
-          await mockEmpty(page)
+          await seedCatalogue(EMPTY_CATALOGUE)
           await page.goto(route.path, { waitUntil: 'load' })
           await shot(page, route.name, vp, lang)
         })
@@ -129,9 +72,8 @@ test.describe('visual filled', () => {
         test(`${route.name} ${vp.name} ${lang}`, async ({ page }) => {
           await page.setViewportSize({ width: vp.width, height: vp.height })
           await seedLang(page, lang)
-          await mockCatalogue(page)
+          await seedCatalogue(catalogue)
           await page.goto(route.path, { waitUntil: 'load' })
-          // Wait until the mocked catalogue replaces the empty seed.
           await expect(page.getByText(/Quiet Surfaces|سطح‌های آرام|Sara Emami|Morning Line/).first()).toBeVisible({
             timeout: 10_000,
           })
