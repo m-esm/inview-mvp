@@ -891,16 +891,22 @@ function csvCell(value: string): string {
   return /[",\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe
 }
 
-export async function leadsCsvForSession(db: Db, galleryId: string): Promise<{ status: 200; body: string } | { status: 401; body: { error: string } }> {
-  const tenant = await tenantById(db, galleryId)
-  if (!tenant) return { status: 401, body: { error: 'Sign in to download the leads.' } }
-  const rows = await readLeadList(db, tenant.gallery.id, 10000)
+export type LeadCsvRow = {
+  at: Date | string
+  kind: string
+  phone: string
+  workId: string | null
+  workTitle: string | null
+  consentTextVersion: string
+}
+
+export function leadsCsv(rows: LeadCsvRow[]): string {
   const lines = [CSV_HEADER.join(',')]
   for (const lead of rows) {
     const at = new Date(lead.at)
     lines.push(
       [
-        lead.at,
+        at.toISOString(),
         tehranGregorianStamp(at),
         tehranJalaliStamp(at),
         lead.kind,
@@ -914,5 +920,12 @@ export async function leadsCsvForSession(db: Db, galleryId: string): Promise<{ s
         .join(','),
     )
   }
-  return { status: 200, body: `\uFEFF${lines.join('\r\n')}\r\n` }
+  return `\uFEFF${lines.join('\r\n')}\r\n`
+}
+
+export async function leadsCsvForSession(db: Db, galleryId: string): Promise<{ status: 200; body: string } | { status: 401; body: { error: string } }> {
+  const tenant = await tenantById(db, galleryId)
+  if (!tenant) return { status: 401, body: { error: 'Sign in to download the leads.' } }
+  const rows = await readLeadList(db, tenant.gallery.id, 10000)
+  return { status: 200, body: leadsCsv(rows) }
 }
