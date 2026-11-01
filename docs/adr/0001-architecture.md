@@ -174,8 +174,12 @@ Decision: OTP codes have 6 digits. The server stores only a hash. A code is vali
 2 minutes. The server limits attempts for each phone and each IP address. In
 development, a console provider writes the code to the log. In production, the app
 uses Kavenegar when Ali gives an API key and a sender line. Until then, the pilot uses
-one access code for each gallery. This code is in a SOPS secret and the database keeps
-only its hash.
+one access code for each gallery. The code is the environment variable
+`O_GALLERY_ACCESS_CODE` in a SOPS secret. The database keeps only a scrypt hash.
+At start, the server writes a new hash when the saved hash is empty or does not match
+the code. The log does not show the code or the hash. In production, the server stops
+when the variable is missing. A development default is allowed only when `NODE_ENV`
+is not `production`.
 
 ### D11. Payments
 

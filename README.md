@@ -56,7 +56,7 @@ npm run dev
 
 Open the address it prints, usually http://localhost:3000.
 
-Default gallery access code: `inview` (change `O_GALLERY_ACCESS_CODE` before production).
+In development, the gallery access code is `inview` when `O_GALLERY_ACCESS_CODE` is not set. In production, the server stops when `O_GALLERY_ACCESS_CODE` is missing. At start, the server stores a new scrypt hash when the saved hash is empty or does not match. The log does not show the code or the hash.
 
 ## Tests
 
@@ -90,7 +90,7 @@ merges a sync pull request when a fast-forward is not possible.
 |---|---|
 | `DATABASE_URL` | Postgres URL (required) |
 | `PUBLIC_APP_URL` | Public site origin for QR links |
-| `O_GALLERY_ACCESS_CODE` | Pilot access code for O Gallery (hashed in the database) |
+| `O_GALLERY_ACCESS_CODE` | Access code for O Gallery. Required in production. The server stores only a scrypt hash. |
 | `MEDIA_DIR` | Local media folder when S3 is not set |
 | `S3_BUCKET`, `S3_ENDPOINT`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_PUBLIC_HOST` | Garage / S3 |
 | `KAVENEGAR_API_KEY`, `KAVENEGAR_SENDER` | SMS OTP (optional; console provider is the default) |
