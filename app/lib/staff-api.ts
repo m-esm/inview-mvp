@@ -63,7 +63,6 @@ export function uploadImage(file: File, onProgress: (ratio: number) => void): Pr
       return
     }
     const body = new FormData()
-    body.append('gallery', 'o-gallery')
     body.append('file', file)
     const xhr = new XMLHttpRequest()
     xhr.open('POST', '/api/v1/uploads')

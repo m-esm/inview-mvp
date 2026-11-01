@@ -1,3 +1,4 @@
+import { O_SLUG } from './galleries'
 import { useLocation, useRouteLoaderData } from 'react-router'
 import { defaultLang, dirFor, type Lang } from './lang'
 
@@ -112,7 +113,7 @@ const en = {
   publishTitle: 'Publish',
   publishNote: 'Publish uses your staff session. Visitors see the change at once.',
   publish: 'Publish',
-  published: 'Published. The QR path is still /g/o-gallery.',
+  published: `Published. The QR path is still /g/${O_SLUG}.`,
   publishFailed: 'Publish did not complete.',
   unsaved: 'You have changes that are not published.',
   allSaved: 'The visitor page shows this version.',
@@ -231,7 +232,7 @@ const fa: StaffDict = {
   publishTitle: 'انتشار',
   publishNote: 'انتشار با جلسه کارکنان شما انجام می‌شود. بازدیدکنندگان تغییر را فوراً می‌بینند.',
   publish: 'انتشار',
-  published: 'منتشر شد. مسیر QR همچنان /g/o-gallery است.',
+  published: `منتشر شد. مسیر QR همچنان /g/${O_SLUG} است.`,
   publishFailed: 'انتشار انجام نشد.',
   unsaved: 'تغییراتی دارید که هنوز منتشر نشده است.',
   allSaved: 'صفحه بازدیدکننده همین نسخه را نشان می‌دهد.',

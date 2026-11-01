@@ -1,3 +1,4 @@
+import { ensureOGalleryTenant } from './gallery-bootstrap.ts'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
@@ -44,6 +45,7 @@ async function setup() {
     }
   }
   const db = drizzle(client, { schema })
+  await ensureOGalleryTenant(db)
   const mediaRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'inview-rate-'))
   const storage = new LocalObjectStorage(mediaRoot)
   return { client, db, storage, mediaRoot }

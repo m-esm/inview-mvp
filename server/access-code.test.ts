@@ -14,11 +14,8 @@ import fs from 'node:fs'
 import * as schema from '../database/schema.ts'
 import { galleries } from '../database/schema.ts'
 import { hashSecret, verifySecret } from './crypto.ts'
-import {
-  ensureOGalleryTenant,
-  resolveOGalleryAccessCode,
-  syncOGalleryAccessCode,
-} from './gallery-record.ts'
+import { ensureOGalleryTenant, resolveOGalleryAccessCode, syncOGalleryAccessCode } from './gallery-bootstrap.ts'
+
 import { handlePilotApi } from './pilot-api.ts'
 import { LocalObjectStorage } from './storage.ts'
 
@@ -124,7 +121,7 @@ test('null access-code hash is replaced and publish accepts the configured code'
     const denied = await publish(db, storage, BETA)
     assert.equal(denied.status, 401)
     const before = await readHash(db)
-    await syncOGalleryAccessCode(db, { NODE_ENV: 'production', O_GALLERY_ACCESS_CODE: ALPHA })
+    await syncOGalleryAccessCode(db, { NODE_ENV: 'production', O_GALLERY_ACCESS_CODE: BETA })
     assert.equal((await readHash(db)) === before, true)
   } finally {
     await client.close()
@@ -132,7 +129,7 @@ test('null access-code hash is replaced and publish accepts the configured code'
   }
 })
 
-test('a changed access code replaces the stored hash', async () => {
+test('a rotated access code survives a second boot', async () => {
   const { client, db, storage, mediaRoot } = await setup()
   try {
     await insertGallery(db, hashSecret(ALPHA))
@@ -142,13 +139,15 @@ test('a changed access code replaces the stored hash', async () => {
     )
     const hash = await readHash(db)
     assertNoSecret(lines, [ALPHA, BETA, oldHash || '', hash || ''])
-    assert.equal(hash === oldHash, false)
-    assert.equal(verifySecret(BETA, hash), true)
-    assert.equal(verifySecret(ALPHA, hash), false)
+    assert.equal(hash, oldHash)
+    assert.equal(verifySecret(BETA, hash), false)
+    assert.equal(verifySecret(ALPHA, hash), true)
     assert.equal(verifySecret('inview', hash), false)
-    const published = await publish(db, storage, BETA)
+    await syncOGalleryAccessCode(db, { NODE_ENV: 'production' })
+    assert.equal(await readHash(db), oldHash)
+    const published = await publish(db, storage, ALPHA)
     assert.equal(published.status, 200)
-    const denied = await publish(db, storage, ALPHA)
+    const denied = await publish(db, storage, BETA)
     assert.equal(denied.status, 401)
   } finally {
     await client.close()

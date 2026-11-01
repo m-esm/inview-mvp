@@ -5,16 +5,17 @@ import {
   recordLead,
   recordVisit,
   tenantBySlug,
+  GALLERY_NOT_FOUND,
 } from './gallery-record'
 import type { ObjectStorage } from './storage'
 
-export const DEFAULT_GALLERY_SLUG = 'o-gallery'
+import { O_SLUG } from '../app/lib/galleries'
 
-const UNKNOWN_GALLERY = { status: 404, body: { error: 'That gallery was not found.' } }
+const UNKNOWN_GALLERY = GALLERY_NOT_FOUND
 
 export function gallerySlugOf(body: unknown): string {
   const raw = body && typeof body === 'object' ? (body as { gallery?: unknown }).gallery : undefined
-  if (raw === undefined || raw === null || raw === '') return DEFAULT_GALLERY_SLUG
+  if (raw === undefined || raw === null || raw === '') return O_SLUG
   return typeof raw === 'string' ? raw : ''
 }
 
@@ -25,18 +26,24 @@ export async function handlePilotApi(
   body: unknown,
 ) {
   const verb = (method || 'GET').toUpperCase()
+  const tenant = await tenantBySlug(db, gallerySlugOf(body))
+  if (!tenant) return UNKNOWN_GALLERY
   if (verb === 'PUT') {
     const payload = (body || {}) as { password?: string; accessCode?: string; record?: unknown }
     const code = payload.accessCode || payload.password || ''
-    return publishGalleryRecord(db, storage, code, payload.record)
+    return publishGalleryRecord(db, storage, tenant, code, payload.record)
   }
   if (verb !== 'GET' && verb !== 'HEAD' && verb !== 'POST') {
     return { status: 405, body: { error: 'Method not allowed.' } }
   }
-  const tenant = await tenantBySlug(db, gallerySlugOf(body))
-  if (!tenant) return UNKNOWN_GALLERY
+  if (tenant.gallery.status !== 'live') return UNKNOWN_GALLERY
   if (verb === 'GET' || verb === 'HEAD') {
-    return { status: 200, body: await loadPublicRecord(db, tenant) }
+    try {
+      return { status: 200, body: await loadPublicRecord(db, tenant) }
+    } catch (error) {
+      if (error instanceof Response && error.status === 404) return UNKNOWN_GALLERY
+      throw error
+    }
   }
   const payload = (body || {}) as {
     op?: string
@@ -75,6 +82,9 @@ export async function handlePilotApi(
 export async function handleStaffApi(
   db: Parameters<typeof loadPublicRecord>[0],
   accessCode: string,
+  gallerySlug: string,
 ) {
-  return readStaffReport(db, accessCode)
+  const tenant = await tenantBySlug(db, gallerySlug)
+  if (!tenant) return UNKNOWN_GALLERY
+  return readStaffReport(db, tenant, accessCode)
 }

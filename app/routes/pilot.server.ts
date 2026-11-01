@@ -1,7 +1,7 @@
 import { database } from '../../database/context'
-import { loadPublicRecord, tenantBySlug } from '../../server/gallery-record'
+import { galleryNotFound, loadPublicRecord, tenantBySlug } from '../../server/gallery-record'
 import { artworks } from '../data/gallery'
-import { DEMO_SLUG, O_SLUG } from '../lib/galleries'
+import { DEMO_SLUG } from '../lib/galleries'
 import type { GalleryPageData, PilotRecord, PilotWork } from '../lib/pilot'
 
 type GalleryRead = { found: true; record: PilotRecord | null } | { found: false }
@@ -11,8 +11,14 @@ const perRequest = new WeakMap<Request, Map<string, Promise<GalleryRead>>>()
 function readGallery(slug: string): Promise<GalleryRead> {
   const db = database()
   return tenantBySlug(db, slug).then(async (tenant): Promise<GalleryRead> => {
-    if (!tenant) return { found: false }
-    const { record } = await loadPublicRecord(db, tenant)
+    if (!tenant || tenant.gallery.status !== 'live') return { found: false }
+    let record: PilotRecord
+    try {
+      ;({ record } = await loadPublicRecord(db, tenant))
+    } catch (error) {
+      if (error instanceof Response && error.status === 404) return { found: false }
+      throw error
+    }
     return { found: true, record }
   })
 }
@@ -30,17 +36,8 @@ function sharedRead(request: Request, slug: string): Promise<GalleryRead> {
   return pending
 }
 
-export function loadOGalleryPilot(request: Request): Promise<PilotRecord | null> {
-  return sharedRead(request, O_SLUG)
-    .then((read) => (read.found ? read.record : null))
-    .catch((error: unknown) => {
-      console.error('O Gallery loader failed', error)
-      return null
-    })
-}
-
 export function notFound(): Response {
-  return new Response('Not found', { status: 404, headers: { 'Cache-Control': 'no-store' } })
+  return galleryNotFound()
 }
 
 function unavailable(): Response {
@@ -53,7 +50,6 @@ export async function loadGalleryPage(
 ): Promise<GalleryPageData> {
   if (!slug) throw notFound()
   if (slug === DEMO_SLUG) return { pilot: null }
-  if (slug === O_SLUG) return { pilot: await loadOGalleryPilot(request) }
   let read: GalleryRead
   try {
     read = await sharedRead(request, slug)

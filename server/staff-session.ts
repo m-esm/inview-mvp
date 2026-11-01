@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { sessions } from '../database/schema'
-import { ensureOGalleryTenant } from './gallery-record'
+import { tenantBySlug } from './gallery-record'
+import { O_SLUG } from '../app/lib/galleries'
 import { randomToken, sha256, verifySecret } from './crypto'
 
 // Drizzle database handle (Postgres.js in production, PGlite in tests).
@@ -9,7 +10,7 @@ type Db = any
 
 export const STAFF_COOKIE = 'inview_staff'
 export const SIGN_IN_PATH = '/dashboard/sign-in'
-export const EDITOR_PATH = '/dashboard/o-gallery'
+export const EDITOR_PATH = `/dashboard/${O_SLUG}`
 export const STAFF_SESSION_TTL_MS = 12 * 60 * 60 * 1000
 
 const TTL_SECONDS = STAFF_SESSION_TTL_MS / 1000
@@ -70,9 +71,10 @@ export function readCookie(header: string | null | undefined, name: string): str
   return null
 }
 
-export async function signInWithAccessCode(db: Db, code: string) {
-  const { gallery } = await ensureOGalleryTenant(db)
-  if (!verifySecret(code, gallery.accessCodeHash)) return null
+export async function signInWithAccessCode(db: Db, code: string, gallerySlug: string) {
+  const tenant = await tenantBySlug(db, gallerySlug)
+  if (!tenant || !tenant.gallery.sharedCodeEnabled || !verifySecret(code, tenant.gallery.accessCodeHash)) return null
+  const { gallery } = tenant
   const token = randomToken()
   const tokenHash = sha256(token)
   const expiresAt = new Date(Date.now() + STAFF_SESSION_TTL_MS)
@@ -103,8 +105,8 @@ export async function endStaffSession(db: Db, cookieHeader: string | null | unde
   await db.delete(sessions).where(eq(sessions.tokenHash, sha256(token)))
 }
 
-export async function completeSignIn(db: Db, code: string, secure: boolean) {
-  const created = await signInWithAccessCode(db, code)
+export async function completeSignIn(db: Db, code: string, secure: boolean, gallerySlug: string) {
+  const created = await signInWithAccessCode(db, code, gallerySlug)
   if (!created) return { ok: false as const, error: WRONG_CODE }
   return signedIn(created.token, secure)
 }
