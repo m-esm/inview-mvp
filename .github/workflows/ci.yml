@@ -13,10 +13,28 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: m-esm/inview-mvp
+  DATABASE_URL: postgres://inview:inview@127.0.0.1:5432/inview
+  O_GALLERY_ACCESS_CODE: inview
+  PUBLIC_APP_URL: http://127.0.0.1:3000
+  MEDIA_DIR: .data/media
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: inview
+          POSTGRES_PASSWORD: inview
+          POSTGRES_DB: inview
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U inview -d inview"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -27,13 +45,32 @@ jobs:
       - run: npm test
       - run: npm run typecheck
       - run: npm run build
+      - name: Prepare database
+        run: |
+          npm run db:migrate:prod
+          npx tsx scripts/seed.ts
+      - name: Start server
+        run: |
+          npm run start &
+          for i in $(seq 1 30); do
+            if curl -fsS "http://127.0.0.1:3000/api/v1/health" >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Server did not become ready" >&2
+          exit 1
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
 
   image:
     needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/pilot-o-gallery')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - id: vars
+        run: echo "short_sha=$(git rev-parse --short=7 HEAD)" >> "$GITHUB_OUTPUT"
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
@@ -45,7 +82,8 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=sha,format=short,prefix=
+            type=raw,value=${{ steps.vars.outputs.short_sha }}
+            type=raw,value=main-${{ github.run_number }}-${{ steps.vars.outputs.short_sha }}
             type=raw,value=latest
       - uses: docker/build-push-action@v6
         with:
