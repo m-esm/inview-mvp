@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { OLandingPreview } from '../visitor/OGalleryPages'
 import { parseToman } from '../../lib/price'
-import { fetchPilot, fetchStaff, QR_ADDRESS, seed, type PilotRecord, type PilotWork, type StaffReport } from '../../lib/pilot'
+import { fetchPilot, fetchStaff, QR_ADDRESS, type PilotRecord, type PilotWork, type StaffReport } from '../../lib/pilot'
 
 function readImage(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -40,21 +40,19 @@ function blankWork(sample: boolean): PilotWork {
   }
 }
 
-export default function OGalleryEditor() {
-  const [draft, setDraft] = useState<PilotRecord>(seed)
+export default function OGalleryEditor({ initialRecord }: { initialRecord: PilotRecord }) {
+  const [draft, setDraft] = useState<PilotRecord>(initialRecord)
   const [stats, setStats] = useState<StaffReport | null>(null)
   const [error, setError] = useState('')
   const [reportError, setReportError] = useState('')
   const [message, setMessage] = useState('')
   const [previewLang, setPreviewLang] = useState<'fa' | 'en'>('fa')
-  const [loaded, setLoaded] = useState(false)
   const [copied, setCopied] = useState(false)
   const [publishing, setPublishing] = useState(false)
 
   async function loadRecord() {
     const state = await fetchPilot()
     setDraft(state.record)
-    setLoaded(true)
   }
 
   async function loadReport() {
@@ -69,7 +67,6 @@ export default function OGalleryEditor() {
   }
 
   useEffect(() => {
-    loadRecord().catch(() => setError('The saved record did not load. You can still edit and publish.'))
     void loadReport()
   }, [])
 
@@ -117,7 +114,7 @@ export default function OGalleryEditor() {
     }
   }
 
-  const noVisits = loaded && !!stats && stats.visits.scans === 0 && stats.visits.views === 0
+  const noVisits = !!stats && stats.visits.scans === 0 && stats.visits.views === 0
 
   return (
     <div className="editor">
@@ -125,7 +122,6 @@ export default function OGalleryEditor() {
         <div className="editor-main-col">
           <section className="box">
             <h2>Visits</h2>
-            {!loaded && <p className="muted small">Loading the gallery record…</p>}
             {noVisits && <p>There are no visits yet.</p>}
             {stats && !noVisits && (
               <div className="kpis">

@@ -1,6 +1,6 @@
 export function StaffSignIn({ error = '' }: { error?: string }) {
   return (
-    <div className="gate">
+    <main className="gate">
       <aside className="gate-panel" aria-hidden>
         <h2>Edit the show. Keep the wall clear.</h2>
         <p>Open the O Gallery editor to update works, prices and the QR landing page.</p>
@@ -26,6 +26,6 @@ export function StaffSignIn({ error = '' }: { error?: string }) {
           Open the editor
         </button>
       </form>
-    </div>
+    </main>
   )
 }
