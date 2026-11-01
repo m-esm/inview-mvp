@@ -4,6 +4,9 @@ const NUMBER_LOCALE: Record<Lang, string> = { fa: 'fa-IR', en: 'en-US' }
 const DATE_LOCALE: Record<Lang, string> = { fa: 'fa-IR-u-ca-persian', en: 'en-US' }
 const PERSIAN_DIGITS = '۰۱۲۳۴۵۶۷۸۹'
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
+// ICU builds differ on thin and no-break spaces in dates (Node puts U+2009 around the range dash, Chromium
+// does not), so the server and client text would not match at hydration.
+const ICU_SPACES = /[\u00A0\u2009\u202F]/g
 
 const numberFormats = new Map<Lang, Intl.NumberFormat>()
 const dateFormats = new Map<Lang, Intl.DateTimeFormat>()
@@ -56,7 +59,11 @@ function parseDay(value: string | null | undefined): Date | null {
 
 export function formatDate(lang: Lang, value: string | null | undefined): string {
   const date = parseDay(value)
-  return date ? dateFormat(lang).format(date) : ''
+  return date ? plainSpaces(dateFormat(lang).format(date)) : ''
+}
+
+function plainSpaces(text: string): string {
+  return text.replace(ICU_SPACES, ' ')
 }
 
 export function formatDateRange(
@@ -66,8 +73,6 @@ export function formatDateRange(
 ): string {
   const from = parseDay(start)
   const to = parseDay(end)
-  if (from && to && to.getTime() >= from.getTime()) return dateFormat(lang).formatRange(from, to)
-  if (from) return dateFormat(lang).format(from)
-  if (to) return dateFormat(lang).format(to)
-  return ''
+  if (from && to && to.getTime() >= from.getTime()) return plainSpaces(dateFormat(lang).formatRange(from, to))
+  return formatDate(lang, start) || formatDate(lang, end)
 }
