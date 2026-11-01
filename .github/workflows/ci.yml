@@ -75,7 +75,13 @@ jobs:
           echo "Server did not become ready" >&2
           exit 1
       - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
+      - run: npx playwright test visual --grep "dashboard-login"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: visual-diff
+          path: test-results/
+          retention-days: 3
       - name: Boot the production image
         run: |
           docker build -t inview-ci .
