@@ -36,8 +36,8 @@ export default function OGallerySite() {
       <main>
         <section className="o-site-intro" id="current">
           <p className="muted">{copy.currentShow}{dates ? `, ${dates}` : ''}</p>
-          <h1>{title || copy.catalogue}</h1>
-          {title && real.length === 0 && <p className="site-lead">{copy.catalogue}</p>}
+          <h1>{title || name}</h1>
+          {real.length === 0 && <p className="site-lead">{copy.emptyBody}</p>}
           {text && <p className="site-lead">{text}</p>}
           <div className="row gap wrap">
             <Link className="btn btn-primary" to="/g/o-gallery/works">{copy.seeWorks}</Link>
@@ -46,7 +46,6 @@ export default function OGallerySite() {
           </div>
         </section>
         <section className="site-section" id="works">
-          {real.length === 0 && samples.length === 0 && <p>{copy.catalogue}</p>}
           {real.length > 0 && (
             <>
               <h2>{copy.worksTitle}</h2>
@@ -67,7 +66,6 @@ export default function OGallerySite() {
           <p className="site-brand light">{name}</p>
           {(address || hours) && <p>{[address, hours].filter(Boolean).join(' · ')}</p>}
         </div>
-        <p className="site-made">/site/o-gallery · Website by Inview</p>
       </footer>
     </div>
   )

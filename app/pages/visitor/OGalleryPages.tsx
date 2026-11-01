@@ -32,13 +32,13 @@ function OLanding({ record, preview = false, lang }: { record: PilotRecord, prev
           <>
             <h1 className="show-title">{title}</h1>
             <span className="ink-rule" aria-hidden />
-            {empty && <p className="muted">{copy.catalogue}</p>}
+            {empty && <p className="muted">{copy.emptyBody}</p>}
           </>
         ) : (
           <>
             <h1 className="show-title">{brand}</h1>
             <span className="ink-rule" aria-hidden />
-            {empty && <p className="show-kind">{copy.catalogue}</p>}
+            {empty && <p className="show-kind">{copy.emptyBody}</p>}
           </>
         )}
         {(dates || hours) && <p className="muted small">{[dates, hours].filter(Boolean).join(' · ')}</p>}
@@ -159,11 +159,13 @@ export function OWorks() {
   const real = record.works.filter((work) => !work.sample)
   const samples = record.works.filter((work) => work.sample)
   const title = showTitle(record, lang)
+  const name = pick(lang, record.name, record.nameFa)
 
   if (ready && real.length === 0 && samples.length === 0) {
     return (
       <EmptyState
-        title={copy.catalogue}
+        title={name}
+        body={copy.emptyBody}
         action={<Link className="btn btn-outline" to="/g/o-gallery">{copy.currentShow}</Link>}
       />
     )
@@ -175,7 +177,7 @@ export function OWorks() {
         <p className="eyebrow">{copy.worksTitle}</p>
         <h1 className="page-title">{title || copy.worksTitle}</h1>
         <span className="ink-rule" aria-hidden />
-        {real.length === 0 && <p className="muted">{copy.catalogue}</p>}
+        {real.length === 0 && <p className="muted">{copy.emptyBody}</p>}
       </div>
       <WorkWall works={real} />
       {samples.length > 0 && (
@@ -200,7 +202,8 @@ export function OPrices() {
   if (ready && record.works.length === 0) {
     return (
       <EmptyState
-        title={copy.catalogue}
+        title={name}
+        body={copy.emptyBody}
         action={<Link className="btn btn-outline" to="/g/o-gallery/works">{copy.seeWorks}</Link>}
       />
     )
@@ -211,7 +214,7 @@ export function OPrices() {
       <p className="eyebrow">{name}</p>
       <h1 className="page-title">{t.priceList}</h1>
       <span className="ink-rule" aria-hidden />
-      <p className="muted small">{title || copy.catalogue}</p>
+      {title ? <p className="muted small">{title}</p> : null}
       <WorkList works={record.works} />
       {record.pdfUrl && <a className="btn btn-outline wide pdf-action" href={record.pdfUrl}>{copy.downloadPdf}</a>}
     </div>
@@ -236,7 +239,7 @@ export function OWork() {
   if (!work) {
     return (
       <EmptyState
-        title={copy.catalogue}
+        title={copy.missingWork}
         action={<Link className="btn btn-outline" to="/g/o-gallery/works">{copy.seeWorks}</Link>}
       />
     )
@@ -314,7 +317,7 @@ export function OAbout() {
       <p className="eyebrow">{copy.currentShow}</p>
       <h1 className="page-title">{pick(lang, record.name, record.nameFa)}</h1>
       <span className="ink-rule" aria-hidden />
-      {text ? <p className="reading">{text}</p> : <p className="muted">{copy.catalogue}</p>}
+      {text ? <p className="reading">{text}</p> : <p className="muted">{copy.emptyNote}</p>}
       {(address || hours) && (
         <section id="visit">
           <h2 className="section-title">{t.visit}</h2>
