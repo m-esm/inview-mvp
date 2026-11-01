@@ -130,17 +130,15 @@ for (const viewport of viewports) {
     })
 
     test('staff signs in, edits and publishes', async ({ page }) => {
-      await page.goto('/dashboard')
-      await expectAxe(page, 'staff sign-in')
-      await page.getByLabel('Dashboard password').fill(accessCode)
-      await page.getByRole('button', { name: 'Open dashboard' }).click()
-      await expect(page.getByRole('link', { name: 'O Gallery' })).toBeVisible()
-
       await page.goto('/dashboard/o-gallery')
+      await expect(page).toHaveURL(/\/dashboard\/sign-in$/)
+      await expectAxe(page, 'staff sign-in')
+      await page.getByLabel('Gallery access code').fill(accessCode)
+      await page.getByRole('button', { name: 'Open the editor' }).click()
+      await expect(page).toHaveURL(/\/dashboard\/o-gallery$/)
       const title = page.getByLabel('Show title', { exact: true })
       await expect(title).toBeVisible()
       await title.fill('Staff flow show')
-      await page.getByLabel('Gallery access code').fill(accessCode)
       await page.getByRole('button', { name: 'Publish' }).click()
       await expect(page.getByRole('status')).toHaveText('Published. The QR path is still /g/o-gallery.')
       await expect(page.getByRole('heading', { name: 'Visits' })).toBeVisible()

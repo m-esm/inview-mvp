@@ -5,8 +5,26 @@ import { useVisitor, visitor } from '../../lib/store'
 import { useSignIn } from '../../components/VisitorShell'
 import { Calendar } from '../../components/Icons'
 
+const faStamps: Record<string, string> = {
+  H: 'ه',
+  S: 'س',
+  '0': '۰',
+  B: 'ب',
+  V: 'و',
+  O: 'ا',
+  A: 'آ',
+  K: 'ک',
+  N: 'ن',
+  R: 'ر',
+}
+
+function stampMark(mark: string, lang: 'en' | 'fa') {
+  if (lang !== 'fa') return mark
+  return faStamps[mark] ?? 'م'
+}
+
 export default function Profile() {
-  const { t, n, artist, status } = useT()
+  const { t, n, artist, status, lang } = useT()
   const { phone, saved, follows, stamps } = useVisitor()
   const { requireSignIn } = useSignIn()
 
@@ -47,7 +65,7 @@ export default function Profile() {
         <ul className="stamps" role="list">
           {Array.from({ length: passportGoal }, (_, i) => (
             <li key={i} className={i < filled ? (marks[i] === 'R' ? 'stamp here' : i % 3 === 0 ? 'stamp copper' : 'stamp') : 'stamp open'}>
-              {i < filled ? marks[i] : ''}
+              {i < filled ? stampMark(marks[i], lang) : ''}
             </li>
           ))}
         </ul>

@@ -3,8 +3,8 @@ export interface SmsProvider {
 }
 
 export class ConsoleSmsProvider implements SmsProvider {
-  async sendOtp(phone: string, code: string): Promise<void> {
-    console.info(`[sms:console] OTP for ${phone}: ${code}`)
+  async sendOtp(_phone: string, _code: string): Promise<void> {
+    console.info('[sms:console] OTP generated. The console provider does not print the phone or the code.')
   }
 }
 

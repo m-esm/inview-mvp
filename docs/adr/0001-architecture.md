@@ -139,6 +139,8 @@ Add imgproxy only if we need many sizes.
 
 - Hashed build files and media: `Cache-Control: public, max-age=31536000, immutable`.
 - Public SSR pages: `public, max-age=0, s-maxage=60, stale-while-revalidate=600`.
+- Public SSR pages also send `Vary: Cookie`. The language cookie changes the HTML, so a
+  shared cache must keep one entry for each language.
 - Editor and API: `no-store`.
 - The CDN (Cloudflare now, ArvanCloud later) follows these headers. We do not use a
   CDN-specific rule.
@@ -162,13 +164,18 @@ Decision: use `Intl.DateTimeFormat('fa-IR-u-ca-persian')` and
 `Intl.NumberFormat('fa-IR')`. Set `dir="rtl"` and `lang="fa"` on the server for Persian.
 Store dates in UTC. Add a Jalali library only for date input in the editor.
 
+The server reads the language from the `inview-lang` cookie. When the cookie is absent, the
+O Gallery pages start in Persian and the demo pages start in English. The language switcher
+writes the cookie and revalidates, so the server renders `lang` and `dir` on `<html>` for
+every request. The staff UI stays in English until it is translated.
+
 ### D10. Login, sessions and roles
 
 | Option | For | Against |
 |---|---|---|
 | **Phone OTP behind an `SmsProvider` interface. Server sessions in Postgres with an httpOnly cookie. Roles in `memberships`.** | We can stop a session at once. Simple. The provider can change (Kavenegar, Ghasedak, SMS.ir). | One database read for each request. |
 | JWT in the browser | No session table. | Hard to stop a stolen token. |
-| A shared editor password (current pilot) | Simple. | No users, no roles, no audit. |
+| A shared editor password (old pilot) | Simple. | No users, no roles, no audit. |
 
 Decision: OTP codes have 6 digits. The server stores only a hash. A code is valid for
 2 minutes. The server limits attempts for each phone and each IP address. In
@@ -179,7 +186,19 @@ one access code for each gallery. The code is the environment variable
 At start, the server writes a new hash when the saved hash is empty or does not match
 the code. The log does not show the code or the hash. In production, the server stops
 when the variable is missing. A development default is allowed only when `NODE_ENV`
-is not `production`.
+is not `production`. Until OTP is available, publish, upload and staff sign-in use
+the Postgres limits in D13.
+
+The O Gallery editor uses a staff session until phone OTP is ready. Staff open
+`/dashboard/sign-in` and send the gallery access code once. The server checks the
+scrypt hash. It does not store the code. The server writes a row in `sessions`.
+The row stores the SHA-256 hash of a random token and the gallery id. `user_id`
+stays empty. The cookie name is `inview_staff`. The cookie is httpOnly, Secure,
+and SameSite=Lax. It expires after 12 hours. `/dashboard/o-gallery`, publish,
+image upload, and `/api/pilot/staff` read this cookie. A missing or expired session
+sends the editor to the sign-in page. The staff API returns 401. Sign-out deletes
+the session row and clears the cookie. The Rooz demo pages under `/dashboard` stay
+public. They do not use this gate. The browser bundle does not contain the access code.
 
 ### D11. Payments
 
@@ -196,7 +215,8 @@ Ali or his company owns.
 | Umami or Plausible (self-hosted) | Ready reports. | One more service. It does not know shows, works and QR codes. |
 
 Decision: Postgres tables. A visitor id is a random value in the browser. We do not
-store IP addresses. Leads store a phone number only after the visitor agrees.
+store IP addresses. Rate-limit rows store a daily hash of the client address.
+They do not store the address. Leads store a phone number only after the visitor agrees.
 The server stores the consent time and the consent text version. A Save lead and
 an Ask lead each include the work id. A lead without consent returns 400. The
 server stores no phone number in that case.
@@ -211,6 +231,14 @@ Reuse from ha3 only what is the best fit:
 - Garage S3: yes. It uses the S3 API, so a move is easy.
 - Traefik, cert-manager, Cloudflare tunnel: yes.
 - Redis: no. We do not need it now. Rate limits use Postgres.
+
+Access-code checks, visits, leads and uploads use a fixed window in `rate_limits`.
+The server reads the client address from `CF-Connecting-IP`.
+It stores a SHA-256 hash of a daily salt and that address.
+It does not store the address.
+A full window returns HTTP 429, a `Retry-After` header, and a short message in English and Persian.
+The README lists each limit and its environment variable.
+A visit limit per address is high because many phones can share one network.
 
 CI: GitHub Actions run the tests and the build, then push
 `ghcr.io/m-esm/inview-mvp:<short-sha>`. A migration Job runs once for each image tag,

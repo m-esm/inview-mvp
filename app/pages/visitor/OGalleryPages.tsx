@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link } from 'react-router'
 import { EmptyState } from '../../components/EmptyState'
 import { useSignIn } from '../../components/VisitorShell'
 import { useT } from '../../lib/i18n'
 import { CONSENT_TEXT_VERSION } from '../../lib/consent'
-import { oCopy, pick, recordWorkView, reportLead, usePilotRecord, type PilotRecord, type PilotWork } from '../../lib/pilot'
+import { oCopy, pick, recordWorkView, reportLead, type PilotRecord, type PilotWork } from '../../lib/pilot'
 import { useVisitor, visitor } from '../../lib/store'
 
 function showTitle(record: PilotRecord, lang: 'en' | 'fa') {
@@ -32,13 +32,13 @@ function OLanding({ record, preview = false, lang }: { record: PilotRecord, prev
           <>
             <h1 className="show-title">{title}</h1>
             <span className="ink-rule" aria-hidden />
-            {empty && <p className="muted">{copy.catalogue}</p>}
+            {empty && <p className="muted">{copy.emptyBody}</p>}
           </>
         ) : (
           <>
             <h1 className="show-title">{brand}</h1>
             <span className="ink-rule" aria-hidden />
-            {empty && <p className="show-kind">{copy.catalogue}</p>}
+            {empty && <p className="show-kind">{copy.emptyBody}</p>}
           </>
         )}
         {(dates || hours) && <p className="muted small">{[dates, hours].filter(Boolean).join(' · ')}</p>}
@@ -68,8 +68,7 @@ function OLanding({ record, preview = false, lang }: { record: PilotRecord, prev
   )
 }
 
-export function OWelcome() {
-  const { record } = usePilotRecord(true)
+export function OWelcome({ record }: { record: PilotRecord }) {
   return <OLanding record={record} />
 }
 
@@ -152,18 +151,19 @@ function WorkWall({ works }: { works: PilotWork[] }) {
   )
 }
 
-export function OWorks() {
+export function OWorks({ record }: { record: PilotRecord }) {
   const { lang } = useT()
   const copy = oCopy(lang)
-  const { record, ready } = usePilotRecord(true)
   const real = record.works.filter((work) => !work.sample)
   const samples = record.works.filter((work) => work.sample)
   const title = showTitle(record, lang)
+  const name = pick(lang, record.name, record.nameFa)
 
-  if (ready && real.length === 0 && samples.length === 0) {
+  if (real.length === 0 && samples.length === 0) {
     return (
       <EmptyState
-        title={copy.catalogue}
+        title={name}
+        body={copy.emptyBody}
         action={<Link className="btn btn-outline" to="/g/o-gallery">{copy.currentShow}</Link>}
       />
     )
@@ -175,7 +175,7 @@ export function OWorks() {
         <p className="eyebrow">{copy.worksTitle}</p>
         <h1 className="page-title">{title || copy.worksTitle}</h1>
         <span className="ink-rule" aria-hidden />
-        {real.length === 0 && <p className="muted">{copy.catalogue}</p>}
+        {real.length === 0 && <p className="muted">{copy.emptyBody}</p>}
       </div>
       <WorkWall works={real} />
       {samples.length > 0 && (
@@ -190,17 +190,17 @@ export function OWorks() {
   )
 }
 
-export function OPrices() {
+export function OPrices({ record }: { record: PilotRecord }) {
   const { t, lang } = useT()
   const copy = oCopy(lang)
-  const { record, ready } = usePilotRecord(true)
   const title = showTitle(record, lang)
   const name = pick(lang, record.name, record.nameFa)
 
-  if (ready && record.works.length === 0) {
+  if (record.works.length === 0) {
     return (
       <EmptyState
-        title={copy.catalogue}
+        title={name}
+        body={copy.emptyBody}
         action={<Link className="btn btn-outline" to="/g/o-gallery/works">{copy.seeWorks}</Link>}
       />
     )
@@ -211,36 +211,24 @@ export function OPrices() {
       <p className="eyebrow">{name}</p>
       <h1 className="page-title">{t.priceList}</h1>
       <span className="ink-rule" aria-hidden />
-      <p className="muted small">{title || copy.catalogue}</p>
+      {title ? <p className="muted small">{title}</p> : null}
       <WorkList works={record.works} />
       {record.pdfUrl && <a className="btn btn-outline wide pdf-action" href={record.pdfUrl}>{copy.downloadPdf}</a>}
     </div>
   )
 }
 
-export function OWork() {
-  const { id } = useParams()
+export function OWork({ work }: { work: PilotWork }) {
   const { t, lang } = useT()
   const copy = oCopy(lang)
-  const { record } = usePilotRecord(true)
   const { saved, phone, consentVersion } = useVisitor()
   const { requireSignIn } = useSignIn()
   const [asked, setAsked] = useState(false)
-  const work = record.works.find((item) => item.id === id)
-  const workId = work?.id
+  const workId = work.id
 
   useEffect(() => {
-    if (workId) recordWorkView(workId)
+    recordWorkView(workId)
   }, [workId])
-
-  if (!work) {
-    return (
-      <EmptyState
-        title={copy.catalogue}
-        action={<Link className="btn btn-outline" to="/g/o-gallery/works">{copy.seeWorks}</Link>}
-      />
-    )
-  }
 
   const isSaved = saved.includes(work.id)
   return (
@@ -302,9 +290,8 @@ export function OWork() {
   )
 }
 
-export function OAbout() {
+export function OAbout({ record }: { record: PilotRecord }) {
   const { lang, t } = useT()
-  const { record } = usePilotRecord(true)
   const copy = oCopy(lang)
   const text = pick(lang, record.text, record.textFa)
   const address = pick(lang, record.address, record.addressFa)
@@ -314,7 +301,7 @@ export function OAbout() {
       <p className="eyebrow">{copy.currentShow}</p>
       <h1 className="page-title">{pick(lang, record.name, record.nameFa)}</h1>
       <span className="ink-rule" aria-hidden />
-      {text ? <p className="reading">{text}</p> : <p className="muted">{copy.catalogue}</p>}
+      {text ? <p className="reading">{text}</p> : <p className="muted">{copy.emptyNote}</p>}
       {(address || hours) && (
         <section id="visit">
           <h2 className="section-title">{t.visit}</h2>

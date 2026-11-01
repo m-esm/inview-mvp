@@ -1,6 +1,6 @@
-import { useLocation } from 'react-router'
+import { useLocation, useRouteLoaderData } from 'react-router'
 import { consentText } from './consent'
-import { useVisitor } from './store'
+import { defaultLang, dirFor, type Lang } from './lang'
 import type { Artwork, Status } from '../data/gallery'
 import { gallery, show } from '../data/gallery'
 
@@ -13,12 +13,12 @@ const en = {
   priceListSub: (n: number) => `${n} works available`,
   aboutArtists: 'About the artists',
   aboutText: 'Exhibition text',
-  aboutTextSub: 'Curator’s note, 1 min read',
+  aboutTextSub: 'Curator note. One minute to read.',
   visit: 'Visit and contact',
   visitSub: 'Address, hours, Instagram',
   stamp: 'Collect your passport stamp',
   stamped: 'Stamp collected',
-  noApp: 'No app needed. Powered by Inview',
+  noApp: 'Open this page in your browser. You do not install an app.',
   all: 'All works',
   available: 'Available',
   reserved: 'Reserved',
@@ -38,7 +38,7 @@ const en = {
   sheetAskTitle: 'Ask about this work',
   sheetFollowTitle: 'Follow this gallery',
   sheetStampTitle: 'Collect your stamp',
-  sheetBody: 'We’ll keep your saved works and tell you if one is reserved or its price changes.',
+  sheetBody: 'We keep your saved works. We tell you if a work is reserved or if the price changes.',
   sheetAskBody: 'The gallery will call or message you about this work.',
   mobile: 'Mobile number',
   sendCode: 'Send code',
@@ -59,7 +59,7 @@ const en = {
   savedWorks: 'Saved works',
   artistsFollowed: 'Artists followed',
   passport: 'Gallery passport',
-  passportLeft: (n: number) => `${n} more galleries to unlock a private preview invitation.`,
+  passportLeft: (n: number) => `Visit ${n} more galleries to receive a private preview invitation.`,
   noSaved: 'Tap the heart on any work to keep it here.',
   thisFriday: 'This Friday: 3 openings for you',
   thisFridaySub: 'Including an artist you follow',
@@ -69,6 +69,11 @@ const en = {
   hours: gallery.hours,
   address: gallery.address,
   call: 'Call the gallery',
+  notFound: 'Page not found',
+  notFoundBody: 'This page does not exist. Scan the QR code at the gallery again.',
+  loadFailed: 'The page did not load',
+  loadFailedBody: 'Try again in a moment.',
+  goToGallery: 'Go to the gallery',
 }
 type Dict = typeof en
 
@@ -86,7 +91,7 @@ const fa: Dict = {
   visitSub: 'نشانی، ساعت کاری، اینستاگرام',
   stamp: 'مهر پاسپورت را بگیرید',
   stamped: 'مهر گرفته شد',
-  noApp: 'بدون نیاز به نصب برنامه. با قدرت Inview',
+  noApp: 'این صفحه را در مرورگر باز کنید. برنامه‌ای نصب نمی‌کنید.',
   all: 'همه آثار',
   available: 'موجود',
   reserved: 'رزرو شده',
@@ -119,7 +124,7 @@ const fa: Dict = {
   needConsent: consentText.fa.needConsent,
   badPhone: 'شماره موبایل ۱۱ رقمی که با ۰۹ شروع می‌شود وارد کنید.',
   badCode: '۴ رقم پیامک را وارد کنید.',
-  profile: 'Inview من',
+  profile: 'حساب من',
   signInPrompt: 'وارد شوید تا آثار ذخیره‌شده و پاسپورتتان حفظ شود.',
   signIn: 'ورود',
   signOut: 'خروج',
@@ -127,7 +132,7 @@ const fa: Dict = {
   savedWorks: 'اثر ذخیره‌شده',
   artistsFollowed: 'هنرمند دنبال‌شده',
   passport: 'پاسپورت گالری',
-  passportLeft: (n) => `${toFa(n)} گالری دیگر تا دعوت به پیش‌نمایش خصوصی.`,
+  passportLeft: (n) => `برای دعوت به پیش‌نمایش خصوصی، ${toFa(n)} گالری دیگر را ببینید.`,
   noSaved: 'روی قلب هر اثر بزنید تا اینجا بماند.',
   thisFriday: 'این جمعه: ۳ افتتاحیه برای شما',
   thisFridaySub: 'از جمله هنرمندی که دنبالش می‌کنید',
@@ -137,6 +142,11 @@ const fa: Dict = {
   hours: gallery.hoursFa,
   address: gallery.addressFa,
   call: 'تماس با گالری',
+  notFound: 'صفحه پیدا نشد',
+  notFoundBody: 'این صفحه وجود ندارد. کد QR را در گالری دوباره اسکن کنید.',
+  loadFailed: 'صفحه بارگذاری نشد',
+  loadFailedBody: 'چند لحظه بعد دوباره تلاش کنید.',
+  goToGallery: 'رفتن به گالری',
 }
 
 export function toFa(v: number | string): string {
@@ -145,17 +155,21 @@ export function toFa(v: number | string): string {
 
 export const messages = { en, fa }
 
-export function useT() {
-  const { lang, langChosen } = useVisitor()
+/** The server resolved the language from the cookie and the path. Keep both renders equal. */
+export function useLang(): Lang {
+  const root = useRouteLoaderData('root') as { lang?: Lang } | undefined
   const { pathname } = useLocation()
-  const onOGallery = pathname.startsWith('/g/o-gallery') || pathname.startsWith('/site/o-gallery')
-  const effective: 'en' | 'fa' = langChosen ? lang : onOGallery ? 'fa' : lang
-  const t = effective === 'fa' ? fa : en
-  const fa_ = effective === 'fa'
+  return root?.lang ?? defaultLang(pathname)
+}
+
+export function useT() {
+  const lang = useLang()
+  const t = lang === 'fa' ? fa : en
+  const fa_ = lang === 'fa'
   return {
     t,
-    lang: effective,
-    dir: (fa_ ? 'rtl' : 'ltr') as 'rtl' | 'ltr',
+    lang,
+    dir: dirFor(lang),
     n: (v: number | string) => (fa_ ? toFa(typeof v === 'number' ? v.toLocaleString('en-US') : v) : typeof v === 'number' ? v.toLocaleString('en-US') : v),
     price: (a: Artwork) =>
       a.status === 'sold' ? null : `${fa_ ? toFa(a.price.toLocaleString('en-US')) : a.price.toLocaleString('en-US')} ${t.toman}`,

@@ -1,17 +1,34 @@
 import compression from 'compression'
 import express from 'express'
-import morgan from 'morgan'
+import { installProcessLog, logEvent, requestLog, setStatusRecorder } from './server/http-log.js'
 
 const BUILD_PATH = './build/server/index.js'
 const DEVELOPMENT = process.env.NODE_ENV === 'development'
 const PORT = Number.parseInt(process.env.PORT || '3000', 10)
 
+installProcessLog()
+
 const app = express()
 app.use(compression())
 app.disable('x-powered-by')
+app.use(requestLog())
+
+let closeInner = async () => {}
+let beginDrain = () => {}
+
+/**
+ * @param {{ beginDrain?: () => void, closeServer?: () => Promise<void>, recordStatus?: (status: number) => void }} source
+ */
+function remember(source) {
+  beginDrain = () => {
+    source.beginDrain?.()
+  }
+  closeInner = () => source.closeServer?.() ?? Promise.resolve()
+  if (source.recordStatus) setStatusRecorder(source.recordStatus)
+}
 
 if (DEVELOPMENT) {
-  console.log('Starting development server')
+  logEvent('info', 'starting', { mode: 'development' })
   const viteDevServer = await import('vite').then((vite) =>
     vite.createServer({
       server: { middlewareMode: true },
@@ -21,6 +38,7 @@ if (DEVELOPMENT) {
   app.use(async (req, res, next) => {
     try {
       const source = await viteDevServer.ssrLoadModule('./server/app.ts')
+      remember(source)
       await source.oGalleryReady
       return await source.app(req, res, next)
     } catch (error) {
@@ -31,7 +49,7 @@ if (DEVELOPMENT) {
     }
   })
 } else {
-  console.log('Starting production server')
+  logEvent('info', 'starting', { mode: 'production' })
   app.use(
     '/assets',
     express.static('build/client/assets', {
@@ -42,10 +60,10 @@ if (DEVELOPMENT) {
       },
     }),
   )
-  app.use(morgan('tiny'))
   app.use(express.static('build/client', { maxAge: '1h' }))
   try {
     const mod = await import(BUILD_PATH)
+    remember(mod)
     await mod.oGalleryReady
     app.use(mod.app)
   } catch (error) {
@@ -55,6 +73,27 @@ if (DEVELOPMENT) {
   }
 }
 
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`)
+const server = app.listen(PORT, () => {
+  logEvent('info', 'listening', { port: PORT })
 })
+
+const SHUTDOWN_MS = 20_000
+let shuttingDown = false
+
+function shutdown() {
+  if (shuttingDown) return
+  shuttingDown = true
+  beginDrain()
+  if (typeof server.closeIdleConnections === 'function') server.closeIdleConnections()
+  const timer = setTimeout(() => process.exit(1), SHUTDOWN_MS)
+  timer.unref()
+  server.close(() => {
+    closeInner().then(
+      () => process.exit(0),
+      () => process.exit(1),
+    )
+  })
+}
+
+process.on('SIGTERM', shutdown)
+process.on('SIGINT', shutdown)

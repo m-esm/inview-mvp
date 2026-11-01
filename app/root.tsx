@@ -1,12 +1,16 @@
 import {
   isRouteErrorResponse,
+  Link,
   Links,
   Meta,
   Outlet,
   Scripts,
   ScrollRestoration,
+  useRouteLoaderData,
 } from 'react-router'
 import type { Route } from './+types/root'
+import { useT } from './lib/i18n'
+import { dirFor, resolveLang } from './lib/lang'
 import '@fontsource/fraunces/400.css'
 import '@fontsource/fraunces/500.css'
 import '@fontsource/sora/400.css'
@@ -23,9 +27,16 @@ export const links: Route.LinksFunction = () => [
   { rel: 'apple-touch-icon', href: '/icons/apple-touch-icon.png' },
 ]
 
+export function loader({ request }: Route.LoaderArgs) {
+  const { pathname } = new URL(request.url)
+  const lang = resolveLang(pathname, request.headers.get('cookie'))
+  return { lang, dir: dirFor(lang) }
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
+  const data = useRouteLoaderData<typeof loader>('root')
   return (
-    <html lang="en">
+    <html lang={data?.lang ?? 'en'} dir={data?.dir ?? 'ltr'}>
       <head>
         <meta charSet="utf-8" />
         <title>Inview</title>
@@ -49,21 +60,14 @@ export default function App() {
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
-  let message = 'Error'
-  let details = 'The page did not load.'
-  if (isRouteErrorResponse(error)) {
-    message = error.status === 404 ? 'Not found' : `Error ${error.status}`
-    details =
-      error.status === 404
-        ? 'This page does not exist. Scan the QR code at the gallery again.'
-        : error.statusText || details
-  } else if (import.meta.env.DEV && error instanceof Error) {
-    details = error.message
-  }
+  const { t, dir } = useT()
+  const missing = isRouteErrorResponse(error) && error.status === 404
   return (
-    <main className="pad empty">
-      <h1 className="page-title">{message}</h1>
-      <p className="muted">{details}</p>
+    <main className="pad empty" dir={dir}>
+      <h1 className="page-title">{missing ? t.notFound : t.loadFailed}</h1>
+      <p className="muted">{missing ? t.notFoundBody : t.loadFailedBody}</p>
+      <Link className="btn btn-outline" to="/g/o-gallery">{t.goToGallery}</Link>
+      {import.meta.env.DEV && error instanceof Error && <pre className="muted small">{error.message}</pre>}
     </main>
   )
 }

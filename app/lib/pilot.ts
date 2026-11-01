@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react'
 import seedJson from '../data/o-gallery-seed.json'
 import { leadBody } from './consent'
 
@@ -51,6 +50,11 @@ export interface StaffReport {
   leads: PilotLead[]
 }
 
+/** What every `/g/:slug` and `/site/:slug` loader returns. `null` means the read failed. */
+export interface GalleryPageData {
+  pilot: PilotRecord | null
+}
+
 export const seed = seedJson as PilotRecord
 export const QR_ADDRESS =
   typeof window !== 'undefined'
@@ -78,7 +82,9 @@ export function oCopy(lang: 'en' | 'fa') {
       currentShow: 'نمایش جاری',
       seeWorks: 'دیدن آثار',
       priceList: 'فهرست قیمت',
-      catalogue: 'فهرست آثار هنوز بارگذاری نشده است.',
+      emptyBody: 'آثار این نمایشگاه را اینجا خواهید دید.',
+      emptyNote: 'برای این نمایشگاه یادداشتی نیست.',
+      missingWork: 'این اثر در این نمایش نیست.',
       sampleBanner: 'این یک نمونه است. این اثر متعلق به گالری اُ نیست.',
       samplesTitle: 'نمونه‌ها',
       downloadPdf: 'دریافت PDF',
@@ -89,7 +95,9 @@ export function oCopy(lang: 'en' | 'fa') {
     currentShow: 'Current show',
     seeWorks: 'See the works',
     priceList: 'Price list',
-    catalogue: 'The catalogue is not loaded yet.',
+    emptyBody: 'You will see the works for this show here.',
+    emptyNote: 'This show has no note yet.',
+    missingWork: 'This work is not in the show.',
     sampleBanner: 'This is a sample. It is not an O Gallery artwork.',
     samplesTitle: 'Samples',
     downloadPdf: 'Download PDF',
@@ -108,29 +116,11 @@ export async function fetchPilot(): Promise<{ record: PilotRecord }> {
   return res.json()
 }
 
-export async function fetchStaff(accessCode: string): Promise<StaffReport> {
-  const res = await fetch('/api/pilot/staff', {
-    cache: 'no-store',
-    headers: { 'X-Access-Code': accessCode },
-  })
+export async function fetchStaff(): Promise<StaffReport> {
+  const res = await fetch('/api/pilot/staff', { cache: 'no-store' })
   const data = (await res.json().catch(() => ({}))) as { error?: string }
   if (!res.ok) throw new Error(data.error || 'The visit report did not load.')
   return data as StaffReport
-}
-
-export function usePilotRecord(enabled = true) {
-  const [record, setRecord] = useState<PilotRecord>(seed)
-  const [ready, setReady] = useState(false)
-  useEffect(() => {
-    if (!enabled) return
-    let live = true
-    fetchPilot()
-      .then((state) => { if (live && state.record) setRecord(state.record) })
-      .catch(() => {})
-      .finally(() => { if (live) setReady(true) })
-    return () => { live = false }
-  }, [enabled])
-  return { record, ready, setRecord }
 }
 
 const sent = new Set<string>()

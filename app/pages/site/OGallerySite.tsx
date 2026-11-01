@@ -1,11 +1,10 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router'
 import { useT } from '../../lib/i18n'
-import { oCopy, pick, usePilotRecord, type PilotWork } from '../../lib/pilot'
+import { oCopy, pick, type PilotRecord, type PilotWork } from '../../lib/pilot'
 
-export default function OGallerySite() {
+export default function OGallerySite({ record }: { record: PilotRecord }) {
   const { lang, dir } = useT()
-  const { record } = usePilotRecord(true)
   const copy = oCopy(lang)
   const name = pick(lang, record.name, record.nameFa)
   const title = pick(lang, record.showTitle, record.showTitleFa)
@@ -36,8 +35,8 @@ export default function OGallerySite() {
       <main>
         <section className="o-site-intro" id="current">
           <p className="muted">{copy.currentShow}{dates ? `, ${dates}` : ''}</p>
-          <h1>{title || copy.catalogue}</h1>
-          {title && real.length === 0 && <p className="site-lead">{copy.catalogue}</p>}
+          <h1>{title || name}</h1>
+          {real.length === 0 && <p className="site-lead">{copy.emptyBody}</p>}
           {text && <p className="site-lead">{text}</p>}
           <div className="row gap wrap">
             <Link className="btn btn-primary" to="/g/o-gallery/works">{copy.seeWorks}</Link>
@@ -46,7 +45,6 @@ export default function OGallerySite() {
           </div>
         </section>
         <section className="site-section" id="works">
-          {real.length === 0 && samples.length === 0 && <p>{copy.catalogue}</p>}
           {real.length > 0 && (
             <>
               <h2>{copy.worksTitle}</h2>
@@ -67,7 +65,6 @@ export default function OGallerySite() {
           <p className="site-brand light">{name}</p>
           {(address || hours) && <p>{[address, hours].filter(Boolean).join(' · ')}</p>}
         </div>
-        <p className="site-made">/site/o-gallery · Website by Inview</p>
       </footer>
     </div>
   )

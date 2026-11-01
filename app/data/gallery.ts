@@ -35,7 +35,6 @@ export const gallery = {
   hoursFa: 'هر روز، ساعت ۱۶ تا ۲۰',
   instagram: 'roozgallery',
   phone: '+98 21 0000 0000',
-  dashboardPassword: 'inview',
   // Public website address: roozgallery.inview.ir (or /site/rooz-gallery on any host)
   subdomain: 'roozgallery',
 }
