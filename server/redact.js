@@ -20,6 +20,7 @@ export function requestPath(url) {
   const raw = String(url || '')
   const query = raw.indexOf('?')
   return redact(query === -1 ? raw : raw.slice(0, query))
+    .replace(/(\/api\/v1\/invites\/|\/staff\/invite\/)[^/]+/gi, '$1[redacted]')
 }
 
 /**

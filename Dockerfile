@@ -30,6 +30,7 @@ COPY package.json package-lock.json server.js ./
 COPY server/*.js ./server/
 COPY drizzle ./drizzle
 COPY scripts/migrate.mjs ./scripts/migrate.mjs
+COPY scripts/create-operator.mjs ./scripts/create-operator.mjs
 COPY --from=production-dependencies-env /app/node_modules ./node_modules
 COPY --from=build-env /app/build ./build
 EXPOSE 3000

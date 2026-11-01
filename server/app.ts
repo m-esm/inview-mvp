@@ -9,6 +9,7 @@ import { clientKey, JSON_LIMIT, mountApi } from './api-app'
 import { metricsText, recordStatus } from './metrics'
 import { contentSecurityPolicy } from './csp'
 import { pingDatabase, sendReady } from './ready'
+import { originCheck } from './origin-check'
 import { createObjectStorage, localMediaMiddleware } from './storage'
 
 declare module 'react-router' {
@@ -51,6 +52,7 @@ if (process.env.NODE_ENV === 'production') {
   })
 }
 
+app.use(originCheck)
 app.use(localMediaMiddleware())
 app.use(express.json({ limit: JSON_LIMIT }))
 

@@ -198,7 +198,7 @@ async function writeBucket(db: Db, bucket: string, limit: number, windowSec: num
   })
 }
 
-async function consumeBucket(db: Db, bucket: string, limit: number, windowSec: number, now: Date): Promise<BucketOutcome> {
+export async function consumeBucket(db: Db, bucket: string, limit: number, windowSec: number, now: Date): Promise<BucketOutcome> {
   try {
     return await writeBucket(db, bucket, limit, windowSec, now)
   } catch (error) {
