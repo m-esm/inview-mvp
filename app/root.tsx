@@ -1,3 +1,4 @@
+import { O_SLUG } from './lib/galleries'
 import {
   isRouteErrorResponse,
   Link,
@@ -74,7 +75,7 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
     <main className="pad empty" dir={dir}>
       <h1 className="page-title">{missing ? t.notFound : t.loadFailed}</h1>
       <p className="muted">{missing ? t.notFoundBody : t.loadFailedBody}</p>
-      <Link className="btn btn-outline" to="/g/o-gallery">{t.goToGallery}</Link>
+      <Link className="btn btn-outline" to={`/g/${O_SLUG}`}>{t.goToGallery}</Link>
       {import.meta.env.DEV && error instanceof Error && <pre className="muted small">{error.message}</pre>}
     </main>
   )

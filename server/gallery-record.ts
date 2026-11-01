@@ -15,12 +15,11 @@ import {
 import { CONSENT_TEXT_VERSION } from '../app/lib/consent'
 import { parseToman } from '../app/lib/price'
 import { GALLERY_TIME_ZONE, QR_CODE_PATTERN, tehranDay } from '../app/lib/tehran-day'
-import { hashSecret, verifySecret } from './crypto'
+import { verifySecret } from './crypto'
 import { displayVariant } from './images'
 import type { ObjectStorage } from './storage'
 
 const SAMPLE_RE = /sample|نمونه/i
-const O_SLUG = 'o-gallery'
 
 export interface WorkImageSet {
   webp: string
@@ -106,14 +105,17 @@ export type GalleryTenant = {
 
 export const GALLERY_SLUG_PATTERN = /^[a-z0-9][a-z0-9-]{0,79}$/
 
-const DEMO_GALLERY_SLUGS: ReadonlySet<string> = new Set(['sample'])
+export function isDemoGallery(gallery: Pick<GalleryTenant['gallery'], 'isDemo'>): boolean {
+  return gallery.isDemo
+}
 
-export function isDemoGallery(slug: string): boolean {
-  return DEMO_GALLERY_SLUGS.has(slug)
+export const GALLERY_NOT_FOUND = { status: 404, body: { error: 'That gallery was not found.', errorFa: 'گالری پیدا نشد.' } }
+
+export function galleryNotFound(): Response {
+  return Response.json(GALLERY_NOT_FOUND.body, { status: 404, headers: { 'Cache-Control': 'no-store' } })
 }
 
 export async function tenantBySlug(db: Db, slug: string): Promise<GalleryTenant | null> {
-  if (slug === O_SLUG) return ensureOGalleryTenant(db)
   if (!GALLERY_SLUG_PATTERN.test(slug)) return null
   const [gallery] = await db.select().from(galleries).where(eq(galleries.slug, slug)).limit(1)
   if (!gallery) return null
@@ -149,99 +151,9 @@ function text(value: unknown, max: number): string {
   return value.trim().slice(0, max)
 }
 
-const DEV_ACCESS_CODE = 'inview'
-
-export function resolveOGalleryAccessCode(env: NodeJS.ProcessEnv = process.env): string {
-  const configured = env.O_GALLERY_ACCESS_CODE
-  if (typeof configured === 'string' && configured.trim() !== '') return configured
-  if (env.NODE_ENV === 'production') {
-    throw new Error('O_GALLERY_ACCESS_CODE is required in production.')
-  }
-  return DEV_ACCESS_CODE
-}
-
-function errorWithoutSecrets(error: unknown, secrets: string[]): Error {
-  let message = error instanceof Error ? error.message : 'Database request failed.'
-  for (const secret of secrets) {
-    if (secret) message = message.split(secret).join('[redacted]')
-  }
-  return new Error(`Could not store the O Gallery access code hash. ${message}`)
-}
-
-export async function ensureOGalleryTenant(
-  db: Db,
-  accessCodePlain?: string,
-  env: NodeJS.ProcessEnv = process.env,
-) {
-  const code =
-    typeof accessCodePlain === 'string' && accessCodePlain.trim() !== ''
-      ? accessCodePlain
-      : resolveOGalleryAccessCode(env)
-  const [existing] = await db.select().from(galleries).where(eq(galleries.slug, O_SLUG)).limit(1)
-  if (existing) {
-    let [show] = await db
-      .select()
-      .from(shows)
-      .where(eq(shows.galleryId, existing.id))
-      .orderBy(desc(shows.updatedAt))
-      .limit(1)
-    if (!show) {
-      const [created] = await db
-        .insert(shows)
-        .values({ galleryId: existing.id, titleEn: '', titleFa: '', status: 'published' })
-        .returning()
-      show = created
-      await db.insert(qrCodes).values({ showId: show.id, code: 'o-gallery-main', label: 'Entrance' })
-    }
-    return { gallery: existing, show }
-  }
-
-  const accessCodeHash = hashSecret(code)
-  let gallery: typeof galleries.$inferSelect
-  try {
-    const [created] = await db
-      .insert(galleries)
-      .values({
-        slug: O_SLUG,
-        nameEn: 'O Gallery',
-        nameFa: 'گالری اُ',
-        subdomain: 'ogallery',
-        accessCodeHash,
-      })
-      .returning()
-    gallery = created
-  } catch (error) {
-    throw errorWithoutSecrets(error, [code, accessCodeHash])
-  }
-  const [show] = await db
-    .insert(shows)
-    .values({ galleryId: gallery.id, titleEn: '', titleFa: '', status: 'published' })
-    .returning()
-  await db.insert(qrCodes).values({ showId: show.id, code: 'o-gallery-main', label: 'Entrance' })
-  return { gallery, show }
-}
-
-// A row can already exist with a null or old hash. Replace that hash from the env code.
-export async function syncOGalleryAccessCode(db: Db, env: NodeJS.ProcessEnv = process.env) {
-  const code = resolveOGalleryAccessCode(env)
-  const { gallery, show } = await ensureOGalleryTenant(db, code, env)
-  if (verifySecret(code, gallery.accessCodeHash)) return { gallery, show }
-  const accessCodeHash = hashSecret(code)
-  try {
-    const [updated] = await db
-      .update(galleries)
-      .set({ accessCodeHash, updatedAt: new Date() })
-      .where(eq(galleries.id, gallery.id))
-      .returning()
-    return { gallery: updated ?? gallery, show }
-  } catch (error) {
-    throw errorWithoutSecrets(error, [code, accessCodeHash])
-  }
-}
-
-async function logoUrl(db: Db, logoMediaId: string | null): Promise<string | null> {
+async function logoUrl(db: Db, galleryId: string, logoMediaId: string | null): Promise<string | null> {
   if (!logoMediaId) return null
-  const [row] = await db.select().from(media).where(eq(media.id, logoMediaId)).limit(1)
+  const [row] = await db.select().from(media).where(and(eq(media.id, logoMediaId), eq(media.galleryId, galleryId))).limit(1)
   if (!row) return null
   return displayVariant(row.variants)
 }
@@ -281,7 +193,7 @@ export function imageSetFor(image: string, variants: Record<string, string> | nu
 
 async function readRecord(
   db: Db,
-  gallery: { slug: string; nameEn: string; nameFa: string; logoMediaId: string | null },
+  gallery: GalleryTenant['gallery'],
   show: {
     titleEn: string
     titleFa: string
@@ -307,8 +219,8 @@ async function readRecord(
     })
     .from(showWorks)
     .innerJoin(works, eq(showWorks.workId, works.id))
-    .leftJoin(media, eq(works.mediaId, media.id))
-    .where(eq(showWorks.showId, show.id))
+    .leftJoin(media, and(eq(works.mediaId, media.id), eq(media.galleryId, gallery.id)))
+    .where(and(eq(showWorks.showId, show.id), eq(works.galleryId, gallery.id)))
     .orderBy(asc(showWorks.sortOrder))
 
   const workDtos: GalleryWorkDto[] = linked.map(
@@ -332,10 +244,10 @@ async function readRecord(
 
   return {
     slug: gallery.slug,
-    demo: isDemoGallery(gallery.slug),
+    demo: isDemoGallery(gallery),
     name: gallery.nameEn,
     nameFa: gallery.nameFa,
-    logo: await logoUrl(db, gallery.logoMediaId),
+    logo: await logoUrl(db, gallery.id, gallery.logoMediaId),
     showTitle: show.titleEn,
     showTitleFa: show.titleFa,
     dates: show.datesEn,
@@ -370,7 +282,7 @@ async function readLeadList(db: Db, galleryId: string, limit = 200): Promise<Sta
   const rows = await db
     .select({ lead: leads, workTitle: works.title })
     .from(leads)
-    .leftJoin(works, eq(leads.workId, works.id))
+    .leftJoin(works, and(eq(leads.workId, works.id), eq(works.galleryId, galleryId)))
     .where(eq(leads.galleryId, galleryId))
     .orderBy(desc(leads.createdAt))
     .limit(limit)
@@ -457,13 +369,14 @@ async function recordStamp(db: Db, galleryId: string): Promise<string | null> {
 }
 
 /** Public catalogue only. This function does not read visits or leads. */
-export async function loadPublicRecord(db: Db, tenant?: GalleryTenant): Promise<{ record: GalleryRecordDto }> {
-  const own = tenant ?? (await ensureOGalleryTenant(db))
+export async function loadPublicRecord(db: Db, tenant: GalleryTenant): Promise<{ record: GalleryRecordDto }> {
+  const own = await tenantById(db, tenant.gallery.id)
+  if (!own || own.gallery.status !== 'live') throw galleryNotFound()
   const stamp = await recordStamp(db, own.gallery.id)
   let byGallery = publicRecordCache.get(db)
   const cached = byGallery?.get(own.gallery.id)
   if (stamp && cached && cached.stamp === stamp) return cached.value
-  const fresh = (await tenantById(db, own.gallery.id)) ?? own
+  const fresh = own
   const value = { record: await readRecord(db, fresh.gallery, fresh.show) }
   if (stamp) {
     if (!byGallery) {
@@ -473,6 +386,10 @@ export async function loadPublicRecord(db: Db, tenant?: GalleryTenant): Promise<
     byGallery.set(own.gallery.id, { stamp, value })
   }
   return value
+}
+
+export async function loadStaffRecord(db: Db, tenant: GalleryTenant): Promise<{ record: GalleryRecordDto }> {
+  return { record: await readRecord(db, tenant.gallery, tenant.show) }
 }
 
 type StaffReportBody = Omit<GalleryStateDto, 'record'>
@@ -497,20 +414,20 @@ async function staffReportForTenant(
   }
 }
 
-export async function readStaffReport(db: Db, accessCode: string): Promise<StaffReportResult> {
-  const { gallery, show } = await ensureOGalleryTenant(db)
-  if (!verifySecret(accessCode, gallery.accessCodeHash)) {
+export async function readStaffReport(db: Db, tenant: GalleryTenant, accessCode: string): Promise<StaffReportResult> {
+  const { gallery, show } = tenant
+  if (!gallery.sharedCodeEnabled || !verifySecret(accessCode, gallery.accessCodeHash)) {
     return { status: 401, body: { error: 'That access code does not match.' } }
   }
   return staffReportForTenant(db, gallery.id, show.id)
 }
 
 export async function readStaffReportForSession(db: Db, galleryId: string): Promise<StaffReportResult> {
-  const { gallery, show } = await ensureOGalleryTenant(db)
-  if (gallery.id !== galleryId) {
+  const tenant = await tenantById(db, galleryId)
+  if (!tenant) {
     return { status: 401, body: { error: 'Sign in to see visits and phone numbers.' } }
   }
-  return staffReportForTenant(db, gallery.id, show.id)
+  return staffReportForTenant(db, tenant.gallery.id, tenant.show.id)
 }
 
 const DUPLICATE_WORK_ERROR = 'Two works have the same id. Give each work its own id.'
@@ -665,11 +582,11 @@ type PublishResult = { status: number; body: { ok: true; record: GalleryRecordDt
 export async function publishGalleryRecord(
   db: Db,
   _storage: ObjectStorage,
+  tenant: GalleryTenant,
   accessCode: string,
   input: unknown,
 ): Promise<PublishResult> {
-  const tenant = await ensureOGalleryTenant(db)
-  if (!verifySecret(accessCode, tenant.gallery.accessCodeHash)) {
+  if (!tenant.gallery.sharedCodeEnabled || !verifySecret(accessCode, tenant.gallery.accessCodeHash)) {
     return { status: 401, body: { error: 'That access code does not match.' } }
   }
   return writeGalleryRecord(db, tenant, input)
@@ -681,8 +598,8 @@ export async function publishGalleryRecordForSession(
   galleryId: string,
   input: unknown,
 ): Promise<PublishResult> {
-  const tenant = await ensureOGalleryTenant(db)
-  if (tenant.gallery.id !== galleryId) {
+  const tenant = await tenantById(db, galleryId)
+  if (!tenant) {
     return { status: 401, body: { error: 'Sign in to publish.' } }
   }
   return writeGalleryRecord(db, tenant, input)
@@ -690,10 +607,12 @@ export async function publishGalleryRecordForSession(
 
 async function writeGalleryRecord(
   db: Db,
-  tenant: Awaited<ReturnType<typeof ensureOGalleryTenant>>,
+  tenant: GalleryTenant,
   input: unknown,
 ): Promise<PublishResult> {
   const { gallery, show } = tenant
+  const target = input && typeof input === 'object' ? (input as { slug?: unknown }).slug : undefined
+  if (target !== undefined && target !== gallery.slug) return refuse('That record belongs to another gallery.', 'این اطلاعات متعلق به گالری دیگری است.')
   const cleaned = sanitizeRecord(input)
   if ('error' in cleaned) {
     return cleaned.errorFa
@@ -702,7 +621,7 @@ async function writeGalleryRecord(
   }
 
   try {
-    const currentLogo = await logoUrl(db, gallery.logoMediaId)
+    const currentLogo = await logoUrl(db, gallery.id, gallery.logoMediaId)
     let logoMediaId: string | null = gallery.logoMediaId
     const logoInput = cleaned.record.logo
     if (logoInput === null) {
@@ -832,8 +751,8 @@ async function writeGalleryRecord(
     })
 
     clearPublicRecordCache(db)
-    const published = await loadPublicRecord(db, tenant)
-    return { status: 200, body: { ok: true, record: published.record } }
+    const fresh = (await tenantById(db, gallery.id))!
+    return { status: 200, body: { ok: true, record: await readRecord(db, fresh.gallery, fresh.show) } }
   } catch (error) {
     console.error(error)
     return { status: 500, body: { error: 'Publish did not complete. Try again.', errorFa: 'انتشار انجام نشد. دوباره تلاش کنید.' } }
@@ -852,7 +771,9 @@ export async function recordVisit(
   if (!/^[a-zA-Z0-9-]{8,80}$/.test(visitorId)) {
     return { status: 400, body: { error: 'Visitor id is not valid.' } }
   }
-  const { gallery, show } = tenant
+  const fresh = await tenantById(db, tenant.gallery.id)
+  if (!fresh || fresh.gallery.status !== 'live') return GALLERY_NOT_FOUND
+  const { gallery, show } = fresh
   const day = tehranDay(now)
   if (kind === 'scan') {
     let qrCodeId: string | null = null
@@ -924,7 +845,9 @@ export async function recordLead(
   if (!workId || !/^[a-zA-Z0-9-]{8,80}$/.test(workId)) {
     return { status: 400, body: { error: 'A work id is required.' } }
   }
-  const { gallery, show } = tenant
+  const fresh = await tenantById(db, tenant.gallery.id)
+  if (!fresh || fresh.gallery.status !== 'live') return GALLERY_NOT_FOUND
+  const { gallery, show } = fresh
   const [found] = await db
     .select({ id: works.id })
     .from(works)
@@ -953,9 +876,9 @@ function csvCell(value: string): string {
 }
 
 export async function leadsCsvForSession(db: Db, galleryId: string): Promise<{ status: 200; body: string } | { status: 401; body: { error: string } }> {
-  const { gallery } = await ensureOGalleryTenant(db)
-  if (gallery.id !== galleryId) return { status: 401, body: { error: 'Sign in to download the leads.' } }
-  const rows = await readLeadList(db, gallery.id, 10000)
+  const tenant = await tenantById(db, galleryId)
+  if (!tenant) return { status: 401, body: { error: 'Sign in to download the leads.' } }
+  const rows = await readLeadList(db, tenant.gallery.id, 10000)
   const lines = [CSV_HEADER.join(',')]
   for (const lead of rows) {
     lines.push(

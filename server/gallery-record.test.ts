@@ -1,3 +1,4 @@
+import { ensureOGalleryTenant } from './gallery-bootstrap.ts'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
@@ -35,6 +36,7 @@ async function setup() {
     }
   }
   const db = drizzle(client, { schema })
+  await ensureOGalleryTenant(db)
   const mediaRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'inview-media-'))
   const storage = new LocalObjectStorage(mediaRoot)
   return { client, db, storage, mediaRoot }
@@ -155,14 +157,14 @@ test('O Gallery publish, scan dedupe, view and lead use the multi-tenant tables'
     assert.equal('leads' in (publicAfterLead.body as object), false)
     assertNoVisitorData(publicAfterLead.body, phone)
 
-    const missingCode = await handleStaffApi(db, '')
+    const missingCode = await handleStaffApi(db, '', 'o-gallery')
     assert.equal(missingCode.status, 401)
     assert.equal(JSON.stringify(missingCode.body).includes(phone), false)
-    const wrongCode = await handleStaffApi(db, 'not-the-code')
+    const wrongCode = await handleStaffApi(db, 'not-the-code', 'o-gallery')
     assert.equal(wrongCode.status, 401)
     assert.equal(JSON.stringify(wrongCode.body).includes(phone), false)
 
-    const staff = await handleStaffApi(db, 'inview')
+    const staff = await handleStaffApi(db, 'inview', 'o-gallery')
     assert.equal(staff.status, 200)
     const staffBody = staff.body as {
       visits: { scans: number; views: number }

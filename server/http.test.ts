@@ -1,3 +1,4 @@
+import { ensureOGalleryTenant } from './gallery-bootstrap.ts'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
@@ -39,6 +40,7 @@ async function withApp(
   fn: (args: { app: ReturnType<typeof createApiApp>; db: TestDb['db']; pg: TestDb['client'] }) => Promise<void>,
 ) {
   const testDb = await createTestDb()
+  await ensureOGalleryTenant(testDb.db)
   const app = createApiApp(testDb.db, testDb.storage)
   try {
     await fn({ app, db: testDb.db, pg: testDb.client })

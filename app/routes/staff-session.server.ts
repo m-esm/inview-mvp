@@ -1,6 +1,7 @@
 import { database } from '../../database/context'
 import {
   anonymousEditorGate,
+  EDITOR_PATH,
   completeSignOut,
   readStaffSession,
   requestIsSecure,
@@ -22,7 +23,7 @@ export async function redirectIfSignedIn(request: Request): Promise<Response | n
   if (!session) return null
   return new Response(null, {
     status: 302,
-    headers: { Location: '/dashboard/o-gallery', 'Cache-Control': 'no-store' },
+    headers: { Location: EDITOR_PATH, 'Cache-Control': 'no-store' },
   })
 }
 

@@ -4,11 +4,12 @@ import type { ErrorRequestHandler } from 'express'
 import 'react-router'
 import { closeDatabase, createDatabase } from '../database/client'
 import { DatabaseContext } from '../database/context'
-import { resolveOGalleryAccessCode, syncOGalleryAccessCode } from './gallery-record'
+import { syncOGalleryAccessCode } from './gallery-bootstrap'
 import { clientKey, JSON_LIMIT, mountApi } from './api-app'
 import { metricsText, recordStatus } from './metrics'
 import { contentSecurityPolicy } from './csp'
 import { pingDatabase, sendReady } from './ready'
+import { originCheck } from './origin-check'
 import { createObjectStorage, localMediaMiddleware } from './storage'
 
 declare module 'react-router' {
@@ -23,8 +24,6 @@ app.disable('x-powered-by')
 
 const databaseUrl = process.env.DATABASE_URL
 if (!databaseUrl) throw new Error('DATABASE_URL is required')
-
-resolveOGalleryAccessCode()
 
 const db = createDatabase(databaseUrl)
 const storage = createObjectStorage()
@@ -51,6 +50,7 @@ if (process.env.NODE_ENV === 'production') {
   })
 }
 
+app.use(originCheck)
 app.use(localMediaMiddleware())
 app.use(express.json({ limit: JSON_LIMIT }))
 

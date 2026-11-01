@@ -29,7 +29,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 COPY package.json package-lock.json server.js ./
 COPY server/*.js ./server/
 COPY drizzle ./drizzle
-COPY scripts/migrate.mjs scripts/seed-sample.mjs ./scripts/
+COPY scripts/migrate.mjs scripts/seed-sample.mjs scripts/create-operator.mjs ./scripts/
 COPY --from=production-dependencies-env /app/node_modules ./node_modules
 COPY --from=build-env /app/build ./build
 EXPOSE 3000

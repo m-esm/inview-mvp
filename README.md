@@ -57,7 +57,7 @@ npm run dev
 
 Open the address it prints, usually http://localhost:3000.
 
-In development, the gallery access code is `inview` when `O_GALLERY_ACCESS_CODE` is not set. In production, the server stops when `O_GALLERY_ACCESS_CODE` is missing. At start, the server stores a new scrypt hash when the saved hash is empty or does not match. The log does not show the code or the hash.
+In development, the gallery access code is `inview` when `O_GALLERY_ACCESS_CODE` is not set. In production, the server stops when `O_GALLERY_ACCESS_CODE` is missing and no saved hash exists. At start, the server fills an empty hash once. An existing hash remains the source of truth, including after a code rotation. The log does not show the code or the hash.
 
 Staff open `/dashboard/sign-in` and send that code once. The server sets an httpOnly cookie named `inview_staff`. The editor, publish, upload and the staff report use that cookie. The cookie expires after 12 hours. Sign-out deletes the session. The Rooz dashboard stays public.
 
@@ -93,7 +93,7 @@ merges a sync pull request when a fast-forward is not possible.
 |---|---|
 | `DATABASE_URL` | Postgres URL (required) |
 | `PUBLIC_APP_URL` | Public site origin for QR links |
-| `O_GALLERY_ACCESS_CODE` | Access code for O Gallery. Required in production. The server stores only a scrypt hash. |
+| `O_GALLERY_ACCESS_CODE` | Access code for O Gallery. Required in production when no saved hash exists. The server stores only a scrypt hash. |
 | `MEDIA_DIR` | Local media folder when S3 is not set |
 | `S3_BUCKET`, `S3_ENDPOINT`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_PUBLIC_HOST` | Garage / S3 |
 | `KAVENEGAR_API_KEY`, `KAVENEGAR_SENDER` | SMS OTP (optional; console provider is the default) |

@@ -1,12 +1,16 @@
 import express from 'express'
 import type { ErrorRequestHandler, Express, Request } from 'express'
 import { media } from '../database/schema'
-import { leadsCsvForSession } from './gallery-record'
+import { leadsCsvForSession, tenantById } from './gallery-record'
 import { displayVariant, processAndStoreImage, UploadError } from './images'
 import { beginUpload, clientIpFrom, runPilotRequest, runStaffRequest, writeApiResult } from './rate-limit'
-import { readStaffSession } from './staff-session'
+import { readStaffSession, requestIsSecure } from './staff-session'
 import type { ObjectStorage } from './storage'
 import { isMultipart, readMultipart } from './upload-body'
+import { AccountInputError, signIn, signOut } from './accounts'
+import { principalFor } from './authz'
+import { acceptInvite, InvalidInviteError, readInvite } from './invitations'
+import { originCheck } from './origin-check'
 
 // Drizzle handle: Postgres.js in production, PGlite in tests.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -51,6 +55,83 @@ const SERVER_ERROR = {
 }
 
 export function mountApi(app: Express, db: Db, storage: ObjectStorage) {
+  app.use('/api', (_req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store')
+    next()
+  })
+
+  app.post('/api/v1/auth/sign-in', async (req, res) => {
+    const { identifier, password } = req.body ?? {}
+    if (typeof identifier !== 'string' || !identifier.trim() || identifier.length > 320 || typeof password !== 'string') {
+      sendJson(res, 400, { error: 'Enter your email or phone number and password.' })
+      return
+    }
+    try {
+      const result = await signIn(db, {
+        identifier,
+        password,
+        ip: clientKey(req),
+        secure: requestIsSecure((name) => req.get(name), `${req.protocol}://${req.get('host')}`),
+      })
+      if (!result.ok) {
+        writeApiResult(res, result.result)
+        return
+      }
+      res.setHeader('Set-Cookie', result.cookie)
+      sendJson(res, 200, { user: result.user })
+    } catch {
+      sendJson(res, 500, SERVER_ERROR)
+    }
+  })
+
+  app.post('/api/v1/auth/sign-out', async (req, res) => {
+    try {
+      const secure = requestIsSecure((name) => req.get(name), `${req.protocol}://${req.get('host')}`)
+      res.setHeader('Set-Cookie', await signOut(db, req.get('cookie'), secure))
+      sendJson(res, 200, { ok: true })
+    } catch {
+      sendJson(res, 500, SERVER_ERROR)
+    }
+  })
+
+  app.get('/api/v1/auth/me', async (req, res) => {
+    try {
+      const principal = await principalFor(db, req.get('cookie'))
+      sendJson(res, principal ? 200 : 401, principal ? { principal } : { error: 'Sign in to continue.' })
+    } catch {
+      sendJson(res, 500, SERVER_ERROR)
+    }
+  })
+
+  app.get('/api/v1/invites/:token', async (req, res) => {
+    try {
+      const invite = await readInvite(db, String(req.params.token))
+      sendJson(res, invite ? 200 : 404, invite ?? { error: 'This invite is not valid.' })
+    } catch {
+      sendJson(res, 500, SERVER_ERROR)
+    }
+  })
+
+  app.post('/api/v1/invites/:token/accept', async (req, res) => {
+    const { name, password } = req.body ?? {}
+    if (typeof name !== 'string' || typeof password !== 'string') {
+      sendJson(res, 400, { error: 'Enter your name and password.' })
+      return
+    }
+    try {
+      const secure = requestIsSecure((key) => req.get(key), `${req.protocol}://${req.get('host')}`)
+      const accepted = await acceptInvite(db, String(req.params.token), name, password, secure)
+      res.setHeader('Set-Cookie', accepted.cookie)
+      sendJson(res, 200, { user: accepted.user })
+    } catch (error) {
+      if (error instanceof InvalidInviteError || error instanceof AccountInputError) {
+        sendJson(res, error instanceof InvalidInviteError ? 404 : 400, { error: error.message })
+        return
+      }
+      sendJson(res, 500, SERVER_ERROR)
+    }
+  })
+
   app.get('/api/v1/health', (_req, res) => {
     sendJson(res, 200, { ok: true, service: 'inview-mvp' })
   })
@@ -115,7 +196,7 @@ export function mountApi(app: Express, db: Db, storage: ObjectStorage) {
       }
       const day = new Date().toISOString().slice(0, 10)
       res.setHeader('Content-Type', 'text/csv; charset=utf-8')
-      res.setHeader('Content-Disposition', `attachment; filename="o-gallery-leads-${day}.csv"`)
+      res.setHeader('Content-Disposition', `attachment; filename="${(await tenantById(db, sessionId))!.gallery.slug}-leads-${day}.csv"`)
       res.status(200).send(result.body)
     } catch (error) {
       console.error(error)
@@ -141,7 +222,7 @@ export function mountApi(app: Express, db: Db, storage: ObjectStorage) {
         sendJson(res, 400, UPLOAD_MISSING)
         return
       }
-      const processed = await processAndStoreImage(storage, 'o-gallery', upload.file)
+      const processed = await processAndStoreImage(storage, gate.gallerySlug, upload.file)
       const [row] = await db
         .insert(media)
         .values({
@@ -194,6 +275,7 @@ export function mountApi(app: Express, db: Db, storage: ObjectStorage) {
 export function createApiApp(db: Db, storage: ObjectStorage) {
   const app = express()
   app.disable('x-powered-by')
+  app.use(originCheck)
   app.use(express.json({ limit: JSON_LIMIT }))
   mountApi(app, db, storage)
   return app
