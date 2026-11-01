@@ -48,10 +48,10 @@ test('the language cookie server-renders the root landing in English', () => {
   assert.doesNotMatch(html, /آثار گالری شما/)
 })
 
-test('default landing contact hides placeholder phone and WhatsApp links', () => {
+test('default landing contact shows no unverified contact link', () => {
   const { html } = renderHome('https://inview.test/')
-  assert.doesNotMatch(html, /tel:|wa\.me|000/)
-  assert.match(html, /class="btn btn-primary" href="https:\/\/t\.me\/inview_ir"/)
+  assert.doesNotMatch(html, /tel:|wa\.me|t\.me|mailto:|000/)
+  assert.ok(html.includes(landingCopy.fa.comingSoon))
   assert.match(html, /href="#contact"/)
 })
 
@@ -68,7 +68,7 @@ test('each configured contact channel can be the primary action', () => {
   const empty = { phone: '', whatsappUrl: '', telegramUrl: '', email: '' }
   for (const [key, value, href] of [
     ['whatsappUrl', 'https://wa.me/358401234567', 'https://wa.me/358401234567'],
-    ['telegramUrl', 'https://t.me/inview_ir', 'https://t.me/inview_ir'],
+    ['telegramUrl', 'https://t.me/example_gallery', 'https://t.me/example_gallery'],
     ['email', 'hello@inview.test', 'mailto:hello@inview.test'],
     ['phone', '+358 40 1234567', 'tel:+358401234567'],
   ]) {
