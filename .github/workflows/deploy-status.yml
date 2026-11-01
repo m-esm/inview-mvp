@@ -150,3 +150,5 @@ jobs:
           fi
           git commit -m "chore: refresh deploy-status screenshots and status.json"
           git push -u origin HEAD:deploy-status
+
+# Trigger feed refresh after first merge to main.
