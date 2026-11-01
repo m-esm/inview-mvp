@@ -1,0 +1,106 @@
+{
+  "fetchedAt": "2026-11-01T01:08:22.676Z",
+  "apps": [
+    {
+      "id": "inview",
+      "status": "live",
+      "imageTag": "main-22-10fc063",
+      "commitSha": "10fc063",
+      "clusterHadCommitSha": null,
+      "health": {
+        "url": "https://inview.moshes.io/api/v1/health",
+        "ok": true,
+        "statusCode": 200,
+        "bodySnippet": "{\"ok\":true,\"service\":\"inview-mvp\"}",
+        "checkedAt": "2026-11-01T01:08:38.281Z",
+        "error": null
+      },
+      "screenshots": [
+        {
+          "pageId": "o-gallery",
+          "label": "Welcome /g/o-gallery",
+          "path": "/g/o-gallery",
+          "viewport": "desktop",
+          "width": 1280,
+          "height": 800,
+          "takenAt": "2026-11-01T01:08:22.676Z",
+          "url": "screenshots/inview/o-gallery-desktop.jpg"
+        },
+        {
+          "pageId": "works",
+          "label": "Works /g/o-gallery/works",
+          "path": "/g/o-gallery/works",
+          "viewport": "desktop",
+          "width": 1280,
+          "height": 800,
+          "takenAt": "2026-11-01T01:08:22.676Z",
+          "url": "screenshots/inview/works-desktop.jpg"
+        },
+        {
+          "pageId": "dashboard",
+          "label": "Editor /dashboard/o-gallery",
+          "path": "/dashboard/o-gallery",
+          "viewport": "desktop",
+          "width": 1280,
+          "height": 800,
+          "takenAt": "2026-11-01T01:08:22.676Z",
+          "url": "screenshots/inview/dashboard-desktop.jpg"
+        },
+        {
+          "pageId": "o-gallery",
+          "label": "Welcome /g/o-gallery",
+          "path": "/g/o-gallery",
+          "viewport": "mobile",
+          "width": 390,
+          "height": 844,
+          "takenAt": "2026-11-01T01:08:22.676Z",
+          "url": "screenshots/inview/o-gallery-mobile.jpg"
+        },
+        {
+          "pageId": "works",
+          "label": "Works /g/o-gallery/works",
+          "path": "/g/o-gallery/works",
+          "viewport": "mobile",
+          "width": 390,
+          "height": 844,
+          "takenAt": "2026-11-01T01:08:22.676Z",
+          "url": "screenshots/inview/works-mobile.jpg"
+        },
+        {
+          "pageId": "dashboard",
+          "label": "Editor /dashboard/o-gallery",
+          "path": "/dashboard/o-gallery",
+          "viewport": "mobile",
+          "width": 390,
+          "height": 844,
+          "takenAt": "2026-11-01T01:08:22.676Z",
+          "url": "screenshots/inview/dashboard-mobile.jpg"
+        }
+      ]
+    },
+    {
+      "id": "wishlist",
+      "status": "live",
+      "imageTag": null,
+      "commitSha": null,
+      "clusterHadCommitSha": null,
+      "health": {
+        "url": "https://wishlist-api.moshes.io/healthz",
+        "ok": true,
+        "statusCode": 200,
+        "bodySnippet": "ok",
+        "checkedAt": "2026-11-01T01:08:38.517Z",
+        "error": null
+      },
+      "screenshots": []
+    },
+    {
+      "id": "inview-docs",
+      "status": "planned",
+      "imageTag": null,
+      "commitSha": null,
+      "clusterHadCommitSha": null,
+      "screenshots": []
+    }
+  ]
+}
