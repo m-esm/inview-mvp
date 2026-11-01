@@ -21,7 +21,7 @@ export default function GalleryLayout() {
 
   if (!unlocked) {
     return (
-      <div className="gate">
+      <main className="gate">
         <aside className="gate-panel" aria-hidden>
           <h2>Edit the show. Keep the wall clear.</h2>
           <p>Inview is the visitor catalogue for your gallery. Open the dashboard to update works, prices and the QR landing page.</p>
@@ -60,7 +60,7 @@ export default function GalleryLayout() {
             Open dashboard
           </button>
         </form>
-      </div>
+      </main>
     )
   }
 

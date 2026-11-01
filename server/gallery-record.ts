@@ -535,7 +535,7 @@ export async function publishGalleryRecord(
       }
     })
 
-    return { status: 200, body: await loadGalleryState(db) }
+    return { status: 200, body: toPublicGallery(await loadGalleryState(db)) }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Publish did not complete.'
     return { status: 400, body: { error: message } }

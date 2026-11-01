@@ -90,8 +90,14 @@ export default function OGalleryEditor() {
         return
       }
       setDraft(data.record)
-      setStats(data)
       setMessage('Published. The QR path is still /g/o-gallery.')
+      const code = password.trim()
+      if (!code) return
+      try {
+        setStats(await fetchStaff(code))
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'The visit report did not load.')
+      }
     } finally {
       setPublishing(false)
     }

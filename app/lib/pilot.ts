@@ -143,6 +143,10 @@ export function usePilotRecord(enabled = true) {
 
 const sent = new Set<string>()
 
+function readBody(res: Response) {
+  return res.text().then(() => res)
+}
+
 export function recordLandingScan() {
   const day = new Date().toISOString().slice(0, 10)
   const localKey = `inview-o-scan-${day}`
@@ -156,7 +160,7 @@ export function recordLandingScan() {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ op: 'visit', kind: 'scan', visitorId: getVisitorId() }),
-  }).then(async (res) => {
+  }).then(readBody).then((res) => {
     if (!res.ok) throw new Error('scan failed')
     try { localStorage.setItem(localKey, '1') } catch { /* server still dedupes */ }
   }).catch(() => { sent.delete(mark) })
@@ -170,7 +174,7 @@ export function recordWorkView(workId: string) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ op: 'visit', kind: 'view', visitorId: getVisitorId(), workId }),
-  }).catch(() => {})
+  }).then(readBody).catch(() => {})
 }
 
 export function reportLead(phone: string, kind: 'save' | 'ask' | 'follow' | 'stamp', workId?: string) {
@@ -180,5 +184,5 @@ export function reportLead(phone: string, kind: 'save' | 'ask' | 'follow' | 'sta
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ op: 'lead', kind, phone, visitorId: getVisitorId(), workId: workId ?? null }),
-  }).catch(() => {})
+  }).then(readBody).catch(() => {})
 }

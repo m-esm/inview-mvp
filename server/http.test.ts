@@ -97,6 +97,10 @@ test('HAD-24 public reads and visitor posts hide phone numbers', async () => {
     })
     assert.equal(published.status, 200)
     assert.equal(published.body.record.works[0].title, 'Sample work')
+    // Chosen rule: a successful PUT returns the public record only.
+    // Lead phone numbers and visit counts stay on POST /api/pilot/staff.
+    assert.equal('leads' in published.body, false)
+    assert.equal('visits' in published.body, false)
 
     const denied = await api.put('/api/pilot').send({
       accessCode: 'nope',
@@ -138,9 +142,31 @@ test('HAD-24 public reads and visitor posts hide phone numbers', async () => {
     assert.equal(lead.body.ok, true)
     assert.equal(JSON.stringify(lead.body).includes('09120000000'), false)
 
+    const ask = await api.post('/api/pilot').send({
+      op: 'lead',
+      kind: 'ask',
+      visitorId: VISITOR,
+      phone: '09121111111',
+      workId: 'samplework1',
+    })
+    assert.equal(ask.status, 200)
+    assert.equal(ask.body.ok, true)
+    assert.equal(JSON.stringify(ask.body).includes('09121111111'), false)
+
     const publicAfter = await api.get('/api/v1/pilot')
     assert.equal(JSON.stringify(publicAfter.body).includes('09120000000'), false)
+    assert.equal(JSON.stringify(publicAfter.body).includes('09121111111'), false)
     assert.equal('leads' in publicAfter.body, false)
+
+    const publishedAfterLead = await api.put('/api/pilot').send({
+      accessCode: 'inview',
+      record: { ...first.body.record, works: [sampleWork()] },
+    })
+    assert.equal(publishedAfterLead.status, 200)
+    assert.equal('leads' in publishedAfterLead.body, false)
+    assert.equal('visits' in publishedAfterLead.body, false)
+    assert.equal(JSON.stringify(publishedAfterLead.body).includes('09120000000'), false)
+    assert.equal(JSON.stringify(publishedAfterLead.body).includes('09121111111'), false)
 
     const staffDenied = await api.post('/api/v1/pilot/staff').send({ accessCode: 'nope' })
     assert.equal(staffDenied.status, 401)
@@ -149,8 +175,9 @@ test('HAD-24 public reads and visitor posts hide phone numbers', async () => {
     assert.equal(staff.status, 200)
     assert.equal(staff.body.visits.scans, 1)
     assert.equal(staff.body.visits.views, 1)
-    assert.equal(staff.body.leads[0].phone, '09120000000')
-    assert.equal(staff.body.leads[0].kind, 'save')
+    const phones = staff.body.leads.map((item: { phone: string; kind: string }) => `${item.kind}:${item.phone}`)
+    assert.equal(phones.includes('save:09120000000'), true)
+    assert.equal(phones.includes('ask:09121111111'), true)
   })
 })
 
