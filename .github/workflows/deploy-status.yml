@@ -35,14 +35,22 @@ jobs:
           node-version: "22"
       - name: Install Playwright
         run: |
+          # Install in a temp tree so this repo's package.json does not
+          # pull a different Playwright browser revision.
+          pw_root="${RUNNER_TEMP}/deploy-status-pw"
+          rm -rf "$pw_root"
+          mkdir -p "$pw_root"
+          cd "$pw_root"
           npm init -y >/dev/null
-          npm install --no-save playwright@1.56.1
+          npm install playwright@1.56.1
           npx playwright install --with-deps chromium
+          echo "PW_ROOT=$pw_root" >> "$GITHUB_ENV"
       - name: Capture screenshots and write status.json
         env:
           CLUSTER_HAD_TOKEN: ${{ secrets.CLUSTER_HAD_TOKEN }}
         run: |
           set -euo pipefail
+          export NODE_PATH="${PW_ROOT}/node_modules${NODE_PATH:+:$NODE_PATH}"
           node <<'NODE'
           const { chromium } = require("playwright");
           const fs = require("fs");
