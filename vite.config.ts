@@ -17,10 +17,14 @@ export default defineConfig(({ isSsrBuild }) => ({
     !isSsrBuild &&
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['icons/favicon.svg', 'icons/apple-touch-icon.png'],
+        includeAssets: ['icons/favicon.svg', 'icons/apple-touch-icon.png', 'offline.html'],
+        injectRegister: false,
         manifest: {
+          id: '/g/o-gallery',
           name: 'Inview',
           short_name: 'Inview',
+          lang: 'fa',
+          dir: 'rtl',
           description: 'The show, the works and the prices, in your pocket.',
           theme_color: '#203F3B',
           background_color: '#E7E3D9',
@@ -39,20 +43,25 @@ export default defineConfig(({ isSsrBuild }) => ({
           ],
         },
         workbox: {
-          globPatterns: ['**/*.{js,css,html,svg,png,jpg,woff2}'],
+          globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+          globIgnores: ['artworks/**', '**/*latin-ext*', '**/*cyrillic*', '**/*vietnamese*'],
           navigateFallback: null,
           runtimeCaching: [
             {
-              urlPattern: ({ request }) => request.mode === 'navigate',
+              urlPattern: ({ request, url }) =>
+                request.mode === 'navigate' &&
+                !url.pathname.startsWith('/dashboard') &&
+                !url.pathname.startsWith('/api'),
               handler: 'NetworkFirst',
               options: {
                 cacheName: 'pages',
                 networkTimeoutSeconds: 3,
                 expiration: { maxEntries: 64 },
+                precacheFallback: { fallbackURL: '/offline.html' },
               },
             },
             {
-              urlPattern: ({ request }) => request.destination === 'image',
+              urlPattern: ({ request, url }) => request.destination === 'image' && !url.pathname.startsWith('/api'),
               handler: 'StaleWhileRevalidate',
               options: {
                 cacheName: 'media',

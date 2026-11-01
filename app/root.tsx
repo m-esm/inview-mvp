@@ -11,6 +11,7 @@ import {
 import type { Route } from './+types/root'
 import { useT } from './lib/i18n'
 import { dirFor, resolveLang } from './lib/lang'
+import { ServiceWorker } from './components/ServiceWorker'
 import '@fontsource/fraunces/400.css'
 import '@fontsource/fraunces/500.css'
 import '@fontsource/sora/400.css'
@@ -25,6 +26,7 @@ import './styles.css'
 export const links: Route.LinksFunction = () => [
   { rel: 'icon', href: '/icons/favicon.svg', type: 'image/svg+xml' },
   { rel: 'apple-touch-icon', href: '/icons/apple-touch-icon.png' },
+  { rel: 'manifest', href: '/manifest.webmanifest' },
 ]
 
 export function loader({ request }: Route.LoaderArgs) {
@@ -48,6 +50,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         {children}
+        <ServiceWorker />
         <ScrollRestoration />
         <Scripts />
       </body>
