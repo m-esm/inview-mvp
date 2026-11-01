@@ -2190,9 +2190,9 @@ td {
   .landing-contact { grid-template-columns: 1.2fr 1fr; gap: var(--space-8); }
   .landing-footer > div:first-child { width: auto; }
 }
-.ops-shell, .ops-auth { color: #202b29; background: #f2eee4; min-height: 100svh; }
+.ops-shell, .ops-auth { color: var(--ink); background: var(--paper); min-height: 100svh; }
 .ops-shell[dir="rtl"], .ops-auth[dir="rtl"] { font-family: 'Estedad', sans-serif; }
-.ops-header { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; border-bottom: 2px solid #263b35; padding: 24px 4vw; }
+.ops-header { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; border-bottom: 2px solid var(--line-strong); padding: 24px 4vw; }
 .ops-brand { font-size: 24px; font-weight: 700; text-decoration: none; margin-inline-end: auto; }
 .ops-brand span { display: block; font-size: 12px; font-weight: 400; margin-top: 4px; }
 .ops-header nav, .ops-links, .ops-actions { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
@@ -2200,42 +2200,53 @@ td {
 .ops-content h1, .ops-auth h1 { font-size: clamp(28px, 4vw, 48px); margin: 8px 0 28px; line-height: 1.5; }
 .ops-content h2 { font-size: 21px; margin-bottom: 16px; }
 .ops-title { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; }
-.ops-eyebrow { color: #47554b; font-size: 13px; margin: 0; }
-.ops-health { border-block: 1px solid #849085; padding: 16px 0; margin: 12px 0 32px; }
+.ops-eyebrow { color: var(--muted); font-size: 13px; margin: 0; }
+.ops-health { border-block: 1px solid var(--line-strong); padding: 16px 0; margin: 12px 0 32px; }
 .ops-health strong { margin-inline-start: 8px; }
 .ops-table-scroll { max-width: 100%; overflow-x: auto; }
 .ops-table { width: 100%; border-collapse: collapse; min-width: 780px; text-align: start; }
-.ops-table th, .ops-table td { padding: 20px 16px; border-bottom: 1px solid #b8bbae; text-align: start; vertical-align: top; }
-.ops-table thead th { background: #e0e3d5; font-size: 13px; }
+.ops-table th, .ops-table td { padding: 20px 16px; border-bottom: 1px solid var(--line); text-align: start; vertical-align: top; }
+.ops-table thead th { background: var(--field); font-size: 13px; }
 .ops-table small { display: block; font-weight: 400; margin-top: 8px; overflow-wrap: anywhere; }
-.ops-status { font-size: 13px; border: 1px solid #687467; padding: 4px 8px; white-space: nowrap; }
+.ops-status { font-size: 13px; border: 1px solid var(--line-strong); padding: 4px 8px; white-space: nowrap; }
 .ops-stats { display: grid; gap: 4px; font-size: 13px; white-space: nowrap; }
-.ops-section { margin-top: 40px; padding-top: 24px; border-top: 1px solid #849085; }
+.ops-section { margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--line-strong); }
 .ops-activity { list-style: none; padding: 0; }
-.ops-activity li { display: flex; justify-content: space-between; gap: 16px; padding: 16px 0; border-bottom: 1px solid #b8bbae; overflow-wrap: anywhere; }
+.ops-activity li { display: flex; justify-content: space-between; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
 .ops-activity time { font-size: 13px; }
 .ops-links { padding: 0 0 28px; }
 .ops-form { max-width: 680px; display: grid; gap: 20px; }
 .ops-form label, .ops-auth label, .ops-member label { display: grid; gap: 8px; font-size: 14px; font-weight: 600; }
-.ops-shell input, .ops-shell select, .ops-shell textarea, .ops-auth input { width: 100%; min-width: 0; border: 1px solid #687467; border-radius: 2px; padding: 12px; background: #fffdf7; color: #202b29; font: inherit; }
+.ops-shell input, .ops-shell select, .ops-shell textarea, .ops-auth input { width: 100%; min-width: 0; border: 1px solid var(--line-strong); border-radius: 2px; padding: 12px; background: var(--surface); color: var(--ink); font: inherit; }
 .ops-shell textarea { resize: vertical; }
 .ops-form .ops-check { display: flex; align-items: center; gap: 12px; }
 .ops-check input { width: 20px; height: 20px; }
 .ops-shell .btn, .ops-auth .btn { min-height: 44px; white-space: normal; }
 .ops-form > .btn { justify-self: start; }
-.ops-once { background: #e2e7d7; border-inline-start: 4px solid #334b37; max-width: 720px; padding: 24px; margin: 24px 0; }
+.ops-once { background: var(--pine-tint); border-inline-start: 4px solid var(--pine); max-width: 720px; padding: 24px; margin: 24px 0; }
 .ops-once textarea { margin: 12px 0; min-height: 90px; overflow-wrap: anywhere; }
 .ops-auth { display: grid; place-items: center; padding: 32px 20px; }
-.ops-auth-form { width: 100%; max-width: 460px; border-block: 2px solid #263b35; padding: 28px 0; }
+.ops-auth-form { width: 100%; max-width: 460px; border-block: 2px solid var(--line-strong); padding: 28px 0; }
 .ops-auth form label { margin: 20px 0; }
 .ops-auth-form > .row { margin-bottom: 32px; }
 .ops-team { display: grid; gap: 24px; margin-top: 40px; }
-.ops-member { border-top: 1px solid #849085; padding-top: 24px; }
+.ops-member { border-top: 1px solid var(--line-strong); padding-top: 24px; }
 .ops-member select { max-width: 320px; }
 .ops-actions { margin-top: 20px; }
-.ops-skip { position: absolute; transform: translateY(-150%); padding: 12px; background: #fff; z-index: 10; }
+.ops-skip { position: absolute; transform: translateY(-150%); padding: 12px; background: var(--surface); z-index: 10; }
 .ops-skip:focus { transform: translateY(0); }
-.ops-shell :focus-visible, .ops-auth :focus-visible { outline: 3px solid #77520e; outline-offset: 3px; }
+.ops-table-compact { min-width: 0; }
+.ops-table-compact th, .ops-table-compact td { padding: 14px 8px; }
+.ops-filters { display: flex; gap: 16px; flex-wrap: wrap; align-items: end; }
+.ops-filters label { display: grid; gap: 8px; flex: 1 1 200px; min-width: 0; }
+.ops-filters select { max-width: 100%; }
+.ops-audit-list { list-style: none; padding: 0; }
+.ops-audit-list li { padding: 24px 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.ops-audit-list time { font-size: 13px; }
+.ops-health-details dt { font-weight: 600; margin-top: 20px; }
+.ops-health-details dd { margin: 8px 0 0; overflow-wrap: anywhere; }
+.ops-member, .ops-activity > li > span { min-width: 0; overflow-wrap: anywhere; }
+.ops-shell :focus-visible, .ops-auth :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 @media (max-width: 600px) {
   .ops-header { padding: 20px; gap: 16px; }
   .ops-header nav { order: 4; width: 100%; }

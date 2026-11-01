@@ -3,6 +3,17 @@ import { defaultLang, dirFor, type Lang } from './lang'
 import { staffFormat } from './i18n-staff'
 
 const en = {
+  qr: 'QR codes', label: 'Label', qrSlug: 'Code slug', createQr: 'Create QR code', downloadSvg: 'Download SVG',
+  activity: 'Activity', audit: 'Audit log', operators: 'Operators', inviteOperator: 'Invite operator',
+  phone: 'Phone number', reason: 'Reason for revealing this number (no personal details)', reveal: 'Reveal one phone',
+  exportCsv: 'Export leads as CSV', consent: 'Consent version', noWork: 'No work', askKind: 'Enquiry', saveKind: 'Saved work',
+  leadsLimit: 'Latest 1,000 leads. Phone numbers are masked in this list.',
+  tehran: 'Tehran time', day: 'Day', viewsByWork: 'Views per work in 30 days', actor: 'Actor', target: 'Target',
+  all: 'All', filter: 'Apply filters', unknown: 'Unknown', platform: 'Platform', pagination: 'Pagination', page: 'Page', previous: 'Previous', next: 'Next',
+  imageTag: 'Image tag', database: 'Database', storage: 'Media storage', blocksToday: 'Rate-limit buckets at capacity today (Tehran)',
+  mediaCount: 'Media count', migrations: 'Applied migrations', blocksHint: 'Counts retained buckets whose window started today in Tehran and whose hits reached the current limit. Resets replace earlier windows; one request can affect several buckets. This is not a count of HTTP 429 responses.',
+  'lead-reveal': 'Lead phone revealed', 'leads-export': 'Leads exported', 'qr-create': 'QR code created',
+  'operator-role': 'Operator role changed', 'operator-disable': 'Operator disabled',
   brand: 'Inview', panel: 'Operator panel', overview: 'Galleries', newGallery: 'Create a gallery',
   signIn: 'Sign in', signOut: 'Sign out', identifier: 'Email or phone', password: 'Password', name: 'Name',
   accept: 'Accept invite', invitation: 'Your invitation', invalidInvite: 'This invite is not valid or has expired.',
@@ -31,6 +42,17 @@ const en = {
 }
 
 const fa: typeof en = {
+  qr: 'کدهای QR', label: 'برچسب', qrSlug: 'شناسه کد', createQr: 'ساخت کد QR', downloadSvg: 'دریافت SVG',
+  activity: 'فعالیت', audit: 'گزارش عملیات', operators: 'اپراتورها', inviteOperator: 'دعوت اپراتور',
+  phone: 'شماره تلفن', reason: 'دلیل نمایش شماره (بدون اطلاعات شخصی)', reveal: 'نمایش یک شماره',
+  exportCsv: 'دریافت درخواست‌ها به صورت CSV', consent: 'نسخه رضایت', noWork: 'بدون اثر', askKind: 'پرسش', saveKind: 'اثر ذخیره‌شده',
+  leadsLimit: '۱۰۰۰ درخواست اخیر. شماره‌ها در این فهرست پوشیده هستند.',
+  tehran: 'زمان تهران', day: 'روز', viewsByWork: 'بازدید هر اثر در ۳۰ روز', actor: 'انجام‌دهنده', target: 'هدف',
+  all: 'همه', filter: 'اعمال فیلتر', unknown: 'نامشخص', platform: 'سامانه', pagination: 'صفحه‌بندی', page: 'صفحه', previous: 'قبلی', next: 'بعدی',
+  imageTag: 'برچسب ایمیج', database: 'پایگاه داده', storage: 'ذخیره‌سازی رسانه', blocksToday: 'شمارنده‌های رسیده به سقف امروز (تهران)',
+  mediaCount: 'تعداد رسانه‌ها', migrations: 'مهاجرت‌های اعمال‌شده', blocksHint: 'شمارنده‌های موجودی که بازه آن‌ها امروز به وقت تهران آغاز شده و به سقف فعلی رسیده‌اند شمرده می‌شوند. بازنشانی، بازه قبلی را جایگزین می‌کند و یک درخواست می‌تواند چند شمارنده را تغییر دهد. این عدد تعداد پاسخ‌های ۴۲۹ نیست.',
+  'lead-reveal': 'شماره درخواست نمایش داده شد', 'leads-export': 'درخواست‌ها صادر شدند', 'qr-create': 'کد QR ساخته شد',
+  'operator-role': 'نقش اپراتور تغییر کرد', 'operator-disable': 'اپراتور غیرفعال شد',
   brand: 'اینویو', panel: 'پنل اپراتور', overview: 'گالری‌ها', newGallery: 'ساخت گالری',
   signIn: 'ورود', signOut: 'خروج', identifier: 'ایمیل یا شماره تلفن', password: 'رمز عبور', name: 'نام',
   accept: 'پذیرش دعوت', invitation: 'دعوت شما', invalidInvite: 'این دعوت معتبر نیست یا منقضی شده است.',

@@ -9,6 +9,7 @@ import { loader as newGallery, action as create } from '../app/routes/ops.galler
 import { loader as profile, action as update } from '../app/routes/ops.galleries.profile'
 import { loader as team, action as editTeam } from '../app/routes/ops.galleries.team'
 import { action as signOut } from '../app/routes/ops.sign-out'
+import { loader as csv } from '../app/routes/ops.galleries.leads-csv'
 import type { AppLoadContext } from 'react-router'
 
 test('each operator loader and action redirects anonymous visitors and rejects staff', async () => {
@@ -20,7 +21,7 @@ test('each operator loader and action redirects anonymous visitors and rejects s
     for (const [cookie, status] of [['', 302], [session.cookie, 403]] as const) {
       const request = new Request('http://localhost/ops', { headers: { cookie } })
       const args = { request, params: { slug: 'unavailable' }, context: {} as AppLoadContext }
-      for (const handler of [shell, overview, newGallery, profile, team, create, update, editTeam, signOut]) {
+      for (const handler of [shell, overview, newGallery, profile, team, create, update, editTeam, signOut, csv]) {
         await assert.rejects(DatabaseContext.run(db, () => handler(args)), (error: unknown) => {
           assert.ok(error instanceof Response)
           assert.equal(error.status, status)

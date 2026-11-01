@@ -35,6 +35,9 @@ export function GalleryLinks({ slug }: { slug: string }) {
   return <nav className="ops-links" aria-label={t.gallery}>
     <Link to={`/ops/galleries/${slug}`}>{t.profile}</Link>
     <Link to={`/ops/galleries/${slug}/team`}>{t.team}</Link>
+    <Link to={`/ops/galleries/${slug}/qr`}>{t.qr}</Link>
+    <Link to={`/ops/galleries/${slug}/leads`}>{t.leads}</Link>
+    <Link to={`/ops/galleries/${slug}/activity`}>{t.activity}</Link>
     <a href={`/g/${slug}`}>{t.visitor}</a><a href={`/staff/${slug}`}>{t.editor}</a>
   </nav>
 }
