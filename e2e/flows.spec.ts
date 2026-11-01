@@ -3,6 +3,8 @@ import { expect, test, type Page } from '@playwright/test'
 
 const accessCode = process.env.O_GALLERY_ACCESS_CODE || 'inview'
 const workId = 'flowwork01'
+const PNG =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
 
 const viewports = [
   { name: 'phone', width: 390, height: 844 },
@@ -129,7 +131,8 @@ for (const viewport of viewports) {
       await expectAxe(page, 'landing persian')
     })
 
-    test('staff signs in, edits and publishes', async ({ page }) => {
+    test('staff signs in, edits and publishes', async ({ page, baseURL }) => {
+      await page.context().addCookies([{ name: 'inview-lang', value: 'en', url: baseURL || 'http://127.0.0.1:3000' }])
       await page.goto('/dashboard/o-gallery')
       await expect(page).toHaveURL(/\/dashboard\/sign-in$/)
       await expectAxe(page, 'staff sign-in')
@@ -141,8 +144,8 @@ for (const viewport of viewports) {
       await title.fill('Staff flow show')
       await page.getByRole('button', { name: 'Publish' }).click()
       await expect(page.getByRole('status')).toHaveText('Published. The QR path is still /g/o-gallery.')
-      await expect(page.getByRole('heading', { name: 'Visits' })).toBeVisible()
-      await expect(page.getByText(/Landing scans|There are no visits yet/)).toBeVisible()
+      await expect(page.getByRole('heading', { name: 'Visits and leads', level: 2 })).toBeVisible()
+      await expect(page.getByRole('term').filter({ hasText: 'Landing scans' })).toBeVisible()
       await expectAxe(page, 'staff editor')
 
       const live = await page.request.get('/api/pilot')
@@ -150,6 +153,34 @@ for (const viewport of viewports) {
       expect(body.record.showTitle).toBe('Staff flow show')
       expect(body.leads).toBeUndefined()
       expect(body.visits).toBeUndefined()
+
+      const csv = await page.request.get('/api/v1/pilot/staff/leads.csv')
+      expect(csv.status()).toBe(200)
+      expect(csv.headers()['content-type']).toContain('text/csv')
+      expect(await csv.text()).toContain('created_at,kind,phone,work_id,work_title')
+
+      await page.getByRole('button', { name: 'فا' }).first().click()
+      await expect(page.locator('html')).toHaveAttribute('dir', 'rtl')
+      await expect(page.getByRole('heading', { name: 'فهرست آثار گالری اُ' })).toBeVisible()
+      await expectAxe(page, 'staff editor persian')
+    })
+
+    test('staff upload sends the file and shows a preview', async ({ page, baseURL }) => {
+      await page.context().addCookies([{ name: 'inview-lang', value: 'en', url: baseURL || 'http://127.0.0.1:3000' }])
+      await page.goto('/dashboard/sign-in')
+      await page.getByLabel('Gallery access code').fill(accessCode)
+      await page.getByRole('button', { name: 'Open the editor' }).click()
+      await expect(page).toHaveURL(/\/dashboard\/o-gallery$/)
+      const upload = page.waitForResponse((response) => response.url().includes('/api/v1/uploads'))
+      await page.getByLabel('Image', { exact: true }).first().setInputFiles({ name: 'work.png', mimeType: 'image/png', buffer: Buffer.from(PNG, 'base64') })
+      const response = await upload
+      expect(response.status()).toBe(201)
+      expect(response.request().headers()['content-type']).toContain('multipart/form-data')
+      await expect(page.locator('.work-edit .upload-thumb img').first()).toHaveAttribute('src', /^\/media\//)
+      const publish = page.waitForRequest((request) => request.method() === 'PUT' && request.url().includes('/api/pilot'))
+      await page.getByRole('button', { name: 'Publish' }).click()
+      expect((await publish).postData() || '').not.toContain('data:')
+      await expect(page.getByRole('status')).toHaveText('Published. The QR path is still /g/o-gallery.')
     })
   })
 }
