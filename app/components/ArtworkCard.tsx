@@ -26,10 +26,14 @@ export function ArtworkCard({ a }: { a: Artwork }) {
         <Heart size={18} filled={isSaved} />
       </button>
       <Link to={`/g/${gallery.slug}/works/${a.id}`} className="label">
-        <span className="label-artist">{artist(a)}</span>
-        <span className="label-meta">{medium(a)}, {size(a)}</span>
+        <span className="label-artist" dir="auto">{artist(a)}</span>
+        <span className="label-meta">
+          <bdi className="bidi-plain">{medium(a)}</bdi>
+          {', '}
+          <bdi className="bidi-plain">{size(a)}</bdi>
+        </span>
         <span className="label-row">
-          <span className="label-price">{p ?? '—'}</span>
+          <span className="label-price"><bdi className="bidi-plain">{p ?? '—'}</bdi></span>
           <span className={`status s-${a.status}`}>{status(a.status)}</span>
         </span>
       </Link>

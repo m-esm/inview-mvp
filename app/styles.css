@@ -453,6 +453,9 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; }
   text-transform: uppercase;
   color: var(--muted);
 }
+.pad > .eyebrow:first-child {
+  margin-block-start: var(--space-5);
+}
 .visitor.fa .eyebrow {
   letter-spacing: 0;
   text-transform: none;
@@ -524,15 +527,64 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; }
   flex-direction: column;
   gap: var(--space-3);
   padding-top: var(--space-5);
-  padding-bottom: var(--space-6);
+  padding-bottom: var(--space-5);
   max-width: 360px;
 }
 .o-landing .show-title { max-width: 18ch; }
+
+/* Mobile: compact pine band under the welcome copy (no fake catalogue content). */
 .o-atmosphere {
-  display: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin-inline: var(--space-5);
+  margin-block-end: var(--space-5);
+  min-height: 148px;
+  padding: var(--space-5);
+  background:
+    linear-gradient(160deg, rgba(255, 252, 247, 0.08), rgba(18, 23, 20, 0.22)),
+    var(--pine);
+  color: var(--surface);
+  overflow: hidden;
+  position: relative;
+}
+.o-atmosphere-mark {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: clamp(5.5rem, 42vw, 8rem);
+  line-height: 0.8;
+  letter-spacing: -0.06em;
+  color: color-mix(in srgb, var(--surface) 18%, transparent);
+  position: absolute;
+  inset-inline-end: -4%;
+  top: 10%;
+  pointer-events: none;
+  user-select: none;
+}
+.visitor.fa .o-atmosphere-mark {
+  font-family: var(--fa);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.o-atmosphere-label {
+  position: relative;
+  font-family: var(--serif);
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+  max-width: 12ch;
+}
+.visitor.fa .o-atmosphere-label {
+  font-family: var(--fa);
+  font-weight: 700;
+  letter-spacing: 0;
 }
 
 @media (min-width: 960px) {
+  .pad > .eyebrow:first-child {
+    margin-block-start: var(--space-6);
+  }
   .cover { height: min(48vh, 420px); min-height: 280px; }
   .welcome:not(.o-landing) {
     display: grid;
@@ -566,51 +618,19 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; }
     width: 100%;
   }
   .o-atmosphere {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    align-items: flex-start;
-    gap: var(--space-4);
-    padding: clamp(28px, 4vw, 56px);
-    background:
-      linear-gradient(160deg, rgba(255, 252, 247, 0.08), rgba(18, 23, 20, 0.22)),
-      var(--pine);
-    color: var(--surface);
+    margin: 0;
     min-height: 100%;
-    border-radius: 0;
-    overflow: hidden;
-    position: relative;
+    padding: clamp(28px, 4vw, 56px);
+    gap: var(--space-4);
   }
   .o-landing .pad { padding-inline: clamp(32px, 5vw, 72px); }
   .o-atmosphere-mark {
-    font-family: var(--serif);
-    font-weight: 500;
     font-size: clamp(8rem, 18vw, 14rem);
-    line-height: 0.8;
-    letter-spacing: -0.06em;
-    color: color-mix(in srgb, var(--surface) 18%, transparent);
-    position: absolute;
     inset-inline-end: -2%;
     top: 8%;
-    pointer-events: none;
-    user-select: none;
-  }
-  .visitor.fa .o-atmosphere-mark {
-    font-family: var(--fa);
-    font-weight: 700;
-    letter-spacing: 0;
   }
   .o-atmosphere-label {
-    position: relative;
-    font-family: var(--serif);
     font-size: clamp(1.75rem, 3vw, 2.5rem);
-    letter-spacing: -0.02em;
-    max-width: 12ch;
-  }
-  .visitor.fa .o-atmosphere-label {
-    font-family: var(--fa);
-    font-weight: 700;
-    letter-spacing: 0;
   }
   .menu {
     margin-inline: clamp(32px, 5vw, 72px);
@@ -663,6 +683,7 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; }
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-5) var(--space-4);
+  /* Match .pad gutters so the wall aligns with the header column. */
   padding: var(--space-1) var(--space-5) var(--space-6);
 }
 .card { position: relative; }
@@ -717,6 +738,7 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; }
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  unicode-bidi: plaintext;
 }
 .label-meta {
   font-size: 13px;
@@ -724,6 +746,10 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; }
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  unicode-bidi: plaintext;
+}
+.bidi-plain {
+  unicode-bidi: plaintext;
 }
 .label-row {
   display: flex;
@@ -755,9 +781,9 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; }
   .grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--space-6) var(--space-5);
-    padding-inline: var(--space-6);
+    padding-inline: clamp(32px, 5vw, 72px);
   }
-  .chips { padding-inline: var(--space-6); }
+  .chips { padding-inline: clamp(32px, 5vw, 72px); }
 }
 
 /* ---------- Single work ---------- */
@@ -878,6 +904,13 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; }
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  unicode-bidi: plaintext;
+}
+.pl-text .muted {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  unicode-bidi: plaintext;
 }
 .pl-price {
   align-items: flex-end;
