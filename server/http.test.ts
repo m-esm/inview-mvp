@@ -6,6 +6,7 @@ delete process.env.O_GALLERY_ACCESS_CODE
 
 import { eq } from 'drizzle-orm'
 import request from 'supertest'
+import { CONSENT_TEXT_VERSION } from '../app/lib/consent.ts'
 import { galleries, media, works } from '../database/schema.ts'
 import { createApiApp } from './api-app.ts'
 import { resetAuthFailures } from './auth-limit.ts'
@@ -138,6 +139,8 @@ test('HAD-24 public reads and visitor posts hide phone numbers', async () => {
       visitorId: VISITOR,
       phone: '09120000000',
       workId: 'samplework1',
+      consent: true,
+      consentTextVersion: CONSENT_TEXT_VERSION,
     })
     assert.equal(lead.status, 200)
     assert.equal(lead.body.ok, true)
@@ -149,6 +152,8 @@ test('HAD-24 public reads and visitor posts hide phone numbers', async () => {
       visitorId: VISITOR,
       phone: '09121111111',
       workId: 'samplework1',
+      consent: true,
+      consentTextVersion: CONSENT_TEXT_VERSION,
     })
     assert.equal(ask.status, 200)
     assert.equal(ask.body.ok, true)

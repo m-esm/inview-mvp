@@ -52,6 +52,7 @@ async function expectAxe(page: Page, label: string) {
 async function signIn(page: Page, kind: 'save' | 'ask') {
   await expect(page.getByRole('dialog')).toBeVisible()
   await page.getByLabel('شماره موبایل').fill('09123334444')
+  await page.getByRole('checkbox', { name: /موافقم/ }).check()
   await page.getByRole('button', { name: 'ارسال کد' }).click()
   await page.getByLabel('کد ۴ رقمی را وارد کنید').fill('1234')
   await page.getByRole('button', { name: 'تأیید' }).click()

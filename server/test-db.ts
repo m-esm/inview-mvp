@@ -10,12 +10,13 @@ import { LocalObjectStorage } from './storage'
 
 export async function createTestDb() {
   const client = new PGlite()
-  const migration = readFileSync(
-    path.join(path.dirname(fileURLToPath(import.meta.url)), '../drizzle/0000_adr0001_init.sql'),
-    'utf8',
-  )
-  for (const statement of migration.split('--> statement-breakpoint').map((part) => part.trim()).filter(Boolean)) {
-    await client.exec(statement)
+  const drizzleDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '../drizzle')
+  const files = fs.readdirSync(drizzleDir).filter((name) => name.endsWith('.sql')).sort()
+  for (const file of files) {
+    const migration = readFileSync(path.join(drizzleDir, file), 'utf8')
+    for (const statement of migration.split('--> statement-breakpoint').map((part) => part.trim()).filter(Boolean)) {
+      await client.exec(statement)
+    }
   }
   const db = drizzle(client, { schema })
   const mediaRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'inview-media-'))

@@ -24,7 +24,9 @@ export function VisitorShell() {
     document.documentElement.lang = lang
     document.documentElement.dir = dir
   }, [lang, dir])
-  useEffect(() => window.scrollTo(0, 0), [pathname])
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
 
   const requireSignIn = useCallback<Ctx['requireSignIn']>((kind, action, subtitle, workId) => {
     if (phone && consentVersion === CONSENT_TEXT_VERSION) action()
