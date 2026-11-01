@@ -1,0 +1,51 @@
+name: Sync main
+
+# Keep main equal to pilot-o-gallery. Pushes that use GITHUB_TOKEN do not start
+# other workflows, so CI also builds the image on push to pilot-o-gallery.
+on:
+  push:
+    branches: [pilot-o-gallery]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fast-forward main or merge a sync pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git fetch origin main pilot-o-gallery
+          main_sha=$(git rev-parse origin/main)
+          pilot_sha=$(git rev-parse origin/pilot-o-gallery)
+
+          if [ "$main_sha" = "$pilot_sha" ]; then
+            echo "main already equals pilot-o-gallery"
+            exit 0
+          fi
+
+          if git merge-base --is-ancestor "$main_sha" "$pilot_sha"; then
+            git push origin "$pilot_sha:refs/heads/main"
+            echo "Fast-forwarded main to $pilot_sha"
+            exit 0
+          fi
+
+          pr_number=$(gh pr list --base main --head pilot-o-gallery --state open \
+            --json number --jq '.[0].number // empty')
+          if [ -z "$pr_number" ]; then
+            gh pr create --base main --head pilot-o-gallery \
+              --title "sync: set main equal to pilot-o-gallery" \
+              --body "Keep main equal to pilot-o-gallery for deploy."
+            pr_number=$(gh pr list --base main --head pilot-o-gallery --state open \
+              --json number --jq '.[0].number')
+          fi
+
+          gh pr merge "$pr_number" --merge --delete-branch=false
+          echo "Merged sync pull request #$pr_number into main"

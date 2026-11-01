@@ -77,8 +77,12 @@ docker run --rm -p 3000:3000 \
   ghcr.io/m-esm/inview-mvp:local
 ```
 
-CI runs tests and the build on each pull request.
-A push to `main` also pushes `ghcr.io/m-esm/inview-mvp:<short-sha>`.
+CI runs unit tests, the production build, and Playwright smoke tests on each
+pull request. A push to `main` (or a sync from `pilot-o-gallery`) also pushes
+`ghcr.io/m-esm/inview-mvp:<short-sha>` and
+`ghcr.io/m-esm/inview-mvp:main-<run_number>-<short-sha>` for Flux image
+automation. A push to `pilot-o-gallery` fast-forwards `main`, or opens and
+merges a sync pull request when a fast-forward is not possible.
 
 ## Environment
 
