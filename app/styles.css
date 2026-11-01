@@ -1919,6 +1919,8 @@ td {
   border-bottom: 1px solid var(--line);
 }
 .lead-phone { font-variant-numeric: tabular-nums; font-weight: 600; }
+.lead-time { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 1px; line-height: 1.3; }
+.lead-time .tiny { opacity: 0.75; }
 .staff-qr-label { display: block; margin-top: 18px; font-size: 14px; font-weight: 600; }
 .staff-report input {
   min-height: var(--touch);

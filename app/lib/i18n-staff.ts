@@ -46,6 +46,7 @@ const en = {
   noWorkStats: 'No work has views or leads yet.',
   leadsTitle: 'Phone numbers',
   leadsNote: 'Each number is unverified. The 4-digit code is still a demo.',
+  leadsTimeNote: 'Each time is Tehran time, in the Gregorian and Jalali calendars.',
   noLeads: 'No phone numbers yet.',
   downloadCsv: 'Download CSV',
   leadSave: 'Save',
@@ -191,6 +192,7 @@ const fa: StaffDict = {
   noWorkStats: 'هنوز هیچ اثری بازدید یا شماره ندارد.',
   leadsTitle: 'شماره‌ها',
   leadsNote: 'هیچ شماره‌ای تأیید نشده است. کد ۴ رقمی هنوز نمایشی است.',
+  leadsTimeNote: 'هر زمان به وقت تهران است، در گاه‌شمار خورشیدی و میلادی.',
   noLeads: 'هنوز شماره‌ای ثبت نشده است.',
   downloadCsv: 'دریافت CSV',
   leadSave: 'ذخیره',
@@ -298,18 +300,35 @@ function locale(lang: Lang) {
   return lang === 'fa' ? 'fa-IR' : 'en-GB'
 }
 
+function withoutEra(format: Intl.DateTimeFormat, at: Date) {
+  return format
+    .formatToParts(at)
+    .filter((part) => part.type !== 'era')
+    .map((part) => part.value)
+    .join('')
+    .trim()
+}
+
 export function staffFormat(lang: Lang) {
   const number = new Intl.NumberFormat(locale(lang))
   const calendar = lang === 'fa' ? 'fa-IR-u-ca-persian' : 'en-GB'
+  const otherCalendar = lang === 'fa' ? 'en-GB' : 'en-GB-u-ca-persian'
   const dateTime = new Intl.DateTimeFormat(calendar, {
     dateStyle: 'medium',
     timeStyle: 'short',
+    timeZone: STAFF_TIME_ZONE,
+  })
+  const otherDate = new Intl.DateTimeFormat(otherCalendar, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
     timeZone: STAFF_TIME_ZONE,
   })
   const dayOnly = new Intl.DateTimeFormat(calendar, { dateStyle: 'medium', timeZone: 'UTC' })
   return {
     number: (value: number) => number.format(value),
     dateTime: (iso: string) => dateTime.format(new Date(iso)),
+    otherDate: (iso: string) => withoutEra(otherDate, new Date(iso)),
     day: (isoDay: string) => dayOnly.format(new Date(`${isoDay}T12:00:00Z`)),
   }
 }

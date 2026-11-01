@@ -10,6 +10,7 @@ import { eq } from 'drizzle-orm'
 import sharp from 'sharp'
 import request from 'supertest'
 import { CONSENT_TEXT_VERSION } from '../app/lib/consent.ts'
+import { staffFormat } from '../app/lib/i18n-staff.ts'
 import { leads, memberships, visits, works } from '../database/schema.ts'
 import { createApiApp } from './api-app.ts'
 import { ensureOGalleryTenant } from './gallery-bootstrap.ts'
@@ -74,13 +75,23 @@ test('HAD-35 the leads CSV needs a staff session', async () => {
   })
 })
 
+test('HAD-35 each staff lead time carries the Jalali and the Gregorian date in Tehran time', () => {
+  const at = '2026-11-01T20:30:00Z'
+  const fa = staffFormat('fa')
+  assert.equal(fa.dateTime(at), '۱۱ آبان ۱۴۰۵، ۰:۰۰')
+  assert.equal(fa.otherDate(at), '2 November 2026')
+  const en = staffFormat('en')
+  assert.equal(en.dateTime(at), '2 Nov 2026, 00:00')
+  assert.equal(en.otherDate(at), '11 Aban 1405')
+})
+
 test('HAD-35 the CSV lists each lead with the work title and blocks spreadsheet formulas', async () => {
   await withStaff(async ({ app, db, cookie }) => {
     const saved = await publish(app, cookie, [work('csvwork01', '=HYPERLINK("x")'), work('csvwork02', 'Harbour, light')])
     assert.equal(saved.status, 200)
     const { gallery, show } = await ensureOGalleryTenant(db)
     await db.insert(leads).values([
-      { galleryId: gallery.id, showId: show.id, workId: 'csvwork01', phone: '09120000001', kind: 'ask', consentAt: new Date(), consentTextVersion: CONSENT_TEXT_VERSION },
+      { galleryId: gallery.id, showId: show.id, workId: 'csvwork01', phone: '09120000001', kind: 'ask', consentAt: new Date('2026-11-01T20:30:00Z'), consentTextVersion: CONSENT_TEXT_VERSION },
       { galleryId: gallery.id, showId: show.id, workId: 'csvwork02', phone: '09120000002', kind: 'save', consentAt: new Date(), consentTextVersion: CONSENT_TEXT_VERSION },
     ])
     const csv = await request(app).get('/api/v1/pilot/staff/leads.csv?gallery=o-gallery').set('Cookie', cookie)
@@ -88,9 +99,14 @@ test('HAD-35 the CSV lists each lead with the work title and blocks spreadsheet 
     assert.match(csv.headers['content-type'], /text\/csv/)
     assert.match(csv.headers['content-disposition'], /attachment; filename="o-gallery-leads-\d{4}-\d{2}-\d{2}\.csv"/)
     const lines = csv.text.replace(/^﻿/, '').trim().split('\r\n')
-    assert.equal(lines[0], 'created_at,kind,phone,work_id,work_title,consent_text_version,verified')
+    assert.equal(
+      lines[0],
+      'created_at_utc_iso,created_at_tehran_gregorian,created_at_tehran_jalali,kind,phone,work_id,work_title,consent_text_version,verified',
+    )
     assert.equal(lines.length, 3)
     assert.ok(lines.some((line) => line.includes('09120000001') && line.includes(`"'=HYPERLINK(""x"")"`)))
+    const formulaRow = lines.find((line) => line.includes('09120000001'))!
+    assert.ok(formulaRow.startsWith('2026-11-01T20:30:00.000Z,2026-11-02 00:00,1405-08-11 00:00,ask,'))
     assert.ok(lines.some((line) => line.includes('09120000002') && line.includes('"Harbour, light"')))
   })
 })
