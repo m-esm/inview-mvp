@@ -95,8 +95,15 @@ function WorkList({ works }: { works: PilotWork[] }) {
             <span className="pl-num" aria-hidden>{index + 1}</span>
             {work.image ? <img src={work.image} alt="" loading="lazy" /> : <span className="pl-fallback" aria-hidden />}
             <span className="pl-text">
-              <strong dir="auto">{work.title}</strong>
-              <span className="muted small" dir="auto">{[work.artist, work.medium, work.size].filter(Boolean).join(' · ') || '—'}</span>
+              <strong dir="auto" className="bidi-plain">{work.title}</strong>
+              <span className="muted small">
+                {work.artist ? <bdi className="bidi-plain">{work.artist}</bdi> : null}
+                {work.artist && (work.medium || work.size) ? ' · ' : null}
+                {work.medium ? <bdi className="bidi-plain">{work.medium}</bdi> : null}
+                {work.medium && work.size ? ' · ' : null}
+                {work.size ? <bdi className="bidi-plain">{work.size}</bdi> : null}
+                {!work.artist && !work.medium && !work.size ? '—' : null}
+              </span>
               {work.sample && <span className="sample-note">{copy.sampleBanner}</span>}
             </span>
             <span className="pl-price"><WorkPrice work={work} /></span>
@@ -121,9 +128,16 @@ function WorkWall({ works }: { works: PilotWork[] }) {
               : <span className="pl-fallback wall-fallback" aria-hidden />}
           </Link>
           <Link to={`/g/o-gallery/works/${work.id}`} className="label">
-            <span className="label-artist">{work.artist || work.title}</span>
+            <span className="label-artist" dir="auto">{work.artist || work.title}</span>
             <span className="label-meta">
-              {[work.title !== work.artist ? work.title : null, work.medium, work.size].filter(Boolean).join(' · ') || '—'}
+              {work.title && work.title !== work.artist && (
+                <bdi className="bidi-plain">{work.title}</bdi>
+              )}
+              {work.title && work.title !== work.artist && (work.medium || work.size) ? ' · ' : null}
+              {work.medium ? <bdi className="bidi-plain">{work.medium}</bdi> : null}
+              {work.medium && work.size ? ' · ' : null}
+              {work.size ? <bdi className="bidi-plain">{work.size}</bdi> : null}
+              {!work.title && !work.medium && !work.size ? '—' : null}
             </span>
             <span className="label-row">
               <span className="label-price"><WorkPrice work={work} /></span>
@@ -242,12 +256,21 @@ export function OWork() {
         {work.sample && <p className="sample-note">{copy.sampleBanner}</p>}
         {work.artist && (
           <>
-            <h1 className="work-artist">{work.artist}</h1>
+            <h1 className="work-artist" dir="auto">{work.artist}</h1>
             <span className="ink-rule" aria-hidden />
           </>
         )}
-        <p className="work-title">{work.title}{work.year ? `, ${work.year}` : ''}</p>
-        {(work.medium || work.size) && <p className="muted">{[work.medium, work.size].filter(Boolean).join(', ')}</p>}
+        <p className="work-title">
+          <bdi className="bidi-plain">{work.title}</bdi>
+          {work.year ? <>, <bdi className="bidi-plain">{work.year}</bdi></> : null}
+        </p>
+        {(work.medium || work.size) && (
+          <p className="muted">
+            {work.medium ? <bdi className="bidi-plain">{work.medium}</bdi> : null}
+            {work.medium && work.size ? ', ' : null}
+            {work.size ? <bdi className="bidi-plain">{work.size}</bdi> : null}
+          </p>
+        )}
         <div className="row between price-row">
           <span className="work-price"><WorkPrice work={work} /></span>
           <span className={`status s-${work.status}`}>{t[work.status]}</span>
