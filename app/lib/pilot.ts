@@ -1,5 +1,6 @@
 import seedJson from '../data/o-gallery-seed.json'
 import { leadBody } from './consent'
+import { isDatabaseGallery, O_SLUG } from './galleries'
 import { QR_CODE_PATTERN, tehranDay } from './tehran-day'
 
 export type PilotStatus = 'available' | 'reserved' | 'sold'
@@ -27,7 +28,8 @@ export interface PilotWork {
 }
 
 export interface PilotRecord {
-  slug: 'o-gallery'
+  slug: string
+  demo?: boolean
   name: string
   nameFa: string
   logo: string | null
@@ -74,7 +76,11 @@ export function getVisitorId(): string {
   }
 }
 
-export function oCopy(lang: 'en' | 'fa') {
+function withArticle(name: string): string {
+  return `${/^[aeiou]/i.test(name) ? 'an' : 'a'} ${name}`
+}
+
+export function oCopy(lang: 'en' | 'fa', galleryName?: string) {
   if (lang === 'fa') {
     return {
       currentShow: 'نمایش جاری',
@@ -83,7 +89,9 @@ export function oCopy(lang: 'en' | 'fa') {
       emptyBody: 'آثار این نمایشگاه را اینجا خواهید دید.',
       emptyNote: 'برای این نمایشگاه یادداشتی نیست.',
       missingWork: 'این اثر در این نمایش نیست.',
-      sampleBanner: 'این یک نمونه است. این اثر متعلق به گالری اُ نیست.',
+      sampleBanner: `این یک نمونه است. این اثر متعلق به ${galleryName || 'گالری اُ'} نیست.`,
+      demoLabel: 'نمونه نمایشی',
+      demoNote: 'این گالری نمونه است. نام‌ها، آثار و قیمت‌ها ساختگی هستند.',
       samplesTitle: 'نمونه‌ها',
       downloadPdf: 'دریافت PDF',
       worksTitle: 'آثار',
@@ -102,7 +110,9 @@ export function oCopy(lang: 'en' | 'fa') {
     emptyBody: 'You will see the works for this show here.',
     emptyNote: 'This show has no note yet.',
     missingWork: 'This work is not in the show.',
-    sampleBanner: 'This is a sample. It is not an O Gallery artwork.',
+    sampleBanner: `This is a sample. It is not ${withArticle(galleryName || 'O Gallery')} artwork.`,
+    demoLabel: 'Demo',
+    demoNote: 'This is a demo gallery. Names, works and prices are invented.',
     samplesTitle: 'Samples',
     downloadPdf: 'Download PDF',
     worksTitle: 'Works',
@@ -120,6 +130,10 @@ export function pick(lang: 'en' | 'fa', en: string, fa: string) {
   return en || fa
 }
 
+export function gallerySlugFromPath(pathname: string): string | null {
+  return pathname.match(/^\/g\/([^/]+)/)?.[1] ?? null
+}
+
 export async function fetchPilot(): Promise<{ record: PilotRecord }> {
   const res = await fetch('/api/v1/pilot', { cache: 'no-store' })
   if (!res.ok) throw new Error('The gallery record did not load.')
@@ -132,13 +146,13 @@ function readBody(res: Response) {
   return res.text().then(() => res)
 }
 
-export function recordLandingScan(qrCode?: string | null) {
+export function recordLandingScan(gallery: string, qrCode?: string | null) {
   const day = tehranDay()
-  const localKey = `inview-o-scan-${day}`
+  const localKey = gallery === O_SLUG ? `inview-o-scan-${day}` : `inview-scan-${gallery}-${day}`
   try {
     if (localStorage.getItem(localKey) === '1') return
   } catch { /* count on the server */ }
-  const mark = `scan:${day}:${getVisitorId()}`
+  const mark = `scan:${gallery}:${day}:${getVisitorId()}`
   if (sent.has(mark)) return
   sent.add(mark)
   void fetch('/api/v1/pilot', {
@@ -146,6 +160,7 @@ export function recordLandingScan(qrCode?: string | null) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       op: 'visit',
+      gallery,
       kind: 'scan',
       visitorId: getVisitorId(),
       qrCode: qrCode && QR_CODE_PATTERN.test(qrCode) ? qrCode : undefined,
@@ -156,24 +171,28 @@ export function recordLandingScan(qrCode?: string | null) {
   }).catch(() => { sent.delete(mark) })
 }
 
-export function recordWorkView(workId: string) {
-  const mark = `view:${workId}:${Math.floor(Date.now() / 500)}`
+export function recordWorkView(gallery: string, workId: string) {
+  const mark = `view:${gallery}:${workId}:${Math.floor(Date.now() / 500)}`
   if (sent.has(mark)) return
   sent.add(mark)
   void fetch('/api/v1/pilot', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ op: 'visit', kind: 'view', visitorId: getVisitorId(), workId }),
+    body: JSON.stringify({ op: 'visit', gallery, kind: 'view', visitorId: getVisitorId(), workId }),
   }).then(readBody).catch(() => {})
 }
 
-export function reportLead(phone: string, kind: 'save' | 'ask' | 'follow' | 'stamp', workId?: string) {
+export function reportLead(
+  gallery: string | null,
+  phone: string,
+  kind: 'save' | 'ask' | 'follow' | 'stamp',
+  workId?: string,
+) {
   if (kind !== 'save' && kind !== 'ask') return
-  if (!workId) return
-  if (!window.location.pathname.startsWith('/g/o-gallery')) return
+  if (!workId || !gallery || !isDatabaseGallery(gallery)) return
   void fetch('/api/v1/pilot', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(leadBody({ phone, kind, workId, visitorId: getVisitorId() })),
+    body: JSON.stringify({ ...leadBody({ phone, kind, workId, visitorId: getVisitorId() }), gallery }),
   }).then(readBody).catch(() => {})
 }

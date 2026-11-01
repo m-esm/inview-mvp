@@ -152,6 +152,7 @@ export function galleryPageMeta(
         title: join([title, artist].filter(Boolean).join(lang === 'fa' ? '، ' : ', '), name),
         description: words.workDescription(name),
         image: work?.image || demo?.image,
+        noindex: Boolean(record?.demo),
       }),
       ...preloadImage(work, '(min-width: 960px) 60vw, 100vw'),
     ]
@@ -163,7 +164,7 @@ export function galleryPageMeta(
     about: { title: join(words.about, name), description: words.aboutDescription(name) },
     website: { title: join(name, words.website), description: words.showDescription(name) },
   }
-  const tags = pageMeta({ lang, origin, path, ...map[kind], image: coverImage(record) })
+  const tags = pageMeta({ lang, origin, path, ...map[kind], image: coverImage(record), noindex: Boolean(record?.demo) })
   if (kind === 'show') tags.push(...preloadImage(coverWork(record), '(min-width: 960px) 55vw, 100vw'))
   return tags
 }

@@ -22,8 +22,9 @@ test('a scan at 00:10 in Tehran (20:40 UTC) counts on the new Tehran day', async
   try {
     const before = new Date('2026-11-01T20:29:00Z')
     const after = new Date('2026-11-01T20:40:00Z')
-    await recordVisit(testDb.db, 'scan', 'visitor-tehran-1', null, null, before)
-    await recordVisit(testDb.db, 'scan', 'visitor-tehran-2', null, null, after)
+    const tenant = await ensureOGalleryTenant(testDb.db)
+    await recordVisit(testDb.db, tenant, 'scan', 'visitor-tehran-1', null, null, before)
+    await recordVisit(testDb.db, tenant, 'scan', 'visitor-tehran-2', null, null, after)
     const rows = await testDb.db.select({ day: schema.visits.day, visitorId: schema.visits.visitorId }).from(schema.visits)
     const days = Object.fromEntries(rows.map((row: { visitorId: string; day: string }) => [row.visitorId, String(row.day)]))
     assert.equal(days['visitor-tehran-1'], '2026-11-01')

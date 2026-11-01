@@ -9,9 +9,9 @@ import { useSignIn } from '../../components/VisitorShell'
 import { Back, Chat, Heart } from '../../components/Icons'
 
 export default function Work() {
-  const { work } = useLoaderData() as GalleryPageData & { work: PilotWork | null }
+  const { work, pilot } = useLoaderData() as GalleryPageData & { work: PilotWork | null }
   // Only the pilot catalogue resolves a work here. The demo reads its own data.
-  if (work) return <OWork work={work} />
+  if (work && pilot) return <OWork work={work} record={pilot} />
   return <RoozWork />
 }
 

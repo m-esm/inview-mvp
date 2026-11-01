@@ -3,9 +3,9 @@ import { Link, NavLink, Outlet, useLocation, useRevalidator, useRouteLoaderData 
 import { gallery } from '../data/gallery'
 import { useT } from '../lib/i18n'
 import { CONSENT_TEXT_VERSION } from '../lib/consent'
-import { O_SLUG } from '../lib/galleries'
+import { isDatabaseGallery } from '../lib/galleries'
 import { langCookie, type Lang } from '../lib/lang'
-import { pick, recordLandingScan, seed, type GalleryPageData } from '../lib/pilot'
+import { gallerySlugFromPath, oCopy, pick, recordLandingScan, seed, type GalleryPageData } from '../lib/pilot'
 import { useVisitor } from '../lib/store'
 import { SignInSheet, type SheetKind } from './SignInSheet'
 import { Grid, Home, User } from './Icons'
@@ -43,17 +43,19 @@ export function VisitorShell() {
     void revalidator.revalidate()
   }, [lang, revalidator])
 
-  const slug = pathname.match(/^\/g\/([^/]+)/)?.[1] ?? ''
-  const isO = slug === O_SLUG
+  const slug = gallerySlugFromPath(pathname) ?? ''
+  const isDb = isDatabaseGallery(slug)
   const layoutData = useRouteLoaderData('routes/g') as GalleryPageData | undefined
   const record = layoutData?.pilot ?? seed
   const oName = pick(lang, record.name, record.nameFa)
-  const base = isO ? '/g/o-gallery' : `/g/${gallery.slug}`
-  const brand = isO ? oName : galleryName
+  const base = isDb ? `/g/${slug}` : `/g/${gallery.slug}`
+  const brand = isDb ? oName : galleryName
+  const demo = isDb && Boolean(layoutData?.pilot?.demo)
+  const demoCopy = oCopy(lang)
 
   useEffect(() => {
-    if (pathname === '/g/o-gallery') recordLandingScan(new URLSearchParams(window.location.search).get('q'))
-  }, [pathname])
+    if (isDb && pathname === `/g/${slug}`) recordLandingScan(slug, new URLSearchParams(window.location.search).get('q'))
+  }, [isDb, pathname, slug])
 
   return (
     <SignInCtx.Provider value={{ requireSignIn }}>
@@ -61,14 +63,15 @@ export function VisitorShell() {
         <div className={`visitor ${lang === 'fa' ? 'fa' : ''}`} dir={dir}>
           <header className="v-top">
             <div className="v-brand-stack">
-              {isO ? (
-                <Link to="/site/o-gallery" className="v-gallery v-wordmark" title={brand}>
+              {isDb ? (
+                <Link to={`/site/${slug}`} className="v-gallery v-wordmark" title={brand}>
                   {record.logo ? <img className="v-logo" src={record.logo} alt={oName} /> : brand}
                 </Link>
               ) : (
                 <Link to={base} className="v-gallery" title={brand}>{brand}</Link>
               )}
               <span className="ink-rule" aria-hidden />
+              {demo && <span className="demo-badge" title={demoCopy.demoNote}>{demoCopy.demoLabel}</span>}
             </div>
             <div className="lang" role="group" aria-label="Language">
               <button type="button" aria-pressed={lang === 'en'} onClick={() => chooseLang('en')}>EN</button>
@@ -76,17 +79,18 @@ export function VisitorShell() {
             </div>
           </header>
           <nav className="v-desktop-nav" aria-label="Visitor">
-            <NavLink to={base} end>{isO ? brand : galleryName}</NavLink>
+            <NavLink to={base} end>{isDb ? brand : galleryName}</NavLink>
             <NavLink to={`${base}/works`}>{t.artworks}</NavLink>
             <NavLink to={`${base}/prices`}>{t.priceList}</NavLink>
-            {!isO && <NavLink to="/me">{t.profile}</NavLink>}
-            {isO && <NavLink to={`${base}/about`}>{t.visit}</NavLink>}
+            {!isDb && <NavLink to="/me">{t.profile}</NavLink>}
+            {isDb && <NavLink to={`${base}/about`}>{t.visit}</NavLink>}
           </nav>
+          {demo && <p className="demo-banner" role="note">{demoCopy.demoNote}</p>}
           <main className="v-main"><Outlet /></main>
-          <nav className={`v-tabs${isO ? ' tabs-2' : ''}`} aria-label="Visitor">
-            <NavLink to={base} end><Home /><span>{isO ? brand : galleryName}</span></NavLink>
+          <nav className={`v-tabs${isDb ? ' tabs-2' : ''}`} aria-label="Visitor">
+            <NavLink to={base} end><Home /><span>{isDb ? brand : galleryName}</span></NavLink>
             <NavLink to={`${base}/works`}><Grid /><span>{t.artworks}</span></NavLink>
-            {!isO && <NavLink to="/me"><User /><span>{t.profile}</span></NavLink>}
+            {!isDb && <NavLink to="/me"><User /><span>{t.profile}</span></NavLink>}
           </nav>
           {pending && (
             <SignInSheet kind={pending.kind} subtitle={pending.subtitle} workId={pending.workId}
