@@ -61,6 +61,7 @@ jobs:
         run: |
           npm run db:migrate:prod
           npx tsx scripts/seed.ts
+          SAMPLE_GALLERY_ACCESS_CODE=ci-sample node scripts/seed-sample.mjs
       - name: Start server
         run: |
           npm run start &

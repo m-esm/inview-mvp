@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useLoaderData, useParams } from 'react-router'
 import OGallerySite from './OGallerySite'
 import { artists, artworks, gallery, pastShows, show } from '../../data/gallery'
-import { O_SLUG } from '../../lib/galleries'
+import { isDatabaseGallery } from '../../lib/galleries'
 import { seed, type GalleryPageData } from '../../lib/pilot'
 import { normalizePhone } from '../../lib/store'
 
@@ -12,7 +12,7 @@ export default function Website() {
   const { slug } = useParams()
   // `/` has no slug, so it carries no pilot record and shows the demo website.
   const { pilot } = useLoaderData() as Partial<GalleryPageData>
-  if (slug === O_SLUG) return <OGallerySite record={pilot ?? seed} />
+  if (isDatabaseGallery(slug)) return <OGallerySite record={pilot ?? seed} />
   return <RoozWebsite />
 }
 

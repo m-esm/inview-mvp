@@ -3,7 +3,7 @@ import { Link, useLoaderData, useParams } from 'react-router'
 import { OWorks } from './OGalleryPages'
 import { artworks, gallery, type Status } from '../../data/gallery'
 import { useT } from '../../lib/i18n'
-import { O_SLUG } from '../../lib/galleries'
+import { isDatabaseGallery } from '../../lib/galleries'
 import { seed, type GalleryPageData } from '../../lib/pilot'
 import { ArtworkCard } from '../../components/ArtworkCard'
 
@@ -12,7 +12,7 @@ type Filter = 'all' | Status
 export default function Works() {
   const { slug } = useParams()
   const { pilot } = useLoaderData() as GalleryPageData
-  if (slug === O_SLUG) return <OWorks record={pilot ?? seed} />
+  if (isDatabaseGallery(slug)) return <OWorks record={pilot ?? seed} />
   return <RoozWorks />
 }
 

@@ -3,8 +3,13 @@ import { eq } from 'drizzle-orm'
 import type { AppDatabase } from '../database/context'
 import { rateLimits } from '../database/schema'
 import { sha256, verifySecret } from './crypto'
-import { ensureOGalleryTenant, publishGalleryRecordForSession, readStaffReportForSession } from './gallery-record'
-import { handlePilotApi, handleStaffApi } from './pilot-api'
+import {
+  ensureOGalleryTenant,
+  GALLERY_SLUG_PATTERN,
+  publishGalleryRecordForSession,
+  readStaffReportForSession,
+} from './gallery-record'
+import { gallerySlugOf, handlePilotApi, handleStaffApi } from './pilot-api'
 import { signInWithAccessCode } from './staff-session'
 import type { ObjectStorage } from './storage'
 
@@ -269,9 +274,14 @@ async function afterAccessCheck(db: Db, ip: string, status: number, now: Date, c
   return null
 }
 
+function gallerySubject(slug: string): string {
+  return GALLERY_SLUG_PATTERN.test(slug) ? slug : 'invalid'
+}
+
 async function beforeEvent(
   db: Db,
   action: 'visit' | 'lead',
+  gallerySlug: string,
   ip: string,
   visitorId: unknown,
   now: Date,
@@ -283,8 +293,9 @@ async function beforeEvent(
   const visitorWindow = action === 'visit' ? config.visitVisitorWindowSec : config.leadVisitorWindowSec
   const ipMax = action === 'visit' ? config.visitIpMax : config.leadIpMax
   const ipWindow = action === 'visit' ? config.visitIpWindowSec : config.leadIpWindowSec
-  const visitorOutcome = await consumeBucket(db, `${action}:visitor:${subject}`, visitorMax, visitorWindow, now)
-  const ipOutcome = await consumeBucket(db, `${action}:ip:${hash}`, ipMax, ipWindow, now)
+  const scope = `${action}:gallery:${gallerySubject(gallerySlug)}`
+  const visitorOutcome = await consumeBucket(db, `${scope}:visitor:${subject}`, visitorMax, visitorWindow, now)
+  const ipOutcome = await consumeBucket(db, `${scope}:ip:${hash}`, ipMax, ipWindow, now)
   if (visitorOutcome.allowed && ipOutcome.allowed) return null
   const retry = Math.max(
     visitorOutcome.allowed ? 0 : visitorOutcome.retryAfterSeconds,
@@ -313,7 +324,7 @@ export async function runPilotRequest(
     const blocked = await beforeAccessCheck(db, ip, now, config)
     if (blocked) return blocked
   } else if (verb === 'POST' && (payload.op === 'visit' || payload.op === 'lead')) {
-    const blocked = await beforeEvent(db, payload.op, ip, payload.visitorId, now, config)
+    const blocked = await beforeEvent(db, payload.op, gallerySlugOf(payload), ip, payload.visitorId, now, config)
     if (blocked) return blocked
   }
   const result = await handlePilotApi(db, storage, verb, body)
