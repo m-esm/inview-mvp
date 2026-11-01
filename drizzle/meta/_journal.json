@@ -43,6 +43,13 @@
       "when": 1762050000000,
       "tag": "0005_work_soft_remove",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1762060000000,
+      "tag": "0006_users_roles_audit",
+      "breakpoints": true
     }
   ]
 }
