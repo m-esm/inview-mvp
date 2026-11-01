@@ -8,7 +8,8 @@ import request from 'supertest'
 import * as schema from '../database/schema.ts'
 import { tehranDay } from '../app/lib/tehran-day.ts'
 import { createApiApp } from './api-app.ts'
-import { ensureOGalleryTenant, recordVisit } from './gallery-record.ts'
+import { ensureOGalleryTenant } from './gallery-bootstrap.ts'
+import { recordVisit } from './gallery-record.ts'
 import { createTestDb } from './test-db.ts'
 
 test('the visit day turns over at midnight in Tehran, not at midnight UTC', () => {
@@ -19,6 +20,7 @@ test('the visit day turns over at midnight in Tehran, not at midnight UTC', () =
 
 test('a scan at 00:10 in Tehran (20:40 UTC) counts on the new Tehran day', async () => {
   const testDb = await createTestDb()
+  await ensureOGalleryTenant(testDb.db)
   try {
     const before = new Date('2026-11-01T20:29:00Z')
     const after = new Date('2026-11-01T20:40:00Z')
@@ -36,6 +38,7 @@ test('a scan at 00:10 in Tehran (20:40 UTC) counts on the new Tehran day', async
 
 test('a scan from a labelled QR code stores that code', async () => {
   const testDb = await createTestDb()
+  await ensureOGalleryTenant(testDb.db)
   try {
     const { show } = await ensureOGalleryTenant(testDb.db)
     const [label] = await testDb.db
@@ -64,6 +67,7 @@ test('a scan from a labelled QR code stores that code', async () => {
 
 test('bad JSON returns a JSON 400, and the old path says it is deprecated', async () => {
   const testDb = await createTestDb()
+  await ensureOGalleryTenant(testDb.db)
   try {
     const app = createApiApp(testDb.db, testDb.storage)
     const bad = await request(app)

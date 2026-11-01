@@ -12,7 +12,8 @@ import { loadGalleryPage, loadWorkPage } from '../app/routes/pilot.server.ts'
 import { DatabaseContext } from '../database/context.ts'
 import { galleries, leads, qrCodes, rateLimits, showWorks, shows, visits, works } from '../database/schema.ts'
 import { createApiApp } from './api-app.ts'
-import { ensureOGalleryTenant, loadPublicRecord, tenantBySlug } from './gallery-record.ts'
+import { ensureOGalleryTenant } from './gallery-bootstrap.ts'
+import { loadPublicRecord, tenantBySlug } from './gallery-record.ts'
 import { createTestDb } from './test-db.ts'
 
 type TestDb = Awaited<ReturnType<typeof createTestDb>>
@@ -23,7 +24,7 @@ const SAMPLE_WORK = 'sample-test-work-1'
 async function addSampleGallery(db: TestDb['db']) {
   const [gallery] = await db
     .insert(galleries)
-    .values({ slug: 'sample', nameEn: 'Sample Gallery', nameFa: 'گالری نمونه' })
+    .values({ slug: 'sample', isDemo: true, nameEn: 'Sample Gallery', nameFa: 'گالری نمونه' })
     .returning()
   const [show] = await db
     .insert(shows)
@@ -119,12 +120,12 @@ test('the /g/:slug loader serves a database gallery by slug and marks a demo', a
 
 test('the public record cache keeps one copy for each gallery', async () => {
   await withGalleries(async ({ db, sample }) => {
-    const o = await loadPublicRecord(db)
+    const o = await loadPublicRecord(db, (await tenantBySlug(db, 'o-gallery'))!)
     const s = await loadPublicRecord(db, sample)
     assert.equal(o.record.slug, 'o-gallery')
     assert.equal(s.record.slug, 'sample')
     assert.equal((await loadPublicRecord(db, sample)).record.slug, 'sample')
-    assert.equal((await loadPublicRecord(db)).record.slug, 'o-gallery')
+    assert.equal((await loadPublicRecord(db, (await tenantBySlug(db, 'o-gallery'))!)).record.slug, 'o-gallery')
   })
 })
 
@@ -132,7 +133,7 @@ test('a demo gallery page carries noindex and O Gallery does not', async () => {
   await withGalleries(async ({ db, sample }) => {
     const matches = [{ id: 'root', data: { lang: 'en', origin: 'https://inview.test' } }]
     const demo = await loadPublicRecord(db, sample)
-    const o = await loadPublicRecord(db)
+    const o = await loadPublicRecord(db, (await tenantBySlug(db, 'o-gallery'))!)
     const robots = (tags: Record<string, string>[]) => tags.find((tag) => tag.name === 'robots')?.content
     assert.equal(robots(galleryPageMeta('show', matches, '/g/sample', { pilot: demo.record })), 'noindex')
     assert.equal(robots(galleryPageMeta('works', matches, '/g/sample/works', { pilot: demo.record })), 'noindex')

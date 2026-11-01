@@ -1,3 +1,4 @@
+import { ensureOGalleryTenant } from './gallery-bootstrap.ts'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
@@ -28,9 +29,10 @@ async function withCatalogue(
   fn: (run: <T>(task: () => Promise<T>) => Promise<T>) => Promise<void>,
 ) {
   const testDb = await createTestDb()
+  await ensureOGalleryTenant(testDb.db)
   const run = <T>(task: () => Promise<T>) => DatabaseContext.run(testDb.db, task)
   try {
-    const published = await publishGalleryRecord(testDb.db, testDb.storage, 'inview', {
+    const published = await publishGalleryRecord(testDb.db, testDb.storage, await ensureOGalleryTenant(testDb.db), 'inview', {
       name: 'O Gallery',
       nameFa: 'گالری اُ',
       showTitle: 'Quiet Surfaces',

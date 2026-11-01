@@ -483,13 +483,13 @@ export async function seedSample({ sql, storage, env = process.env, now = new Da
     if (existing) {
       galleryId = existing.id
       await tx`
-        UPDATE galleries SET name_en = ${GALLERY.nameEn}, name_fa = ${GALLERY.nameFa}, subdomain = NULL,
+        UPDATE galleries SET is_demo = true, name_en = ${GALLERY.nameEn}, name_fa = ${GALLERY.nameFa}, subdomain = NULL,
           logo_media_id = NULL, access_code_hash = ${accessCodeHash}, updated_at = ${now}
         WHERE id = ${galleryId}`
     } else {
       const [created] = await tx`
-        INSERT INTO galleries (slug, name_en, name_fa, subdomain, access_code_hash, created_at, updated_at)
-        VALUES (${SAMPLE_SLUG}, ${GALLERY.nameEn}, ${GALLERY.nameFa}, NULL, ${accessCodeHash}, ${now}, ${now})
+        INSERT INTO galleries (slug, name_en, name_fa, subdomain, access_code_hash, created_at, updated_at, is_demo)
+        VALUES (${SAMPLE_SLUG}, ${GALLERY.nameEn}, ${GALLERY.nameFa}, NULL, ${accessCodeHash}, ${now}, ${now}, true)
         RETURNING id`
       galleryId = created.id
     }

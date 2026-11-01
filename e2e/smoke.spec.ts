@@ -45,6 +45,25 @@ test.describe('smoke', () => {
     expect(errors.join('\n')).not.toMatch(/418|Hydration failed|did not match/)
   })
 
+  for (const lang of ['fa', 'en'] as const) {
+    test(`visitor routes log nothing in ${lang}`, async ({ page, baseURL }) => {
+      const errors: string[] = []
+      page.on('console', (msg) => {
+        if (msg.type() === 'error' || msg.type() === 'warning') {
+          errors.push(msg.text().slice(0, 160))
+        }
+      })
+      page.on('pageerror', (err) => errors.push(err.message.slice(0, 160)))
+      await page.context().addCookies([
+        { name: 'inview-lang', value: lang, url: baseURL as string },
+      ])
+      for (const path of pages) {
+        await page.goto(path, { waitUntil: 'networkidle' })
+      }
+      expect(errors.join('\n')).toBe('')
+    })
+  }
+
   test('health API', async ({ request }) => {
     const response = await request.get('/api/v1/health')
     expect(response.status()).toBe(200)

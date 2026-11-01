@@ -148,14 +148,16 @@ test(
       assert.equal(printed.length, 1)
       const match = /^SAMPLE_ACCESS_CODE=(\S+)$/.exec(printed[0])
       assert.ok(match, 'the first run prints the generated code once')
-      const [gallery] = await sql`SELECT id, access_code_hash FROM galleries WHERE slug = 'sample'`
+      const [gallery] = await sql`SELECT id, access_code_hash, is_demo FROM galleries WHERE slug = 'sample'`
       assert.ok(verifySecret(match[1], gallery.access_code_hash))
+      assert.equal(gallery.is_demo, true)
       const firstCounts = await seed.countRows(sql, gallery.id)
 
       const second = runSeed(url, mediaDir)
       assert.equal(second.trim(), '')
-      const [again] = await sql`SELECT id, access_code_hash FROM galleries WHERE slug = 'sample'`
+      const [again] = await sql`SELECT id, access_code_hash, is_demo FROM galleries WHERE slug = 'sample'`
       assert.equal(again.id, gallery.id)
+      assert.equal(again.is_demo, true)
       assert.equal(again.access_code_hash, gallery.access_code_hash)
       assert.deepEqual(await seed.countRows(sql, gallery.id), firstCounts)
 

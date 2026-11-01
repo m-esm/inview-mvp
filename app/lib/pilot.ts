@@ -1,4 +1,4 @@
-import seedJson from '../data/o-gallery-seed.json'
+import { pilotSeed as seedJson } from './galleries'
 import { leadBody } from './consent'
 import { isDatabaseGallery, O_SLUG } from './galleries'
 import { QR_CODE_PATTERN, tehranDay } from './tehran-day'
@@ -58,8 +58,8 @@ export interface GalleryPageData {
 export const seed = seedJson as PilotRecord
 export const QR_ADDRESS =
   typeof window !== 'undefined'
-    ? `${window.location.origin}/g/o-gallery`
-    : 'https://inview.moshes.io/g/o-gallery'
+    ? `${window.location.origin}/g/${O_SLUG}`
+    : `https://inview.moshes.io/g/${O_SLUG}`
 
 const visitorKey = 'inview-visitor-id'
 const memoryVisitorId = crypto.randomUUID()

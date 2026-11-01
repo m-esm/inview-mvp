@@ -1,3 +1,5 @@
+import { ensureOGalleryTenant } from './gallery-bootstrap.ts'
+import { tenantBySlug } from './gallery-record.ts'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
@@ -45,9 +47,10 @@ test('a plain image path has no srcset', () => {
 
 test('Persian work fields and show dates round-trip through publish', async () => {
   const testDb = await createTestDb()
+  await ensureOGalleryTenant(testDb.db)
   try {
     const { db, storage } = testDb
-    const first = (await loadPublicRecord(db)).record
+    const first = (await loadPublicRecord(db, (await tenantBySlug(db, 'o-gallery'))!)).record
     const published = await handlePilotApi(db, storage, 'PUT', {
       accessCode: 'inview',
       record: {
@@ -58,7 +61,7 @@ test('Persian work fields and show dates round-trip through publish', async () =
       },
     })
     assert.equal(published.status, 200)
-    const record = (await loadPublicRecord(db)).record
+    const record = (await loadPublicRecord(db, (await tenantBySlug(db, 'o-gallery'))!)).record
     assert.equal(record.startsOn, '2026-11-01')
     assert.equal(record.endsOn, null)
     assert.equal(record.works[0].titleFa, 'نور بندر')
@@ -71,23 +74,24 @@ test('Persian work fields and show dates round-trip through publish', async () =
 
 test('the public record cache serves repeats and drops a stale copy after a direct write', async () => {
   const testDb = await createTestDb()
+  await ensureOGalleryTenant(testDb.db)
   try {
     const { db, storage } = testDb
-    const first = (await loadPublicRecord(db)).record
+    const first = (await loadPublicRecord(db, (await tenantBySlug(db, 'o-gallery'))!)).record
     await handlePilotApi(db, storage, 'PUT', { accessCode: 'inview', record: { ...first, showTitle: 'One', works: [work('cachework1')] } })
-    const a = await loadPublicRecord(db)
-    const b = await loadPublicRecord(db)
+    const a = await loadPublicRecord(db, (await tenantBySlug(db, 'o-gallery'))!)
+    const b = await loadPublicRecord(db, (await tenantBySlug(db, 'o-gallery'))!)
     assert.equal(a, b)
     assert.equal(b.record.showTitle, 'One')
 
     const [show] = await db.select().from(schema.shows).limit(1)
     await db.update(schema.shows).set({ titleEn: 'Two', updatedAt: new Date(show.updatedAt.getTime() + 1000) }).where(eq(schema.shows.id, show.id))
-    const c = await loadPublicRecord(db)
+    const c = await loadPublicRecord(db, (await tenantBySlug(db, 'o-gallery'))!)
     assert.notEqual(c, b)
     assert.equal(c.record.showTitle, 'Two')
 
     await handlePilotApi(db, storage, 'PUT', { accessCode: 'inview', record: { ...c.record, showTitle: 'Three' } })
-    assert.equal((await loadPublicRecord(db)).record.showTitle, 'Three')
+    assert.equal((await loadPublicRecord(db, (await tenantBySlug(db, 'o-gallery'))!)).record.showTitle, 'Three')
   } finally {
     await testDb.close()
   }

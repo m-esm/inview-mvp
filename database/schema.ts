@@ -4,6 +4,7 @@ import {
   boolean,
   date,
   integer,
+  index,
   jsonb,
   pgEnum,
   pgTable,
@@ -36,6 +37,11 @@ export const visitKindEnum = pgEnum('visit_kind', ['scan', 'view'])
 
 export const leadKindEnum = pgEnum('lead_kind', ['save', 'ask'])
 
+export const platformRoleEnum = pgEnum('platform_role', ['admin', 'support'])
+export const userStatusEnum = pgEnum('user_status', ['invited', 'active', 'disabled'])
+export const invitationKindEnum = pgEnum('invitation_kind', ['staff', 'operator', 'reset'])
+export const galleryStatusEnum = pgEnum('gallery_status', ['draft', 'live', 'paused'])
+
 export const galleries = pgTable(
   'galleries',
   {
@@ -46,6 +52,10 @@ export const galleries = pgTable(
     subdomain: varchar('subdomain', { length: 80 }),
     logoMediaId: uuid('logo_media_id'),
     accessCodeHash: text('access_code_hash'),
+    status: galleryStatusEnum('status').notNull().default('live'),
+    isDemo: boolean('is_demo').notNull().default(false),
+    notes: text('notes').notNull().default(''),
+    sharedCodeEnabled: boolean('shared_code_enabled').notNull().default(true),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },
@@ -56,10 +66,20 @@ export const users = pgTable(
   'users',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    phone: varchar('phone', { length: 20 }).notNull(),
+    phone: varchar('phone', { length: 20 }),
+    email: varchar('email', { length: 320 }),
+    name: text('name').notNull().default(''),
+    passwordHash: text('password_hash'),
+    platformRole: platformRoleEnum('platform_role'),
+    status: userStatusEnum('status').notNull().default('active'),
+    lastSignedInAt: timestamp('last_signed_in_at', { withTimezone: true }),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
-  (table) => [uniqueIndex('users_phone_uidx').on(table.phone)],
+  (table) => [
+    uniqueIndex('users_phone_uidx').on(table.phone),
+    uniqueIndex('users_email_uidx').on(sql`lower(${table.email})`).where(sql`${table.email} IS NOT NULL`),
+  ],
 )
 
 export const memberships = pgTable(
@@ -73,6 +93,7 @@ export const memberships = pgTable(
       .notNull()
       .references(() => galleries.id, { onDelete: 'cascade' }),
     role: membershipRoleEnum('role').notNull().default('editor'),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
@@ -84,14 +105,52 @@ export const sessions = pgTable(
   'sessions',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    // Phone OTP sessions set userId. Staff access-code sessions set galleryId.
     userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
     galleryId: uuid('gallery_id').references(() => galleries.id, { onDelete: 'cascade' }),
     tokenHash: text('token_hash').notNull(),
     expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
-  (table) => [uniqueIndex('sessions_token_hash_uidx').on(table.tokenHash)],
+  (table) => [
+    uniqueIndex('sessions_token_hash_uidx').on(table.tokenHash),
+    index('sessions_user_id_idx').on(table.userId),
+  ],
+)
+
+export const invitations = pgTable(
+  'invitations',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    tokenHash: text('token_hash').notNull(),
+    kind: invitationKindEnum('kind').notNull(),
+    galleryId: uuid('gallery_id').references(() => galleries.id, { onDelete: 'cascade' }),
+    role: membershipRoleEnum('role'),
+    platformRole: platformRoleEnum('platform_role'),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    consumedAt: timestamp('consumed_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex('invitations_token_hash_uidx').on(table.tokenHash)],
+)
+
+export const auditLogs = pgTable(
+  'audit_logs',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    actorUserId: uuid('actor_user_id').references(() => users.id, { onDelete: 'set null' }),
+    galleryId: uuid('gallery_id').references(() => galleries.id, { onDelete: 'set null' }),
+    action: text('action').notNull(),
+    targetType: text('target_type').notNull(),
+    targetId: text('target_id').notNull(),
+    summary: jsonb('summary').$type<Record<string, unknown>>().notNull().default({}),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index('audit_logs_gallery_created_idx').on(table.galleryId, table.createdAt),
+    index('audit_logs_actor_created_idx').on(table.actorUserId, table.createdAt),
+  ],
 )
 
 export const otpChallenges = pgTable('otp_challenges', {

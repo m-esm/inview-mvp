@@ -67,10 +67,17 @@ test.describe('server rendering', () => {
     expect(response.headers()['vary']).toContain('Cookie')
   })
 
-  test('the root path leads to the O Gallery landing page', async ({ request }) => {
+  test('the root path renders Inview in Persian without a redirect', async ({ request }) => {
     const response = await request.get('/', { maxRedirects: 0 })
-    expect(response.status()).toBe(302)
-    expect(response.headers()['location']).toBe('/g/o-gallery')
+    expect(response.status()).toBe(200)
+    expect(response.headers()['location']).toBeUndefined()
+    const body = await response.text()
+    expect(body).toMatch(/<html[^>]*lang="fa"[^>]*dir="rtl"/)
+    expect(body).toContain('آثار گالری شما، در\u00a0دست بازدیدکننده.')
+    expect(body).toContain('href="/g/sample"')
+    const english = await request.get('/', { headers: { cookie: 'inview-lang=en' } })
+    expect(await english.text()).toMatch(/<html[^>]*lang="en"[^>]*dir="ltr"/)
+    expect(await english.text()).toContain('Your gallery, in your visitor')
   })
 
   test('unknown slugs and unknown work ids answer 404', async ({ request }) => {
@@ -84,6 +91,21 @@ test.describe('server rendering', () => {
     const missingWork = await request.get('/g/o-gallery/works/no-such-work')
     expect(missingWork.status()).toBe(404)
     expect(await missingWork.text()).toContain('صفحه پیدا نشد')
+  })
+
+  test('the landing language switch updates the document and persists after reload', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.locator('html')).toHaveAttribute('lang', 'fa')
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl')
+    await page.locator('.landing-header').getByRole('button', { name: 'English', exact: true }).click()
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+    await expect(page.locator('html')).toHaveAttribute('dir', 'ltr')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Your gallery, in your visitor’s hands.')
+    await page.reload()
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+    await page.locator('.landing-header').getByRole('button', { name: 'فارسی', exact: true }).click()
+    await expect(page.locator('html')).toHaveAttribute('lang', 'fa')
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl')
   })
 
   test('the first page load does not ask the API for the record again', async ({ page }) => {

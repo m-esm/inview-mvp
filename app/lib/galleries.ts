@@ -1,3 +1,4 @@
+export { default as pilotSeed } from '../data/o-gallery-seed.json'
 import { gallery } from '../data/gallery'
 
 /** The pilot gallery. Its pages come from the database. */

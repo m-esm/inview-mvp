@@ -8,9 +8,10 @@ on:
     workflows: ["CI"]
     types: [completed]
   push:
-    branches: [main]
+    branches: [main, pilot-o-gallery]
     paths:
       - ".github/workflows/deploy-status.yml"
+      - "deploy/surfaces.json"
 
 permissions:
   contents: write
@@ -24,7 +25,6 @@ jobs:
       github.event_name != 'workflow_run' ||
       (github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.head_branch == 'main')
-    # ubuntu-latest is 26.04; Playwright 1.56 has no browser builds for it.
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -36,8 +36,6 @@ jobs:
           node-version: "22"
       - name: Install Playwright
         run: |
-          # Install in a temp tree so this repo's package.json does not
-          # pull a different Playwright browser revision.
           pw_root="${RUNNER_TEMP}/deploy-status-pw"
           rm -rf "$pw_root"
           mkdir -p "$pw_root"
@@ -56,18 +54,26 @@ jobs:
           const { chromium } = require("playwright");
           const fs = require("fs");
           const path = require("path");
-          const outRoot = path.join(process.cwd(), "deploy-status-out");
+          const registry = JSON.parse(fs.readFileSync(path.join(process.cwd(), "deploy/surfaces.json"), "utf8"));
+          const baseUrl = process.env.APP_URL || registry.baseUrl;
+          const outRoot = path.resolve(process.env.OUT_DIR || "deploy-status-out");
           const shotDir = path.join(outRoot, "screenshots", "inview");
           fs.mkdirSync(shotDir, { recursive: true });
-          const pages = [
-            { id: "o-gallery", path: "/g/o-gallery", label: "Welcome /g/o-gallery" },
-            { id: "works", path: "/g/o-gallery/works", label: "Works /g/o-gallery/works" },
-            { id: "dashboard", path: "/dashboard/o-gallery", label: "Editor /dashboard/o-gallery" },
-          ];
           const viewports = [
-            { id: "desktop", width: 1280, height: 800 },
+            { id: "desktop", width: 1440, height: 900 },
             { id: "mobile", width: 390, height: 844 },
           ];
+          async function probe(surface) {
+            const url = surface.url || new URL(surface.path, baseUrl).href;
+            const checkedAt = new Date().toISOString();
+            let httpStatus = null;
+            try {
+              const res = await fetch(url, { method: "GET", redirect: "manual", signal: AbortSignal.timeout(10000) });
+              httpStatus = res.status;
+              await res.body?.cancel();
+            } catch {}
+            return { id: surface.id, group: surface.group, label: surface.label, ...(surface.path ? { path: surface.path } : {}), url, access: surface.access, httpStatus, checkedAt, note: surface.note || null };
+          }
           async function health(url) {
             const started = new Date().toISOString();
             try {
@@ -101,30 +107,35 @@ jobs:
           }
           (async () => {
             const takenAt = new Date().toISOString();
+            const surfaces = await Promise.all(registry.surfaces.map(probe));
+            const pages = registry.surfaces.filter((surface) => surface.screenshot && surfaces.some((result) => result.id === surface.id && result.httpStatus === 200));
             const browser = await chromium.launch({ headless: true });
             const screenshots = [];
-            for (const vp of viewports) {
-              const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height } });
-              const page = await context.newPage();
-              for (const target of pages) {
-                const url = `${process.env.APP_URL}${target.path}`;
-                await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
-                await page.waitForTimeout(2000);
-                const file = `${target.id}-${vp.id}.jpg`;
-                await page.screenshot({ path: path.join(shotDir, file), type: "jpeg", quality: 55, fullPage: false });
-                screenshots.push({ pageId: target.id, label: target.label, path: target.path, viewport: vp.id, width: vp.width, height: vp.height, takenAt, url: `screenshots/inview/${file}` });
+            try {
+              for (const vp of viewports) {
+                const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height } });
+                const page = await context.newPage();
+                for (const target of pages) {
+                  const url = new URL(target.path, baseUrl).href;
+                  await page.goto(url, { waitUntil: "networkidle", timeout: 60000 });
+                  await page.evaluate(() => document.fonts.ready);
+                  const file = `${target.id}-${vp.id}.jpg`;
+                  await page.screenshot({ path: path.join(shotDir, file), type: "jpeg", quality: 60, fullPage: false });
+                  screenshots.push({ pageId: target.id, label: target.label, path: target.path, viewport: vp.id, width: vp.width, height: vp.height, takenAt, url: `screenshots/inview/${file}` });
+                }
+                await context.close();
               }
-              await context.close();
+            } finally {
+              await browser.close();
             }
-            await browser.close();
             const tagInfo = await preferredGhcrTag();
             const clusterHadCommitSha = await clusterHadCommit(process.env.CLUSTER_HAD_TOKEN || "");
-            const inviewHealth = await health(`${process.env.APP_URL}/api/v1/health`);
+            const inviewHealth = await health(new URL("/api/v1/health", baseUrl).href);
             const wishlistHealth = await health("https://wishlist-api.moshes.io/healthz");
             const status = {
               fetchedAt: takenAt,
               apps: [
-                { id: "inview", status: inviewHealth.ok ? "live" : "unknown", imageTag: tagInfo?.tag || null, commitSha: tagInfo?.sha || null, clusterHadCommitSha, health: inviewHealth, screenshots },
+                { id: "inview", status: inviewHealth.ok ? "live" : "unknown", imageTag: tagInfo?.tag || null, commitSha: tagInfo?.sha || null, clusterHadCommitSha, health: inviewHealth, screenshots, surfaces, groups: registry.groups },
                 { id: "wishlist", status: wishlistHealth.ok ? "live" : "unknown", imageTag: null, commitSha: null, clusterHadCommitSha: null, health: wishlistHealth, screenshots: [] },
                 { id: "inview-docs", status: "planned", imageTag: null, commitSha: null, clusterHadCommitSha: null, screenshots: [] },
               ],
@@ -159,9 +170,3 @@ jobs:
           fi
           git commit -m "chore: refresh deploy-status screenshots and status.json"
           git push -u origin HEAD:deploy-status
-
-# Trigger feed refresh after first merge to main.
-
-# Retrigger after Playwright install fix.
-
-# Retrigger on ubuntu-24.04.
