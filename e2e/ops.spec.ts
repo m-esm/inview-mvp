@@ -15,7 +15,7 @@ async function accessible(page: Page) {
 for (const width of [390, 1440]) {
   for (const lang of ['fa', 'en'] as const) {
     test(`operator invite, sign-in, gallery and team at ${width} in ${lang}`, async ({ page, baseURL, browser }, testInfo) => {
-      test.setTimeout(90000)
+      test.setTimeout(180000)
       const origin = baseURL || 'http://127.0.0.1:3000'
       const id = randomUUID().slice(0, 8)
       const email = `ops-${id}@example.com`
@@ -68,7 +68,7 @@ for (const width of [390, 1440]) {
         await ownerPage.locator('[name="password"]').fill('owner-password')
         await ownerPage.locator('form > button').click()
         await expect(ownerPage).toHaveURL(new RegExp(`/staff/${slug}$`))
-        for (const path of ['/ops', '/ops/galleries/new', `/ops/galleries/${slug}`, `/ops/galleries/${slug}/team`]) {
+        for (const path of ['/ops', '/ops/galleries/new', `/ops/galleries/${slug}`, `/ops/galleries/${slug}/team`, `/ops/galleries/${slug}/qr`, `/ops/galleries/${slug}/leads`, `/ops/galleries/${slug}/leads.csv`, `/ops/galleries/${slug}/activity`, '/ops/operators', '/ops/audit', '/ops/health']) {
           expect((await ownerPage.request.get(path)).status()).toBe(403)
         }
       } finally { await staffContext.close() }
@@ -91,6 +91,75 @@ for (const width of [390, 1440]) {
       await expect(page.locator('.ops-once')).toHaveCount(0)
       const response = await page.request.post(`/ops/galleries/${slug}`, { headers: { Origin: 'https://invalid.example' }, form: { intent: 'rotate' } })
       expect(response.status()).toBe(403)
+      const seed = postgres(process.env.DATABASE_URL!, { max: 1 })
+      try {
+        const [gallery] = await seed`select id from galleries where slug = ${slug}`
+        await seed`insert into works(id, gallery_id, title, title_fa) values (${`work-${id}`}, ${gallery.id}, 'Operator work', 'اثر اپراتور')`
+        await seed`insert into leads(gallery_id, work_id, phone, kind, consent_at, consent_text_version) values (${gallery.id}, ${`work-${id}`}, '09121234534', 'ask', now(), 'v1')`
+        const [other] = await seed`insert into galleries(slug, name_en, name_fa) values (${`other-${id}`}, 'Other gallery', 'گالری دیگر') returning id`
+        await seed`insert into leads(gallery_id, phone, kind, consent_at, consent_text_version) values (${other.id}, '09129999999', 'ask', now(), 'v1')`
+      } finally { await seed.end() }
+      for (const path of [`/ops/galleries/${slug}/qr`, `/ops/galleries/${slug}/leads`, `/ops/galleries/${slug}/activity`, '/ops/operators', '/ops/audit', '/ops/health']) {
+        await page.goto(path)
+        await accessible(page)
+        expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([])
+        await page.screenshot({ path: testInfo.outputPath(`${path.split('/').pop()}.png`) })
+      }
+      await page.goto(`/ops/galleries/${slug}/leads`)
+      await expect(page.locator(`a[href="/ops/galleries/${slug}/leads.csv"]`)).toBeVisible()
+      const csvResponse = await page.request.get(`/ops/galleries/${slug}/leads.csv`)
+      expect(csvResponse.status()).toBe(200)
+      expect(csvResponse.headers()['cache-control']).toBe('no-store')
+      expect(csvResponse.headers()['content-disposition']).toContain('attachment; filename=')
+      const csv = await csvResponse.text()
+      expect(csv).toContain('09121234534')
+      expect(csv).not.toContain('09129999999')
+      await page.goto(`/ops/galleries/${slug}/qr`)
+      await page.locator('[name="label"]').fill('Entrance')
+      await page.locator('[name="code"]').fill(`entrance-${id}`)
+      await page.locator('.ops-form button').click()
+      await expect(page.getByText(`entrance-${id}`, { exact: true })).toBeVisible()
+      const svg = await page.request.get(`/ops/galleries/${slug}/qr/entrance-${id}/download.svg`)
+      expect(svg.status()).toBe(200)
+      expect(await svg.text()).toContain('<svg')
+      await page.goto('/ops/operators')
+      await page.locator('[name="identifier"]').fill(`support-${id}@example.com`)
+      await page.locator('.ops-form [name="role"]').selectOption('support')
+      await page.locator('button[value="invite"]').click()
+      await expect(page.locator('.ops-once textarea')).toBeVisible()
+      const supportInvite = await page.locator('.ops-once textarea').inputValue()
+      await page.reload()
+      await expect(page.locator('.ops-once')).toHaveCount(0)
+      const supportContext = await browser.newContext({ baseURL: origin })
+      try {
+        const supportPage = await supportContext.newPage()
+        await supportPage.goto(supportInvite)
+        await supportPage.locator('[name="name"]').fill('Support operator')
+        await supportPage.locator('[name="password"]').fill('support-password')
+        await supportPage.locator('form > button').click()
+        await expect(supportPage).toHaveURL(/\/ops$/)
+        expect((await supportPage.request.get('/ops/operators')).status()).toBe(403)
+        expect((await supportPage.request.post('/ops/operators', { headers: { Origin: origin }, form: { intent: 'invite', identifier: 'blocked@example.com', role: 'admin' } })).status()).toBe(403)
+        await supportPage.goto(`/ops/galleries/${slug}/leads`)
+        await expect(supportPage.locator('a[download]')).toHaveCount(0)
+        expect((await supportPage.request.get(`/ops/galleries/${slug}/leads.csv`)).status()).toBe(403)
+        await expect(supportPage.getByText('0912•••••34', { exact: true })).toBeVisible()
+        expect(await supportPage.content()).not.toContain('09121234534')
+        await supportPage.locator('[name="reason"]').fill('Visitor asked for a callback')
+        await supportPage.locator('.ops-form button').click()
+        await expect(supportPage.locator('.ops-once textarea')).toHaveValue('09121234534')
+        await supportPage.reload()
+        await expect(supportPage.locator('.ops-once')).toHaveCount(0)
+        const check = postgres(process.env.DATABASE_URL!, { max: 1 })
+        try {
+          const rows = await check`select summary from audit_logs a join galleries g on g.id = a.gallery_id where g.slug = ${slug} and a.action = 'lead-reveal'`
+          expect(rows).toHaveLength(1)
+          expect(rows[0].summary).toEqual({ reason: 'Visitor asked for a callback' })
+          const exports = await check`select a.summary from audit_logs a join galleries g on g.id = a.gallery_id where g.slug = ${slug} and a.action = 'leads-export'`
+          expect(exports).toHaveLength(1)
+          expect(exports[0].summary).toEqual({ rows: 1 })
+        } finally { await check.end() }
+      } finally { await supportContext.close() }
     })
   }
 }
