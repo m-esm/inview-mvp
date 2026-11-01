@@ -179,7 +179,8 @@ one access code for each gallery. The code is the environment variable
 At start, the server writes a new hash when the saved hash is empty or does not match
 the code. The log does not show the code or the hash. In production, the server stops
 when the variable is missing. A development default is allowed only when `NODE_ENV`
-is not `production`.
+is not `production`. Until OTP is available, publish, upload and staff sign-in use
+the Postgres limits in D13.
 
 ### D11. Payments
 
@@ -196,7 +197,8 @@ Ali or his company owns.
 | Umami or Plausible (self-hosted) | Ready reports. | One more service. It does not know shows, works and QR codes. |
 
 Decision: Postgres tables. A visitor id is a random value in the browser. We do not
-store IP addresses. Leads store a phone number only after the visitor agrees.
+store IP addresses. Rate-limit rows store a daily hash of the client address.
+They do not store the address. Leads store a phone number only after the visitor agrees.
 The server stores the consent time and the consent text version. A Save lead and
 an Ask lead each include the work id. A lead without consent returns 400. The
 server stores no phone number in that case.
@@ -211,6 +213,14 @@ Reuse from ha3 only what is the best fit:
 - Garage S3: yes. It uses the S3 API, so a move is easy.
 - Traefik, cert-manager, Cloudflare tunnel: yes.
 - Redis: no. We do not need it now. Rate limits use Postgres.
+
+Access-code checks, visits, leads and uploads use a fixed window in `rate_limits`.
+The server reads the client address from `CF-Connecting-IP`.
+It stores a SHA-256 hash of a daily salt and that address.
+It does not store the address.
+A full window returns HTTP 429, a `Retry-After` header, and a short message in English and Persian.
+The README lists each limit and its environment variable.
+A visit limit per address is high because many phones can share one network.
 
 CI: GitHub Actions run the tests and the build, then push
 `ghcr.io/m-esm/inview-mvp:<short-sha>`. A migration Job runs once for each image tag,
