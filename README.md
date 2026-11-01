@@ -94,10 +94,13 @@ merges a sync pull request when a fast-forward is not possible.
 | `MEDIA_DIR` | Local media folder when S3 is not set |
 | `S3_BUCKET`, `S3_ENDPOINT`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_PUBLIC_HOST` | Garage / S3 |
 | `KAVENEGAR_API_KEY`, `KAVENEGAR_SENDER` | SMS OTP (optional; console provider is the default) |
+| `S3_PUBLIC_BASE` | Public origin plus the bucket path. Production: `https://inview-media.moshes.io/inview` |
+| `S3_OBJECT_PREFIX` | Object key prefix the media route can serve. Production: `u` |
 
 ## Deploy notes
 
 - Production target: `inview.moshes.io` with media on `inview-media.moshes.io`.
+- A public image URL is `S3_PUBLIC_BASE` plus the object key. Production keys start with `u/galleries/`.
 - Configure the app with environment variables only.
 - Run `npm run db:migrate` once for each new image tag (migration Job).
 - Keep `vercel.json` for the old static demo only.
