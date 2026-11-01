@@ -1,11 +1,12 @@
 import { createReadStream, existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { HeadBucketCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import type { Request, Response, NextFunction } from 'express'
 
 export interface ObjectStorage {
   putObject(key: string, body: Buffer, contentType: string): Promise<string>
   publicUrl(key: string): string
+  probe(): Promise<void>
 }
 
 export function publicObjectUrl(base: string, key: string): string {
@@ -45,6 +46,10 @@ export class LocalObjectStorage implements ObjectStorage {
   publicUrl(key: string): string {
     return `${this.publicBase}/${key.split(path.sep).join('/')}`
   }
+
+  async probe(): Promise<void> {
+    if (!existsSync(this.rootDir)) throw new Error('Media directory is missing.')
+  }
 }
 
 export class S3ObjectStorage implements ObjectStorage {
@@ -81,6 +86,12 @@ export class S3ObjectStorage implements ObjectStorage {
 
   publicUrl(key: string): string {
     return publicObjectUrl(this.publicBase, key)
+  }
+
+  async probe(): Promise<void> {
+    await this.client.send(new HeadBucketCommand({ Bucket: this.bucket }), {
+      abortSignal: AbortSignal.timeout(700),
+    })
   }
 }
 
