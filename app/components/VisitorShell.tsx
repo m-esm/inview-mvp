@@ -35,6 +35,7 @@ export function VisitorShell() {
   const { record } = usePilotRecord(isO)
   const oName = pick(lang, record.name, record.nameFa)
   const base = isO ? '/g/o-gallery' : `/g/${gallery.slug}`
+  const brand = isO ? oName : galleryName
 
   useEffect(() => {
     if (pathname === '/g/o-gallery') recordLandingScan()
@@ -42,31 +43,43 @@ export function VisitorShell() {
 
   return (
     <SignInCtx.Provider value={{ requireSignIn }}>
-      <div className={`visitor ${lang === 'fa' ? 'fa' : ''}`} dir={dir}>
-        <header className="v-top">
-          {isO ? (
-            <Link to="/site/o-gallery" className="v-gallery v-wordmark">
-              {record.logo ? <img className="v-logo" src={record.logo} alt={oName} /> : oName}
-            </Link>
-          ) : (
-            <Link to={base} className="v-gallery">{galleryName}</Link>
+      <div className="visitor-stage">
+        <div className={`visitor ${lang === 'fa' ? 'fa' : ''}`} dir={dir}>
+          <header className="v-top">
+            <div className="v-brand-stack">
+              {isO ? (
+                <Link to="/site/o-gallery" className="v-gallery v-wordmark" title={brand}>
+                  {record.logo ? <img className="v-logo" src={record.logo} alt={oName} /> : brand}
+                </Link>
+              ) : (
+                <Link to={base} className="v-gallery" title={brand}>{brand}</Link>
+              )}
+              <span className="ink-rule" aria-hidden />
+            </div>
+            <div className="lang" role="group" aria-label="Language">
+              <button type="button" aria-pressed={lang === 'en'} onClick={() => visitor.setLang('en')}>EN</button>
+              <button type="button" aria-pressed={lang === 'fa'} onClick={() => visitor.setLang('fa')} className="fa-btn">فا</button>
+            </div>
+          </header>
+          <nav className="v-desktop-nav" aria-label="Visitor">
+            <NavLink to={base} end>{isO ? brand : galleryName}</NavLink>
+            <NavLink to={`${base}/works`}>{t.artworks}</NavLink>
+            <NavLink to={`${base}/prices`}>{t.priceList}</NavLink>
+            {!isO && <NavLink to="/me">{t.profile}</NavLink>}
+            {isO && <NavLink to={`${base}/about`}>{t.visit}</NavLink>}
+          </nav>
+          <main className="v-main"><Outlet /></main>
+          <nav className={`v-tabs${isO ? ' tabs-2' : ''}`} aria-label="Visitor">
+            <NavLink to={base} end><Home /><span>{isO ? brand : galleryName}</span></NavLink>
+            <NavLink to={`${base}/works`}><Grid /><span>{t.artworks}</span></NavLink>
+            {!isO && <NavLink to="/me"><User /><span>{t.profile}</span></NavLink>}
+          </nav>
+          {pending && (
+            <SignInSheet kind={pending.kind} subtitle={pending.subtitle}
+              onClose={() => setPending(null)}
+              onDone={() => { pending.action(); setPending(null) }} />
           )}
-          <div className="lang" role="group" aria-label="Language">
-            <button aria-pressed={lang === 'en'} onClick={() => visitor.setLang('en')}>EN</button>
-            <button aria-pressed={lang === 'fa'} onClick={() => visitor.setLang('fa')} className="fa-btn">فا</button>
-          </div>
-        </header>
-        <main className="v-main"><Outlet /></main>
-        <nav className={`v-tabs${isO ? ' tabs-2' : ''}`} aria-label="Visitor">
-          <NavLink to={base} end><Home /><span>{isO ? oName : galleryName}</span></NavLink>
-          <NavLink to={`${base}/works`}><Grid /><span>{t.artworks}</span></NavLink>
-          {!isO && <NavLink to="/me"><User /><span>{t.profile}</span></NavLink>}
-        </nav>
-        {pending && (
-          <SignInSheet kind={pending.kind} subtitle={pending.subtitle}
-            onClose={() => setPending(null)}
-            onDone={() => { pending.action(); setPending(null) }} />
-        )}
+        </div>
       </div>
     </SignInCtx.Provider>
   )

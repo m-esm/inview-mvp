@@ -23,9 +23,11 @@ function RoozWorks() {
 
   return (
     <div>
-      <div className="pad">
+      <div className="pad reveal">
+        <p className="eyebrow">{showKind}</p>
         <h1 className="page-title">{showTitle}</h1>
-        <p className="muted small">{showKind}. {n(artworks.length)} {t.artworks.toLowerCase()}</p>
+        <span className="ink-rule" aria-hidden />
+        <p className="muted small">{n(artworks.length)} {t.artworks.toLowerCase()}</p>
       </div>
       <div className="chips" role="group" aria-label={t.artworks}>
         {filters.map((f) => (

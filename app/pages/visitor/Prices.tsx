@@ -12,9 +12,11 @@ export default function Prices() {
 function RoozPrices() {
   const { t, price, status, artist, medium, size, showTitle, galleryName } = useT()
   return (
-    <div className="pad prices">
+    <div className="pad prices reveal">
+      <p className="eyebrow">{galleryName}</p>
       <h1 className="page-title">{t.priceList}</h1>
-      <p className="muted small">{galleryName}, {showTitle}</p>
+      <span className="ink-rule" aria-hidden />
+      <p className="muted small">{showTitle}</p>
       <ol className="price-list">
         {artworks.map((a, i) => (
           <li key={a.id}>
