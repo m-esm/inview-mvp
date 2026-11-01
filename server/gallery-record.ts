@@ -467,9 +467,12 @@ export async function readStaffReportForSession(db: Db, galleryId: string): Prom
   return staffReportForTenant(db, gallery.id, show.id)
 }
 
+const DUPLICATE_WORK_ERROR = 'Two works have the same id. Give each work its own id.'
+const DUPLICATE_WORK_ERROR_FA = 'دو اثر شناسه یکسان دارند. برای هر اثر شناسه جداگانه بگذارید.'
+
 function sanitizeRecord(
   input: unknown,
-): { error: string } | { record: Omit<GalleryRecordDto, 'slug' | 'updatedAt' | 'logo'> & { logo?: string | null } } {
+): { error: string; errorFa?: string } | { record: Omit<GalleryRecordDto, 'slug' | 'updatedAt' | 'logo'> & { logo?: string | null } } {
   if (!input || typeof input !== 'object') return { error: 'The record is missing.' }
   const body = input as Record<string, unknown>
   const name = text(body.name, 80)
@@ -478,6 +481,7 @@ function sanitizeRecord(
   if (body.works.length > 40) return { error: 'You can publish up to 40 works.' }
 
   const worksOut: GalleryWorkDto[] = []
+  const usedIds = new Set<string>()
   for (const raw of body.works) {
     if (!raw || typeof raw !== 'object') return { error: 'One work is not valid.' }
     const work = raw as Record<string, unknown>
@@ -500,6 +504,9 @@ function sanitizeRecord(
     }
     let id = text(work.id, 80)
     if (!/^[a-zA-Z0-9-]{8,80}$/.test(id)) id = crypto.randomUUID()
+    // Two rows with one id break show_works_show_work_uidx inside the transaction.
+    if (usedIds.has(id)) return { error: DUPLICATE_WORK_ERROR, errorFa: DUPLICATE_WORK_ERROR_FA }
+    usedIds.add(id)
     const image = typeof work.image === 'string' ? work.image : ''
     if (image.startsWith('/artworks/')) {
       return { error: 'Use an image you upload. Do not use another gallery’s images.' }
@@ -642,7 +649,11 @@ async function writeGalleryRecord(
 ): Promise<PublishResult> {
   const { gallery, show } = tenant
   const cleaned = sanitizeRecord(input)
-  if ('error' in cleaned) return { status: 400, body: { error: cleaned.error } }
+  if ('error' in cleaned) {
+    return cleaned.errorFa
+      ? refuse(cleaned.error, cleaned.errorFa)
+      : { status: 400, body: { error: cleaned.error } }
+  }
 
   try {
     const currentLogo = await logoUrl(db, gallery.logoMediaId)

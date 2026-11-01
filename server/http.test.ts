@@ -7,7 +7,7 @@ delete process.env.O_GALLERY_ACCESS_CODE
 import { eq } from 'drizzle-orm'
 import request from 'supertest'
 import { CONSENT_TEXT_VERSION } from '../app/lib/consent.ts'
-import { galleries, media, works } from '../database/schema.ts'
+import { galleries, media, showWorks, shows, works } from '../database/schema.ts'
 import { createApiApp } from './api-app.ts'
 import { createTestDb } from './test-db.ts'
 
@@ -32,11 +32,16 @@ function sampleWork(patch: Record<string, unknown> = {}) {
   }
 }
 
-async function withApp(client: string, fn: (args: { app: ReturnType<typeof createApiApp>; db: Awaited<ReturnType<typeof createTestDb>>['db'] }) => Promise<void>) {
+type TestDb = Awaited<ReturnType<typeof createTestDb>>
+
+async function withApp(
+  client: string,
+  fn: (args: { app: ReturnType<typeof createApiApp>; db: TestDb['db']; pg: TestDb['client'] }) => Promise<void>,
+) {
   const testDb = await createTestDb()
   const app = createApiApp(testDb.db, testDb.storage)
   try {
-    await fn({ app, db: testDb.db })
+    await fn({ app, db: testDb.db, pg: testDb.client })
   } finally {
     await testDb.close()
   }
@@ -292,6 +297,119 @@ test('HAD-31 publish keeps a logo, rejects a foreign work, and keeps the show on
     const afterBroken = await api.get('/api/v1/pilot')
     assert.equal(afterBroken.body.record.works[0].title, 'Sample work')
     assert.equal(afterBroken.body.record.logo, logoUrl)
+  })
+})
+
+// Everything the publish transaction writes, in a stable order.
+async function publishedState(db: TestDb['db']) {
+  const [gallery] = await db
+    .select({
+      id: galleries.id,
+      nameEn: galleries.nameEn,
+      nameFa: galleries.nameFa,
+      logoMediaId: galleries.logoMediaId,
+      updatedAt: galleries.updatedAt,
+    })
+    .from(galleries)
+    .where(eq(galleries.slug, 'o-gallery'))
+    .limit(1)
+  return JSON.stringify({
+    gallery,
+    shows: await db.select().from(shows).orderBy(shows.id),
+    showWorks: await db.select().from(showWorks).orderBy(showWorks.workId),
+    works: await db.select().from(works).orderBy(works.id),
+  })
+}
+
+test('HAD-31 a failed statement inside the publish transaction rolls the whole publish back', async () => {
+  await withApp('rollback', async ({ app, db, pg }) => {
+    const api = http(app, 'rollback')
+    const first = await api.get('/api/v1/pilot')
+    const [gallery] = await db.select().from(galleries).where(eq(galleries.slug, 'o-gallery')).limit(1)
+    const [logo] = await db
+      .insert(media)
+      .values({
+        galleryId: gallery.id,
+        s3Key: 'galleries/o-gallery/logo/original.jpg',
+        width: 8,
+        height: 8,
+        variants: { 'w640.webp': '/media/galleries/o-gallery/logo/w640.webp' },
+      })
+      .returning()
+    await db.update(galleries).set({ logoMediaId: logo.id }).where(eq(galleries.id, gallery.id))
+
+    const logoUrl = '/media/galleries/o-gallery/logo/w640.webp'
+    const seeded = await api.put('/api/v1/pilot').send({
+      accessCode: 'inview',
+      record: {
+        ...first.body.record,
+        name: 'O Gallery',
+        logo: logoUrl,
+        showTitle: 'Before the failure',
+        works: [sampleWork()],
+      },
+    })
+    assert.equal(seeded.status, 200)
+    const before = await publishedState(db)
+
+    await pg.exec(`
+      CREATE FUNCTION block_show_works() RETURNS trigger AS $$
+      BEGIN RAISE EXCEPTION 'show_works is blocked'; END;
+      $$ LANGUAGE plpgsql;
+      CREATE TRIGGER block_show_works_t BEFORE INSERT ON show_works
+      FOR EACH ROW EXECUTE FUNCTION block_show_works();
+    `)
+    const failed = await api.put('/api/v1/pilot').send({
+      accessCode: 'inview',
+      record: {
+        ...seeded.body.record,
+        name: 'Renamed gallery',
+        logo: null,
+        showTitle: 'After the failure',
+        works: [sampleWork({ title: 'Sample renamed' }), sampleWork({ id: 'samplework2', title: 'Sample two' })],
+      },
+    })
+    assert.equal(failed.status, 500)
+    assert.equal(failed.body.error, 'Publish did not complete. Try again.')
+    assert.equal(typeof failed.body.errorFa, 'string')
+    assert.equal(JSON.stringify(failed.body).includes('show_works'), false)
+    assert.equal(await publishedState(db), before)
+
+    await pg.exec('DROP TRIGGER block_show_works_t ON show_works; DROP FUNCTION block_show_works();')
+    const again = await api.get('/api/v1/pilot')
+    assert.equal(again.body.record.name, 'O Gallery')
+    assert.equal(again.body.record.showTitle, 'Before the failure')
+    assert.equal(again.body.record.logo, logoUrl)
+    assert.equal(again.body.record.works.length, 1)
+    assert.equal(again.body.record.works[0].title, 'Sample work')
+  })
+})
+
+test('HAD-31 two works with the same id are refused before the transaction', async () => {
+  await withApp('duplicate', async ({ app, db }) => {
+    const api = http(app, 'duplicate')
+    const first = await api.get('/api/v1/pilot')
+    const seeded = await api.put('/api/v1/pilot').send({
+      accessCode: 'inview',
+      record: { ...first.body.record, works: [sampleWork()] },
+    })
+    assert.equal(seeded.status, 200)
+
+    const duplicate = await api.put('/api/v1/pilot').send({
+      accessCode: 'inview',
+      record: {
+        ...seeded.body.record,
+        works: [sampleWork(), sampleWork({ title: 'Sample copy' })],
+      },
+    })
+    assert.equal(duplicate.status, 400)
+    assert.equal(duplicate.body.error, 'Two works have the same id. Give each work its own id.')
+    assert.equal(duplicate.body.errorFa, 'دو اثر شناسه یکسان دارند. برای هر اثر شناسه جداگانه بگذارید.')
+    const rows = await db.select().from(showWorks)
+    assert.equal(rows.length, 1)
+    const after = await api.get('/api/v1/pilot')
+    assert.equal(after.body.record.works.length, 1)
+    assert.equal(after.body.record.works[0].title, 'Sample work')
   })
 })
 
