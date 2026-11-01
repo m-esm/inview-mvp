@@ -5,6 +5,9 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig(({ isSsrBuild }) => ({
   build: {
+    // The CSP sets font-src 'self', so the browser blocks a font inlined as a data: URI.
+    assetsInlineLimit: (file: string) =>
+      /\.(?:woff2?|ttf|otf|eot)$/i.test(file) ? false : undefined,
     rollupOptions: isSsrBuild
       ? {
           input: './server/app.ts',
