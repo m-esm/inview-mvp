@@ -204,7 +204,8 @@ export function imageSetFor(image: string, variants: Record<string, string> | nu
     const match = VARIANT_NAME.exec(image)
     if (!match) return null
     const base = image.slice(0, match.index)
-    for (const width of [320, 640, 1280]) {
+    const own = Number(match[1])
+    for (const width of new Set([...[320, 640, 1280].filter((value) => value < own), own])) {
       webp.push([width, `${base}/w${width}.webp`])
       jpeg.push([width, `${base}/w${width}.jpeg`])
     }

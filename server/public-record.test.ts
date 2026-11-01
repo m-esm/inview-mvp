@@ -26,9 +26,10 @@ const work = (id: string, extra: Record<string, unknown> = {}) => ({
 test('an uploaded variant URL yields webp and jpeg srcsets', () => {
   const set = imageSetFor('/media/galleries/o-gallery/abc/w640.webp', null)
   assert.deepEqual(set, {
-    webp: '/media/galleries/o-gallery/abc/w320.webp 320w, /media/galleries/o-gallery/abc/w640.webp 640w, /media/galleries/o-gallery/abc/w1280.webp 1280w',
-    jpeg: '/media/galleries/o-gallery/abc/w320.jpeg 320w, /media/galleries/o-gallery/abc/w640.jpeg 640w, /media/galleries/o-gallery/abc/w1280.jpeg 1280w',
+    webp: '/media/galleries/o-gallery/abc/w320.webp 320w, /media/galleries/o-gallery/abc/w640.webp 640w',
+    jpeg: '/media/galleries/o-gallery/abc/w320.jpeg 320w, /media/galleries/o-gallery/abc/w640.jpeg 640w',
   })
+  assert.equal(imageSetFor('/m/x/w500.webp', null)?.webp, '/m/x/w320.webp 320w, /m/x/w500.webp 500w')
 })
 
 test('stored media variants decide the srcset widths', () => {

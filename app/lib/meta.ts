@@ -92,6 +92,22 @@ export function pageMeta(input: {
   return tags
 }
 
+function preloadImage(work: PilotWork | null | undefined, sizes: string): MetaTag[] {
+  if (!work?.image) return []
+  const set = work.imageSet?.webp
+  const tag: MetaTag = { tagName: 'link', rel: 'preload', as: 'image', href: work.image, fetchPriority: 'high' }
+  if (set) {
+    tag.imageSrcSet = set
+    tag.imageSizes = sizes
+    tag.type = 'image/webp'
+  }
+  return [tag]
+}
+
+function coverWork(record: PilotRecord | null): PilotWork | undefined {
+  return record?.works.find((work) => !work.sample && work.image) ?? record?.works.find((work) => work.image)
+}
+
 function galleryName(record: PilotRecord | null, lang: Lang): string {
   if (record) return pick(lang, record.name, record.nameFa)
   return lang === 'fa' ? demoGallery.nameFa : demoGallery.name
@@ -128,14 +144,17 @@ export function galleryPageMeta(
       : demo
         ? (lang === 'fa' && demo.artistFa ? demo.artistFa : demo.artist)
         : ''
-    return pageMeta({
-      lang,
-      origin,
-      path,
-      title: join([title, artist].filter(Boolean).join(lang === 'fa' ? '، ' : ', '), name),
-      description: words.workDescription(name),
-      image: work?.image || demo?.image,
-    })
+    return [
+      ...pageMeta({
+        lang,
+        origin,
+        path,
+        title: join([title, artist].filter(Boolean).join(lang === 'fa' ? '، ' : ', '), name),
+        description: words.workDescription(name),
+        image: work?.image || demo?.image,
+      }),
+      ...preloadImage(work, '(min-width: 960px) 60vw, 100vw'),
+    ]
   }
   const map: Record<Exclude<PageKind, 'work'>, { title: string; description: string }> = {
     show: { title: join(showTitle, name), description: words.showDescription(name) },
@@ -144,5 +163,7 @@ export function galleryPageMeta(
     about: { title: join(words.about, name), description: words.aboutDescription(name) },
     website: { title: join(name, words.website), description: words.showDescription(name) },
   }
-  return pageMeta({ lang, origin, path, ...map[kind], image: coverImage(record) })
+  const tags = pageMeta({ lang, origin, path, ...map[kind], image: coverImage(record) })
+  if (kind === 'show') tags.push(...preloadImage(coverWork(record), '(min-width: 960px) 55vw, 100vw'))
+  return tags
 }
