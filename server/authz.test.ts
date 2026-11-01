@@ -30,7 +30,7 @@ test('every permission row covers all roles, own and other galleries, shared cod
         ? { kind: 'operator', userId: 'person', platformRole: role }
         : { kind: 'staff', userId: 'person', memberships: [{ galleryId: 'own', role }] }
       assert.equal(can(principal, action, 'own'), allowed[index], `${action}: ${role}: own`)
-      assert.equal(can(principal, action, 'other'), index < 2 || action === 'view-gallery' ? allowed[index] : false,
+      assert.equal(can(principal, action, 'other'), index < 2 ? allowed[index] : false,
         `${action}: ${role}: other`)
     }
     const shared: Principal = { kind: 'shared-code', galleryId: 'own' }

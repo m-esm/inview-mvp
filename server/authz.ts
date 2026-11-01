@@ -45,7 +45,6 @@ export function can(principal: Principal | null, action: Action, galleryId?: str
       && ['view-gallery', 'edit-catalogue', 'upload-images', 'view-report', 'create-qr'].includes(action)
   }
   if (principal.kind === 'operator') return PERMISSIONS[action].includes(principal.platformRole)
-  if (action === 'view-gallery') return true
   return principal.memberships.some((membership) =>
     membership.galleryId === galleryId && PERMISSIONS[action].includes(membership.role),
   )
