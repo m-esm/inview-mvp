@@ -53,3 +53,27 @@ test('VisitorShell server-renders /g/o-gallery without throwing', async () => {
   assert.match(html, /o-gallery-ssr/)
   assert.match(html, /visitor/)
 })
+
+test('the sign-in sheet starts with an empty consent box in Persian and English', async () => {
+  const { SignInSheet } = await import('../app/components/SignInSheet.tsx')
+  const props = {
+    kind: 'save' as const,
+    workId: 'samplework1',
+    onDone: () => {},
+    onClose: () => {},
+  }
+  const fa = renderToString(
+    createElement(StaticRouter, { location: '/g/o-gallery/works/samplework1' }, createElement(SignInSheet, props)),
+  )
+  const en = renderToString(
+    createElement(StaticRouter, { location: '/g/rooz/works/samplework1' }, createElement(SignInSheet, props)),
+  )
+  for (const html of [fa, en]) {
+    assert.match(html, /type="checkbox"/)
+    assert.doesNotMatch(html, /checked/)
+  }
+  assert.match(fa, /اگر اثری را ذخیره کنید/)
+  assert.match(fa, /موافقم که این گالری/)
+  assert.match(en, /Save sends your mobile number/)
+  assert.match(en, /I agree/)
+})

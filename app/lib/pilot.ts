@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import seedJson from '../data/o-gallery-seed.json'
+import { leadBody } from './consent'
 
 export type PilotStatus = 'available' | 'reserved' | 'sold'
 
@@ -41,6 +42,7 @@ export interface PilotLead {
   kind: 'save' | 'ask'
   at: string
   workId: string | null
+  consentTextVersion: string
   verified: false
 }
 
@@ -165,10 +167,11 @@ export function recordWorkView(workId: string) {
 
 export function reportLead(phone: string, kind: 'save' | 'ask' | 'follow' | 'stamp', workId?: string) {
   if (kind !== 'save' && kind !== 'ask') return
+  if (!workId) return
   if (!window.location.pathname.startsWith('/g/o-gallery')) return
   void fetch('/api/pilot', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ op: 'lead', kind, phone, visitorId: getVisitorId(), workId: workId ?? null }),
+    body: JSON.stringify(leadBody({ phone, kind, workId, visitorId: getVisitorId() })),
   }).catch(() => {})
 }

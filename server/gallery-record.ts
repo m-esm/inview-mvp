@@ -12,6 +12,7 @@ import {
   visits,
   works,
 } from '../database/schema'
+import { CONSENT_TEXT_VERSION } from '../app/lib/consent'
 import { hashSecret, verifySecret } from './crypto'
 import { decodeDataUrl, processAndStoreImage } from './images'
 import type { ObjectStorage } from './storage'
@@ -60,6 +61,7 @@ export interface GalleryStateDto {
     kind: 'save' | 'ask'
     at: string
     workId: string | null
+    consentTextVersion: string
     verified: false
   }>
 }
@@ -254,6 +256,7 @@ async function readLeadList(db: Db, galleryId: string): Promise<GalleryStateDto[
     kind: lead.kind,
     at: lead.consentAt.toISOString(),
     workId: lead.workId,
+    consentTextVersion: lead.consentTextVersion,
     verified: false as const,
   }))
 }
@@ -530,7 +533,9 @@ export async function recordLead(
   phone: string,
   kind: 'save' | 'ask',
   visitorId: string,
-  workId?: string | null,
+  workId: string | null | undefined,
+  consent: unknown,
+  consentTextVersion: unknown,
 ): Promise<{ status: number; body: { ok: true } | { error: string } }> {
   if (!/^[a-zA-Z0-9-]{8,80}$/.test(visitorId)) {
     return { status: 400, body: { error: 'Visitor id is not valid.' } }
@@ -538,14 +543,29 @@ export async function recordLead(
   if (!/^09\d{9}$/.test(phone)) {
     return { status: 400, body: { error: 'Enter a mobile number that starts with 09 and has 11 digits.' } }
   }
+  if (consent !== true) {
+    return { status: 400, body: { error: 'Consent is required.' } }
+  }
+  if (consentTextVersion !== CONSENT_TEXT_VERSION) {
+    return { status: 400, body: { error: 'The consent text version is not valid.' } }
+  }
+  if (!workId || !/^[a-zA-Z0-9-]{8,80}$/.test(workId)) {
+    return { status: 400, body: { error: 'A work id is required.' } }
+  }
   const { gallery, show } = await ensureOGalleryTenant(db)
+  const [found] = await db.select({ id: works.id }).from(works).where(eq(works.id, workId)).limit(1)
+  if (!found) {
+    return { status: 400, body: { error: 'That work was not found.' } }
+  }
+  const consentAt = new Date()
   await db.insert(leads).values({
     galleryId: gallery.id,
     showId: show.id,
-    workId: workId && /^[a-zA-Z0-9-]{8,80}$/.test(workId) ? workId : null,
+    workId: found.id,
     phone,
     kind,
-    consentAt: new Date(),
+    consentAt,
+    consentTextVersion: CONSENT_TEXT_VERSION,
   })
   return { status: 200, body: { ok: true } }
 }

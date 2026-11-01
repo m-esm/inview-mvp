@@ -29,6 +29,8 @@ export async function handlePilotApi(
     visitorId?: string
     phone?: string
     workId?: string | null
+    consent?: unknown
+    consentTextVersion?: unknown
   }
   if (payload.op === 'visit') {
     if (payload.kind !== 'scan' && payload.kind !== 'view') {
@@ -46,6 +48,8 @@ export async function handlePilotApi(
       payload.kind,
       String(payload.visitorId || ''),
       payload.workId,
+      payload.consent,
+      payload.consentTextVersion,
     )
   }
   return { status: 400, body: { error: 'Unknown action.' } }

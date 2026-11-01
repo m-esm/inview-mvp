@@ -6,10 +6,11 @@ process.env.NODE_ENV = 'test'
 delete process.env.O_GALLERY_ACCESS_CODE
 import { PGlite } from '@electric-sql/pglite'
 import { drizzle } from 'drizzle-orm/pglite'
-import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { eq } from 'drizzle-orm'
 import * as schema from '../database/schema.ts'
+import { CONSENT_TEXT_VERSION, leadBody } from '../app/lib/consent.ts'
 import { handlePilotApi, handleStaffApi } from './pilot-api.ts'
 import { LocalObjectStorage } from './storage.ts'
 import os from 'node:os'
@@ -25,13 +26,13 @@ function assertNoVisitorData(body: unknown, phone: string) {
 
 async function setup() {
   const client = new PGlite()
-  const migration = readFileSync(
-    path.join(path.dirname(fileURLToPath(import.meta.url)), '../drizzle/0000_adr0001_init.sql'),
-    'utf8',
-  )
-  // pgcrypto / gen_random_uuid: PGlite supports gen_random_uuid in recent builds.
-  for (const statement of migration.split('--> statement-breakpoint').map((s) => s.trim()).filter(Boolean)) {
-    await client.exec(statement)
+  const drizzleDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '../drizzle')
+  const files = fs.readdirSync(drizzleDir).filter((name) => name.endsWith('.sql')).sort()
+  for (const file of files) {
+    const migration = fs.readFileSync(path.join(drizzleDir, file), 'utf8')
+    for (const statement of migration.split('--> statement-breakpoint').map((s) => s.trim()).filter(Boolean)) {
+      await client.exec(statement)
+    }
   }
   const db = drizzle(client, { schema })
   const mediaRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'inview-media-'))
@@ -139,13 +140,12 @@ test('O Gallery publish, scan dedupe, view and lead use the multi-tenant tables'
     assertNoVisitorData(scanB.body, phone)
     assertNoVisitorData(viewB.body, phone)
 
-    const lead = await handlePilotApi(db, storage, 'POST', {
-      op: 'lead',
+    const lead = await handlePilotApi(db, storage, 'POST', leadBody({
+      phone: '09120000000',
       kind: 'save',
       visitorId: browserB,
-      phone,
       workId: 'samplework1',
-    })
+    }))
     assert.equal(lead.status, 200)
     assert.equal((lead.body as { ok: boolean }).ok, true)
     assertNoVisitorData(lead.body, phone)
@@ -166,12 +166,97 @@ test('O Gallery publish, scan dedupe, view and lead use the multi-tenant tables'
     assert.equal(staff.status, 200)
     const staffBody = staff.body as {
       visits: { scans: number; views: number }
-      leads: Array<{ phone: string; verified: boolean }>
+      leads: Array<{ phone: string; workId: string; consentTextVersion: string; verified: boolean }>
     }
     assert.equal(staffBody.visits.scans, 2)
     assert.equal(staffBody.visits.views, 1)
     assert.equal(staffBody.leads[0].phone, phone)
+    assert.equal(staffBody.leads[0].workId, 'samplework1')
+    assert.equal(staffBody.leads[0].consentTextVersion, CONSENT_TEXT_VERSION)
     assert.equal(staffBody.leads[0].verified, false)
+  } finally {
+    await client.close()
+    fs.rmSync(mediaRoot, { recursive: true, force: true })
+  }
+})
+
+test('the server returns 400 for a lead without consent', async () => {
+  const { client, db, storage, mediaRoot } = await setup()
+  try {
+    const base = {
+      op: 'lead',
+      kind: 'save',
+      visitorId: 'browser-b2',
+      phone: '09120000000',
+      workId: 'samplework1',
+    }
+    const missing = await handlePilotApi(db, storage, 'POST', base)
+    const refused = await handlePilotApi(db, storage, 'POST', { ...base, consent: false, consentTextVersion: CONSENT_TEXT_VERSION })
+    const textConsent = await handlePilotApi(db, storage, 'POST', { ...base, consent: 'true', consentTextVersion: CONSENT_TEXT_VERSION })
+    const badVersion = await handlePilotApi(db, storage, 'POST', { ...base, consent: true, consentTextVersion: 'other' })
+    const missingVersion = await handlePilotApi(db, storage, 'POST', { ...base, consent: true })
+    assert.equal(missing.status, 400)
+    assert.equal(refused.status, 400)
+    assert.equal(textConsent.status, 400)
+    assert.equal(badVersion.status, 400)
+    assert.equal(missingVersion.status, 400)
+    assert.equal((missing.body as { error: string }).error, 'Consent is required.')
+    const rows = await db.select().from(schema.leads)
+    assert.equal(rows.length, 0)
+  } finally {
+    await client.close()
+    fs.rmSync(mediaRoot, { recursive: true, force: true })
+  }
+})
+
+test('a lead from the first sign-in stores the work id', async () => {
+  const { client, db, storage, mediaRoot } = await setup()
+  try {
+    const first = await handlePilotApi(db, storage, 'GET', null)
+    const published = await handlePilotApi(db, storage, 'PUT', {
+      accessCode: 'inview',
+      record: {
+        ...(first.body as { record: object }).record,
+        works: [
+          {
+            id: 'samplework1',
+            title: 'Sample work',
+            artist: '',
+            sample: true,
+            price: null,
+            status: 'available',
+            medium: '',
+            size: '',
+            year: '',
+            image: '',
+          },
+        ],
+      },
+    })
+    assert.equal(published.status, 200)
+
+    const body = leadBody({
+      phone: '09121111111',
+      kind: 'save',
+      visitorId: 'browser-b2',
+      workId: 'samplework1',
+    })
+    assert.equal(body.workId, 'samplework1')
+    assert.equal(body.consent, true)
+
+    const lead = await handlePilotApi(db, storage, 'POST', body)
+    assert.equal(lead.status, 200)
+    const rows = await db.select().from(schema.leads).where(eq(schema.leads.phone, '09121111111'))
+    assert.equal(rows.length, 1)
+    assert.equal(rows[0].workId, 'samplework1')
+    assert.equal(rows[0].kind, 'save')
+    assert.equal(rows[0].consentTextVersion, CONSENT_TEXT_VERSION)
+    assert.ok(rows[0].consentAt)
+
+    const withoutWork = await handlePilotApi(db, storage, 'POST', { ...body, workId: null })
+    assert.equal(withoutWork.status, 400)
+    const after = await db.select().from(schema.leads)
+    assert.equal(after.length, 1)
   } finally {
     await client.close()
     fs.rmSync(mediaRoot, { recursive: true, force: true })

@@ -8,6 +8,13 @@
       "when": 1761950000000,
       "tag": "0000_adr0001_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1762000000000,
+      "tag": "0001_lead_consent",
+      "breakpoints": true
     }
   ]
 }
