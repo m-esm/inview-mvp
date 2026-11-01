@@ -12,6 +12,9 @@ export const landingCopy = {
     hero: 'آثار گالری شما، در دست بازدیدکننده.',
     intro: 'اینویو با یک کد QR، آثار نمایشگاه و قیمت‌ها را روی گوشی بازدیدکننده می‌آورد.',
     demo: 'دیدن نمونه گالری اُ',
+    pilot: 'گالری پایلوت',
+    persianDemo: 'اپلیکیشن نمونه به فارسی نمایش داده می‌شود',
+    screensLabel: 'تصاویر نسخه آزمایشی گالری',
     contact: 'گفت‌وگو درباره گالری شما',
     noApp: 'بدون نصب اپلیکیشن. به فارسی و انگلیسی.',
     preview: 'از دیوار گالری تا صفحه گوشی',
@@ -38,6 +41,8 @@ export const landingCopy = {
     whatsapp: 'واتس‌اپ',
     telegram: 'تلگرام',
     phone: 'تماس تلفنی',
+    email: 'پیام ایمیلی',
+    comingSoon: 'جزئیات تماس به‌زودی اعلام می‌شود',
     staff: 'ورود کارکنان گالری',
     footer: 'همراه آثار، همراه گالری.',
   },
@@ -49,6 +54,9 @@ export const landingCopy = {
     hero: 'Your gallery, in your visitor’s hands.',
     intro: 'Inview brings your exhibition’s works and prices to each visitor’s phone with one QR code.',
     demo: 'Explore the O Gallery demo',
+    pilot: 'pilot gallery',
+    persianDemo: 'The demo app is shown in Persian',
+    screensLabel: 'Gallery demo screenshots',
     contact: 'Talk about your gallery',
     noApp: 'No app to install. In Persian and English.',
     preview: 'From the gallery wall to the phone',
@@ -75,6 +83,8 @@ export const landingCopy = {
     whatsapp: 'WhatsApp',
     telegram: 'Telegram',
     phone: 'Call us',
+    email: 'Email us',
+    comingSoon: 'Contact details coming soon',
     staff: 'Gallery staff sign-in',
     footer: 'With the art. With the gallery.',
   },
@@ -91,17 +101,23 @@ function PilotScreen({ screen, alt }: { screen: (typeof screens)[number]; alt: s
   )
 }
 
-export default function InviewLanding() {
+export default function InviewLanding({ contact = landingContact }: { contact?: typeof landingContact }) {
   const lang = useLang()
   const words = landingCopy[lang]
   const number = new Intl.NumberFormat(lang === 'fa' ? 'fa-IR' : 'en-US')
-  const phone = landingContact.phone.replace(/\d/g, (digit) => number.format(Number(digit)))
+  const phone = contact.phone.replace(/\d/g, (digit) => number.format(Number(digit)))
+  const channels = [
+    { href: contact.whatsappUrl, label: words.whatsapp },
+    { href: contact.telegramUrl, label: words.telegram },
+    { href: contact.email ? `mailto:${contact.email}` : '', label: words.email },
+    { href: contact.phone ? `tel:${contact.phone.replace(/\s/g, '')}` : '', label: words.phone, phone },
+  ].filter((channel) => channel.href)
 
   return (
     <div className={`landing ${lang === 'fa' ? 'fa' : ''}`}>
       <header className="landing-header landing-width">
         <Link to="/" className="landing-brand">{words.brand}</Link>
-        <span>{words.forGalleries}</span>
+        <a className="landing-header-contact" href="#contact">{words.forGalleries}</a>
       </header>
       <main>
         <section className="landing-hero landing-width" aria-labelledby="landing-title">
@@ -109,7 +125,7 @@ export default function InviewLanding() {
             <h1 id="landing-title">{words.hero}</h1>
             <p className="landing-lead">{words.intro}</p>
             <div className="landing-actions">
-              <Link className="btn btn-primary" to="/g/o-gallery">{words.demo}</Link>
+              <Link className="btn btn-primary" to="/g/o-gallery">{words.demo} <span className="landing-pilot">{words.pilot}</span></Link>
               <a className="btn btn-outline" href="#contact">{words.contact}</a>
             </div>
             <p className="landing-note">{words.noApp}</p>
@@ -152,12 +168,13 @@ export default function InviewLanding() {
         <section className="landing-section landing-width" aria-labelledby="landing-proof">
           <div className="landing-proof-heading">
             <div className="landing-section-intro">
-              <h2 id="landing-proof">{words.proof}</h2>
+              <h2 id="landing-proof">{words.proof} <span className="landing-pilot">{words.pilot}</span></h2>
               <p>{words.proofIntro}</p>
+              {lang === 'en' && <p>{words.persianDemo}</p>}
             </div>
-            <Link className="btn btn-outline" to="/g/o-gallery">{words.demo}</Link>
+            <Link className="btn btn-outline" to="/g/o-gallery">{words.demo} <span className="landing-pilot">{words.pilot}</span></Link>
           </div>
-          <div className="landing-screens">
+          <div className="landing-screens" tabIndex={0} role="region" aria-label={words.screensLabel}>
             {screens.map((screen, index) => (
               <figure key={screen}>
                 <div className="landing-screen"><PilotScreen screen={screen} alt={words.screens[index]} /></div>
@@ -173,11 +190,12 @@ export default function InviewLanding() {
             <p>{words.contactIntro}</p>
           </div>
           <div className="landing-contact-links">
-            <a className="btn btn-primary" href={landingContact.whatsappUrl}>{words.whatsapp}</a>
-            <a className="btn btn-outline" href={landingContact.telegramUrl}>{words.telegram}</a>
-            <a className="landing-phone-link" href={`tel:${landingContact.phone.replace(/\s/g, '')}`}>
-              <span>{words.phone}</span><bdi dir="ltr">{phone}</bdi>
-            </a>
+            {channels.map((channel, index) => (
+              <a key={channel.href} className={`btn ${index === 0 ? 'btn-primary' : 'btn-outline'}${channel.phone ? ' landing-phone-link' : ''}`} href={channel.href}>
+                <span>{channel.label}</span>{channel.phone && <bdi dir="ltr">{channel.phone}</bdi>}
+              </a>
+            ))}
+            {channels.length === 0 && <p className="landing-contact-empty">{words.comingSoon}</p>}
           </div>
         </section>
       </main>

@@ -7,8 +7,10 @@ import './test-render.ts'
 import Home, { loader, meta } from '../app/routes/home.tsx'
 import { defaultLang, dirFor, resolveLang } from '../app/lib/lang.ts'
 import { gallery } from '../app/data/gallery.ts'
+import InviewLanding, { landingCopy } from '../app/pages/site/InviewLanding.tsx'
+import { landingContact } from '../app/lib/landing-contact.ts'
 
-function renderHome(url: string, cookie?: string) {
+function renderHome(url: string, cookie?: string, contact?: typeof landingContact) {
   const request = new Request(url, { headers: cookie ? { cookie } : {} })
   const data = loader({ request })
   assert.ok(!(data instanceof Response))
@@ -17,7 +19,7 @@ function renderHome(url: string, cookie?: string) {
     id: 'root',
     path: '/',
     Component: () => createElement('html', { lang, dir: dirFor(lang) }, createElement('body', null, createElement(Outlet))),
-    children: [{ id: 'home', index: true, Component: Home }],
+    children: [{ id: 'home', index: true, Component: contact ? () => createElement(InviewLanding, { contact }) : Home }],
   }])
   const html = renderToString(createElement(Stub, {
     initialEntries: ['/'],
@@ -44,6 +46,48 @@ test('the language cookie server-renders the root landing in English', () => {
   assert.match(html, /Your gallery, in your visitor/)
   assert.match(html, /Contact details, with consent/)
   assert.doesNotMatch(html, /آثار گالری شما/)
+})
+
+test('default landing contact hides placeholder phone and WhatsApp links', () => {
+  const { html } = renderHome('https://inview.test/')
+  assert.doesNotMatch(html, /tel:|wa\.me|000/)
+  assert.match(html, /class="btn btn-primary" href="https:\/\/t\.me\/inview_ir"/)
+  assert.match(html, /href="#contact"/)
+})
+
+test('empty contact channels show the localized coming-soon line', () => {
+  const contact = { phone: '', whatsappUrl: '', telegramUrl: '', email: '' }
+  for (const lang of ['fa', 'en'] as const) {
+    const { html } = renderHome('https://inview.test/', `inview-lang=${lang}`, contact)
+    assert.ok(html.includes(landingCopy[lang].comingSoon))
+    assert.doesNotMatch(html, /tel:|wa\.me|t\.me|mailto:/)
+  }
+})
+
+test('each configured contact channel can be the primary action', () => {
+  const empty = { phone: '', whatsappUrl: '', telegramUrl: '', email: '' }
+  for (const [key, value, href] of [
+    ['whatsappUrl', 'https://wa.me/358401234567', 'https://wa.me/358401234567'],
+    ['telegramUrl', 'https://t.me/inview_ir', 'https://t.me/inview_ir'],
+    ['email', 'hello@inview.test', 'mailto:hello@inview.test'],
+    ['phone', '+358 40 1234567', 'tel:+358401234567'],
+  ]) {
+    const { html } = renderHome('https://inview.test/', undefined, { ...empty, [key]: value })
+    assert.ok(html.includes(`class="btn btn-primary${key === 'phone' ? ' landing-phone-link' : ''}" href="${href}"`))
+    assert.ok(!html.includes(landingCopy.fa.comingSoon))
+    if (key === 'phone') assert.match(html, /<bdi dir="ltr">\+۳۵۸ ۴۰ ۱۲۳۴۵۶۷<\/bdi>/)
+  }
+})
+
+test('pilot labels and the screenshot region are localized with an English-only Persian UI note', () => {
+  for (const lang of ['fa', 'en'] as const) {
+    const { html } = renderHome('https://inview.test/', `inview-lang=${lang}`)
+    const words = landingCopy[lang]
+    assert.equal(html.split(words.pilot).length - 1, 3)
+    assert.ok(html.includes(`tabindex="0" role="region" aria-label="${words.screensLabel}"`))
+    assert.equal(html.includes(landingCopy.en.persianDemo), lang === 'en')
+    assert.ok(!html.includes(landingCopy.fa.persianDemo))
+  }
 })
 
 test('the gallery subdomain keeps its gallery website', () => {
