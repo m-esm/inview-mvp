@@ -19,7 +19,7 @@ export default function Plans() {
       </div>
       <section className="box">
         <h2>Compared with building a website yourself</h2>
-        <div className="scroll-x">
+        <div className="scroll-x" tabIndex={0} role="region" aria-label="Plan comparison">
           <table className="compare">
             <thead><tr><th>Option</th><th className="num">Year 1</th><th className="num">3 years</th><th>What you get</th></tr></thead>
             <tbody>
