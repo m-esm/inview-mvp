@@ -32,7 +32,7 @@ test('root server-renders the Inview landing in Persian without a redirect', () 
   const { html, data } = renderHome('https://inview.test/')
   assert.equal(data.isGallerySite, false)
   assert.match(html, /<html lang="fa" dir="rtl"/)
-  assert.match(html, /آثار گالری شما، در دست بازدیدکننده/)
+  assert.ok(html.includes(landingCopy.fa.hero))
   assert.match(html, /href="\/g\/o-gallery"/)
   assert.match(html, /href="\/dashboard\/sign-in"/)
   assert.match(html, /اطلاعات تماس، با رضایت/)
@@ -52,7 +52,7 @@ test('default landing contact shows no unverified contact link', () => {
   const { html } = renderHome('https://inview.test/')
   assert.doesNotMatch(html, /tel:|wa\.me|t\.me|mailto:|000/)
   assert.ok(html.includes(landingCopy.fa.comingSoon))
-  assert.match(html, /href="#contact"/)
+  assert.doesNotMatch(html, /href="#contact"/)
 })
 
 test('empty contact channels show the localized coming-soon line', () => {
@@ -61,6 +61,7 @@ test('empty contact channels show the localized coming-soon line', () => {
     const { html } = renderHome('https://inview.test/', `inview-lang=${lang}`, contact)
     assert.ok(html.includes(landingCopy[lang].comingSoon))
     assert.doesNotMatch(html, /tel:|wa\.me|t\.me|mailto:/)
+    assert.ok(!html.includes(landingCopy[lang].contact))
   }
 })
 
@@ -75,6 +76,7 @@ test('each configured contact channel can be the primary action', () => {
     const { html } = renderHome('https://inview.test/', undefined, { ...empty, [key]: value })
     assert.ok(html.includes(`class="btn btn-primary${key === 'phone' ? ' landing-phone-link' : ''}" href="${href}"`))
     assert.ok(!html.includes(landingCopy.fa.comingSoon))
+    assert.ok(html.includes(`<a class="btn btn-outline" href="#contact">${landingCopy.fa.contact}</a>`))
     if (key === 'phone') assert.match(html, /<bdi dir="ltr">\+۳۵۸ ۴۰ ۱۲۳۴۵۶۷<\/bdi>/)
   }
 })
@@ -83,11 +85,18 @@ test('pilot labels and the screenshot region are localized with an English-only 
   for (const lang of ['fa', 'en'] as const) {
     const { html } = renderHome('https://inview.test/', `inview-lang=${lang}`)
     const words = landingCopy[lang]
-    assert.equal(html.split(words.pilot).length - 1, 3)
+    assert.equal(html.split(words.pilot).length - 1, 1)
     assert.ok(html.includes(`tabindex="0" role="region" aria-label="${words.screensLabel}"`))
     assert.equal(html.includes(landingCopy.en.persianDemo), lang === 'en')
     assert.ok(!html.includes(landingCopy.fa.persianDemo))
   }
+})
+
+test('header and footer offer full language labels and the hero shows work details', () => {
+  const { html } = renderHome('https://inview.test/')
+  assert.equal(html.split('lang="fa">فارسی</button>').length - 1, 2)
+  assert.equal(html.split('lang="en">English</button>').length - 1, 2)
+  assert.match(html, /class="landing-phone"><picture><source srcSet="\/landing\/work.webp"/)
 })
 
 test('the gallery subdomain keeps its gallery website', () => {

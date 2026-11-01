@@ -1,6 +1,6 @@
-import { Link } from 'react-router'
-import { StaffLangSwitch } from '../../components/StaffLangSwitch'
+import { Link, useRevalidator } from 'react-router'
 import { useLang } from '../../lib/i18n'
+import { langCookie, type Lang } from '../../lib/lang'
 import { landingContact } from '../../lib/landing-contact'
 
 export const landingCopy = {
@@ -9,7 +9,7 @@ export const landingCopy = {
     description: 'با اینویو، بازدیدکننده کد QR گالری را اسکن می‌کند و آثار و قیمت‌ها را روی گوشی می‌بیند. برای گالری‌ها، از معرفی آثار تا شناخت علاقه‌مندان.',
     brand: 'اینویو',
     forGalleries: 'برای گالری‌ها',
-    hero: 'آثار گالری شما، در دست بازدیدکننده.',
+    hero: 'آثار گالری شما، در دست بازدیدکننده.',
     intro: 'اینویو با یک کد QR، آثار نمایشگاه و قیمت‌ها را روی گوشی بازدیدکننده می‌آورد.',
     demo: 'دیدن نمونه گالری اُ',
     pilot: 'گالری پایلوت',
@@ -92,6 +92,23 @@ export const landingCopy = {
 
 const screens = ['welcome', 'works', 'work', 'prices'] as const
 
+function LandingLangSwitch() {
+  const lang = useLang()
+  const revalidator = useRevalidator()
+  const choose = (next: Lang) => {
+    if (next === lang) return
+    document.cookie = langCookie(next)
+    void revalidator.revalidate()
+  }
+
+  return (
+    <div className="lang" role="group" aria-label={lang === 'fa' ? 'زبان' : 'Language'}>
+      <button type="button" aria-pressed={lang === 'fa'} onClick={() => choose('fa')} className="fa-btn" lang="fa">فارسی</button>
+      <button type="button" aria-pressed={lang === 'en'} onClick={() => choose('en')} lang="en">English</button>
+    </div>
+  )
+}
+
 function PilotScreen({ screen, alt }: { screen: (typeof screens)[number]; alt: string }) {
   return (
     <picture>
@@ -117,7 +134,7 @@ export default function InviewLanding({ contact = landingContact }: { contact?: 
     <div className={`landing ${lang === 'fa' ? 'fa' : ''}`}>
       <header className="landing-header landing-width">
         <Link to="/" className="landing-brand">{words.brand}</Link>
-        <a className="landing-header-contact" href="#contact">{words.forGalleries}</a>
+        <LandingLangSwitch />
       </header>
       <main>
         <section className="landing-hero landing-width" aria-labelledby="landing-title">
@@ -125,15 +142,15 @@ export default function InviewLanding({ contact = landingContact }: { contact?: 
             <h1 id="landing-title">{words.hero}</h1>
             <p className="landing-lead">{words.intro}</p>
             <div className="landing-actions">
-              <Link className="btn btn-primary" to="/g/o-gallery">{words.demo} <span className="landing-pilot">{words.pilot}</span></Link>
-              <a className="btn btn-outline" href="#contact">{words.contact}</a>
+              <Link className="btn btn-primary" to="/g/o-gallery">{words.demo}</Link>
+              {channels.length > 0 && <a className="btn btn-outline" href="#contact">{words.contact}</a>}
             </div>
             <p className="landing-note">{words.noApp}</p>
           </div>
           <figure className="landing-exhibit">
             <span className="landing-exhibit-label">{words.preview}</span>
             <div className="landing-phone">
-              <PilotScreen screen="welcome" alt={words.screens[0]} />
+              <PilotScreen screen="work" alt={words.screens[2]} />
             </div>
             <figcaption>{words.previewCaption}</figcaption>
           </figure>
@@ -172,12 +189,12 @@ export default function InviewLanding({ contact = landingContact }: { contact?: 
               <p>{words.proofIntro}</p>
               {lang === 'en' && <p>{words.persianDemo}</p>}
             </div>
-            <Link className="btn btn-outline" to="/g/o-gallery">{words.demo} <span className="landing-pilot">{words.pilot}</span></Link>
+            <Link className="btn btn-outline" to="/g/o-gallery">{words.demo}</Link>
           </div>
           <div className="landing-screens" tabIndex={0} role="region" aria-label={words.screensLabel}>
             {screens.map((screen, index) => (
               <figure key={screen}>
-                <div className="landing-screen"><PilotScreen screen={screen} alt={words.screens[index]} /></div>
+                <div className={`landing-screen${screen === 'prices' ? ' landing-screen-prices' : ''}`}><PilotScreen screen={screen} alt={words.screens[index]} /></div>
                 <figcaption>{words.screens[index]}</figcaption>
               </figure>
             ))}
@@ -201,8 +218,10 @@ export default function InviewLanding({ contact = landingContact }: { contact?: 
       </main>
       <footer className="landing-footer landing-width">
         <div><span className="landing-brand">{words.brand}</span><p>{words.footer}</p></div>
-        <StaffLangSwitch />
-        <Link className="landing-staff" to="/dashboard/sign-in">{words.staff}</Link>
+        <div className="landing-footer-links">
+          <Link className="landing-staff" to="/dashboard/sign-in">{words.staff}</Link>
+          <LandingLangSwitch />
+        </div>
       </footer>
     </div>
   )
