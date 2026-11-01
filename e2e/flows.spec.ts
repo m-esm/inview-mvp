@@ -42,7 +42,8 @@ async function publishFlowWork(page: Page) {
 
 async function expectAxe(page: Page, label: string) {
   await page.evaluate(async () => {
-    await Promise.all(document.getAnimations().map((animation) => animation.finished))
+    const pending = document.getAnimations().map((animation) => animation.finished.catch(() => undefined))
+    await Promise.all(pending)
   })
   const results = await new AxeBuilder({ page }).analyze()
   const violations = results.violations.map((item) => `${item.impact || 'unknown'}:${item.id}`)
@@ -51,7 +52,7 @@ async function expectAxe(page: Page, label: string) {
 
 async function signIn(page: Page, kind: 'save' | 'ask') {
   await expect(page.getByRole('dialog')).toBeVisible()
-  await page.getByLabel('شماره موبایل').fill('09123334444')
+  await page.getByRole('textbox', { name: 'شماره موبایل', exact: true }).fill('09123334444')
   await page.getByRole('checkbox', { name: /موافقم/ }).check()
   await page.getByRole('button', { name: 'ارسال کد' }).click()
   await page.getByLabel('کد ۴ رقمی را وارد کنید').fill('1234')
