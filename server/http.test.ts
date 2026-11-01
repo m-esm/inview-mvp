@@ -9,7 +9,6 @@ import request from 'supertest'
 import { CONSENT_TEXT_VERSION } from '../app/lib/consent.ts'
 import { galleries, media, works } from '../database/schema.ts'
 import { createApiApp } from './api-app.ts'
-import { resetAuthFailures } from './auth-limit.ts'
 import { createTestDb } from './test-db.ts'
 
 const PNG =
@@ -348,9 +347,8 @@ test('uploads require the access code and store a PNG', async () => {
 })
 
 test('repeated bad access codes return 429', async () => {
-  const previous = process.env.AUTH_FAIL_LIMIT
-  process.env.AUTH_FAIL_LIMIT = '2'
-  resetAuthFailures()
+  const previous = process.env.RATE_LIMIT_ACCESS_FAIL_IP_MAX
+  process.env.RATE_LIMIT_ACCESS_FAIL_IP_MAX = '1'
   try {
     await withApp('limit', async ({ app }) => {
       const api = http(app, 'limit')
@@ -366,11 +364,11 @@ test('repeated bad access codes return 429', async () => {
       assert.equal(one.status, 401)
       assert.equal(two.status, 429)
       assert.equal(three.status, 429)
-      assert.equal(three.body.error, 'Too many attempts. Try again later.')
+      assert.equal(three.body.error, 'Too many requests. Try again later.')
+      assert.ok(Number(three.headers['retry-after']) > 0)
     })
   } finally {
-    if (previous === undefined) delete process.env.AUTH_FAIL_LIMIT
-    else process.env.AUTH_FAIL_LIMIT = previous
-    resetAuthFailures()
+    if (previous === undefined) delete process.env.RATE_LIMIT_ACCESS_FAIL_IP_MAX
+    else process.env.RATE_LIMIT_ACCESS_FAIL_IP_MAX = previous
   }
 })

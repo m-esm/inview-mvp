@@ -226,3 +226,9 @@ export const leads = pgTable('leads', {
   consentTextVersion: varchar('consent_text_version', { length: 40 }).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
+
+export const rateLimits = pgTable('rate_limits', {
+  bucket: varchar('bucket', { length: 200 }).primaryKey(),
+  windowStart: timestamp('window_start', { withTimezone: true }).notNull(),
+  hits: integer('hits').notNull(),
+})
