@@ -5,7 +5,7 @@ import type { RouteConfigEntry } from '@react-router/dev/routes'
 import routes from '../app/routes.ts'
 
 const registry = JSON.parse(readFileSync(new URL('../deploy/surfaces.json', import.meta.url), 'utf8'))
-const ignoredPaths = ['/dashboard/sign-out']
+const ignoredPaths = ['/dashboard/sign-out', '/staff/sign-out', '/ops/sign-out']
 
 test('surface registry satisfies the deployment contract', () => {
   assert.equal(registry.app, 'inview')
