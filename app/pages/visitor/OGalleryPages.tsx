@@ -113,8 +113,8 @@ function OLanding({ record, preview = false, lang }: { record: PilotRecord, prev
             </>
           ) : (
             <>
-              <Link className="btn btn-primary wide" to="/g/o-gallery/works">{copy.seeWorks}</Link>
-              <Link className="btn btn-outline wide" to="/g/o-gallery/prices">{copy.priceList}</Link>
+              <Link className="btn btn-primary wide" to={`/g/${record.slug}/works`}>{copy.seeWorks}</Link>
+              <Link className="btn btn-outline wide" to={`/g/${record.slug}/prices`}>{copy.priceList}</Link>
               {record.pdfUrl && <a className="btn btn-outline wide" href={record.pdfUrl}>{copy.downloadPdf}</a>}
             </>
           )}
@@ -175,9 +175,9 @@ function WorkMeta({ work, lang, separator = ' · ' }: { work: PilotWork; lang: L
   )
 }
 
-function WorkList({ works }: { works: PilotWork[] }) {
+function WorkList({ works, slug, galleryName }: { works: PilotWork[]; slug: string; galleryName: string }) {
   const { lang } = useT()
-  const copy = oCopy(lang)
+  const copy = oCopy(lang, galleryName)
   if (works.length === 0) return null
   return (
     <ol className="price-list">
@@ -185,7 +185,7 @@ function WorkList({ works }: { works: PilotWork[] }) {
         const text = workText(work, lang)
         return (
           <li key={work.id}>
-            <Link to={`/g/o-gallery/works/${work.id}`} title={text.title}>
+            <Link to={`/g/${slug}/works/${work.id}`} title={text.title}>
               <span className="pl-num" aria-hidden>{formatNumber(lang, index + 1)}</span>
               {work.image ? <WorkImage work={work} alt="" sizes="56px" /> : <span className="pl-fallback" aria-hidden />}
               <span className="pl-text">
@@ -205,9 +205,19 @@ function WorkList({ works }: { works: PilotWork[] }) {
   )
 }
 
-function WorkWall({ works, firstPriority = false }: { works: PilotWork[]; firstPriority?: boolean }) {
+function WorkWall({
+  works,
+  slug,
+  galleryName,
+  firstPriority = false,
+}: {
+  works: PilotWork[]
+  slug: string
+  galleryName: string
+  firstPriority?: boolean
+}) {
   const { lang } = useT()
-  const copy = oCopy(lang)
+  const copy = oCopy(lang, galleryName)
   if (works.length === 0) return null
   return (
     <div className="grid o-wall">
@@ -217,12 +227,12 @@ function WorkWall({ works, firstPriority = false }: { works: PilotWork[]; firstP
         const meta = [showTitleLine ? text.title : '', text.medium, text.size].filter(Boolean)
         return (
           <article key={work.id} className="card">
-            <Link to={`/g/o-gallery/works/${work.id}`} className="card-img" title={text.title}>
+            <Link to={`/g/${slug}/works/${work.id}`} className="card-img" title={text.title}>
               {work.image
                 ? <WorkImage work={work} alt="" sizes="(min-width: 960px) 30vw, 50vw" priority={firstPriority && index === 0} />
                 : <span className="pl-fallback wall-fallback" aria-hidden />}
             </Link>
-            <Link to={`/g/o-gallery/works/${work.id}`} className="label">
+            <Link to={`/g/${slug}/works/${work.id}`} className="label">
               <span className="label-artist" dir="auto">{text.artist || text.title}</span>
               <span className="label-meta">
                 {meta.length === 0 ? '—' : meta.map((part, i) => (
@@ -260,7 +270,7 @@ export function OWorks({ record }: { record: PilotRecord }) {
       <EmptyState
         title={name}
         body={copy.emptyBody}
-        action={<Link className="btn btn-outline" to="/g/o-gallery">{copy.currentShow}</Link>}
+        action={<Link className="btn btn-outline" to={`/g/${record.slug}`}>{copy.currentShow}</Link>}
       />
     )
   }
@@ -288,13 +298,13 @@ export function OWorks({ record }: { record: PilotRecord }) {
           <button type="button" className="btn btn-outline" onClick={() => setFilter('all')}>{copy.showAll}</button>
         </div>
       )}
-      <WorkWall works={real} firstPriority />
+      <WorkWall works={real} slug={record.slug} galleryName={name} firstPriority />
       {samples.length > 0 && (
         <section>
           <div className="pad">
             <h2 className="section-title">{copy.samplesTitle}</h2>
           </div>
-          <WorkWall works={samples} />
+          <WorkWall works={samples} slug={record.slug} galleryName={name} />
         </section>
       )}
     </div>
@@ -312,7 +322,7 @@ export function OPrices({ record }: { record: PilotRecord }) {
       <EmptyState
         title={name}
         body={copy.emptyBody}
-        action={<Link className="btn btn-outline" to="/g/o-gallery/works">{copy.seeWorks}</Link>}
+        action={<Link className="btn btn-outline" to={`/g/${record.slug}/works`}>{copy.seeWorks}</Link>}
       />
     )
   }
@@ -323,30 +333,31 @@ export function OPrices({ record }: { record: PilotRecord }) {
       <h1 className="page-title">{t.priceList}</h1>
       <span className="ink-rule" aria-hidden />
       {title ? <p className="muted small">{title}</p> : null}
-      <WorkList works={record.works} />
+      <WorkList works={record.works} slug={record.slug} galleryName={name} />
       {record.pdfUrl && <a className="btn btn-outline wide pdf-action" href={record.pdfUrl}>{copy.downloadPdf}</a>}
     </div>
   )
 }
 
-export function OWork({ work }: { work: PilotWork }) {
+export function OWork({ work, record }: { work: PilotWork; record: PilotRecord }) {
   const { t, lang } = useT()
-  const copy = oCopy(lang)
+  const copy = oCopy(lang, pick(lang, record.name, record.nameFa))
+  const slug = record.slug
   const { saved, phone, consentVersion } = useVisitor()
   const { requireSignIn } = useSignIn()
   const [asked, setAsked] = useState(false)
   const workId = work.id
 
   useEffect(() => {
-    recordWorkView(workId)
-  }, [workId])
+    recordWorkView(slug, workId)
+  }, [slug, workId])
 
   const isSaved = saved.includes(work.id)
   const text = workText(work, lang)
   return (
     <div className="work">
       <div className="pad row between">
-        <Link className="btn-text inline" to="/g/o-gallery/works">{t.back}</Link>
+        <Link className="btn-text inline" to={`/g/${slug}/works`}>{t.back}</Link>
       </div>
       {work.image && (
         <figure className="work-figure">
@@ -391,7 +402,7 @@ export function OWork({ work }: { work: PilotWork }) {
           aria-pressed={isSaved}
           onClick={() => {
             if (isSaved) visitor.toggleSaved(work.id)
-            else if (phone && consentVersion === CONSENT_TEXT_VERSION) { visitor.save(work.id); reportLead(phone, 'save', work.id) }
+            else if (phone && consentVersion === CONSENT_TEXT_VERSION) { visitor.save(work.id); reportLead(slug, phone, 'save', work.id) }
             else requireSignIn('save', () => visitor.save(work.id), text.title, work.id)
           }}>
           {isSaved ? t.saved : t.save}
@@ -399,7 +410,7 @@ export function OWork({ work }: { work: PilotWork }) {
         {work.status !== 'sold' && (
           <button className="btn btn-outline" disabled={asked}
             onClick={() => {
-              if (phone && consentVersion === CONSENT_TEXT_VERSION) { setAsked(true); reportLead(phone, 'ask', work.id) }
+              if (phone && consentVersion === CONSENT_TEXT_VERSION) { setAsked(true); reportLead(slug, phone, 'ask', work.id) }
               else requireSignIn('ask', () => setAsked(true), text.title, work.id)
             }}>
             {asked ? t.asked : t.ask}

@@ -5,8 +5,8 @@ import { oCopy, pick, type PilotRecord, type PilotWork } from '../../lib/pilot'
 
 export default function OGallerySite({ record }: { record: PilotRecord }) {
   const { lang, dir } = useT()
-  const copy = oCopy(lang)
   const name = pick(lang, record.name, record.nameFa)
+  const copy = oCopy(lang, name)
   const title = pick(lang, record.showTitle, record.showTitleFa)
   const dates = pick(lang, record.dates, record.datesFa)
   const text = pick(lang, record.text, record.textFa)
@@ -23,13 +23,14 @@ export default function OGallerySite({ record }: { record: PilotRecord }) {
 
   return (
     <div className={`site o-site ${lang === 'fa' ? 'fa' : ''}`} dir={dir}>
+      {record.demo && <p className="demo-banner" role="note"><strong>{copy.demoLabel}</strong> {copy.demoNote}</p>}
       <header className="site-top">
         {record.logo
           ? <img className="o-site-logo" src={record.logo} alt={name} />
           : <span className="site-brand">{name}</span>}
         <nav aria-label="Website">
           <a href="#works">{copy.seeWorks}</a>
-          <Link to="/g/o-gallery/prices">{copy.priceList}</Link>
+          <Link to={`/g/${record.slug}/prices`}>{copy.priceList}</Link>
         </nav>
       </header>
       <main>
@@ -39,8 +40,8 @@ export default function OGallerySite({ record }: { record: PilotRecord }) {
           {real.length === 0 && <p className="site-lead">{copy.emptyBody}</p>}
           {text && <p className="site-lead">{text}</p>}
           <div className="row gap wrap">
-            <Link className="btn btn-primary" to="/g/o-gallery/works">{copy.seeWorks}</Link>
-            <Link className="btn btn-outline" to="/g/o-gallery/prices">{copy.priceList}</Link>
+            <Link className="btn btn-primary" to={`/g/${record.slug}/works`}>{copy.seeWorks}</Link>
+            <Link className="btn btn-outline" to={`/g/${record.slug}/prices`}>{copy.priceList}</Link>
             {record.pdfUrl && <a className="btn btn-outline" href={record.pdfUrl}>{copy.downloadPdf}</a>}
           </div>
         </section>
@@ -48,14 +49,14 @@ export default function OGallerySite({ record }: { record: PilotRecord }) {
           {real.length > 0 && (
             <>
               <h2>{copy.worksTitle}</h2>
-              <WorkGrid works={real} lang={lang} />
+              <WorkGrid works={real} lang={lang} slug={record.slug} galleryName={name} />
             </>
           )}
           {samples.length > 0 && (
             <>
               <h2>{copy.samplesTitle}</h2>
               <p className="sample-note">{copy.sampleBanner}</p>
-              <WorkGrid works={samples} lang={lang} />
+              <WorkGrid works={samples} lang={lang} slug={record.slug} galleryName={name} />
             </>
           )}
         </section>
@@ -70,13 +71,13 @@ export default function OGallerySite({ record }: { record: PilotRecord }) {
   )
 }
 
-function WorkGrid({ works, lang }: { works: PilotWork[], lang: 'en' | 'fa' }) {
+function WorkGrid({ works, lang, slug, galleryName }: { works: PilotWork[], lang: 'en' | 'fa', slug: string, galleryName: string }) {
   const { n, t } = useT()
-  const copy = oCopy(lang)
+  const copy = oCopy(lang, galleryName)
   return (
     <div className="site-grid">
       {works.map((work) => (
-        <Link key={work.id} to={`/g/o-gallery/works/${work.id}`} className="site-card link">
+        <Link key={work.id} to={`/g/${slug}/works/${work.id}`} className="site-card link">
           {work.image && <img src={work.image} alt="" />}
           <h3>{work.title}</h3>
           <p className="muted small">{[work.artist, work.medium, work.size].filter(Boolean).join(' · ') || '—'}</p>

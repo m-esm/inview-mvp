@@ -45,7 +45,8 @@ export interface GalleryWorkDto {
 }
 
 export interface GalleryRecordDto {
-  slug: 'o-gallery'
+  slug: string
+  demo: boolean
   name: string
   nameFa: string
   logo: string | null
@@ -96,6 +97,44 @@ export interface GalleryStateDto {
   days: StaffDayDto[]
   works: StaffWorkDto[]
   leads: StaffLeadDto[]
+}
+
+export type GalleryTenant = {
+  gallery: typeof galleries.$inferSelect
+  show: typeof shows.$inferSelect
+}
+
+export const GALLERY_SLUG_PATTERN = /^[a-z0-9][a-z0-9-]{0,79}$/
+
+const DEMO_GALLERY_SLUGS: ReadonlySet<string> = new Set(['sample'])
+
+export function isDemoGallery(slug: string): boolean {
+  return DEMO_GALLERY_SLUGS.has(slug)
+}
+
+export async function tenantBySlug(db: Db, slug: string): Promise<GalleryTenant | null> {
+  if (slug === O_SLUG) return ensureOGalleryTenant(db)
+  if (!GALLERY_SLUG_PATTERN.test(slug)) return null
+  const [gallery] = await db.select().from(galleries).where(eq(galleries.slug, slug)).limit(1)
+  if (!gallery) return null
+  return withLatestShow(db, gallery)
+}
+
+export async function tenantById(db: Db, galleryId: string): Promise<GalleryTenant | null> {
+  const [gallery] = await db.select().from(galleries).where(eq(galleries.id, galleryId)).limit(1)
+  if (!gallery) return null
+  return withLatestShow(db, gallery)
+}
+
+async function withLatestShow(db: Db, gallery: typeof galleries.$inferSelect): Promise<GalleryTenant | null> {
+  const [show] = await db
+    .select()
+    .from(shows)
+    .where(eq(shows.galleryId, gallery.id))
+    .orderBy(desc(shows.updatedAt))
+    .limit(1)
+  if (!show) return null
+  return { gallery, show }
 }
 
 export const REPORT_TIME_ZONE = GALLERY_TIME_ZONE
@@ -242,7 +281,7 @@ export function imageSetFor(image: string, variants: Record<string, string> | nu
 
 async function readRecord(
   db: Db,
-  gallery: { nameEn: string; nameFa: string; logoMediaId: string | null },
+  gallery: { slug: string; nameEn: string; nameFa: string; logoMediaId: string | null },
   show: {
     titleEn: string
     titleFa: string
@@ -292,7 +331,8 @@ async function readRecord(
   )
 
   return {
-    slug: 'o-gallery',
+    slug: gallery.slug,
+    demo: isDemoGallery(gallery.slug),
     name: gallery.nameEn,
     nameFa: gallery.nameFa,
     logo: await logoUrl(db, gallery.logoMediaId),
@@ -396,18 +436,20 @@ async function readWorkStats(db: Db, galleryId: string, showId: string): Promise
     .sort((a, b) => b.views + b.saves + b.asks - (a.views + a.saves + a.asks))
 }
 
-const publicRecordCache = new WeakMap<object, { stamp: string; value: { record: GalleryRecordDto } }>()
+type CachedRecord = { stamp: string; value: { record: GalleryRecordDto } }
+
+const publicRecordCache = new WeakMap<object, Map<string, CachedRecord>>()
 
 export function clearPublicRecordCache(db: Db) {
   publicRecordCache.delete(db)
 }
 
-async function recordStamp(db: Db): Promise<string | null> {
+async function recordStamp(db: Db, galleryId: string): Promise<string | null> {
   const [row] = await db
     .select({ gallery: galleries.updatedAt, show: shows.updatedAt, showId: shows.id })
     .from(galleries)
     .innerJoin(shows, eq(shows.galleryId, galleries.id))
-    .where(eq(galleries.slug, O_SLUG))
+    .where(eq(galleries.id, galleryId))
     .orderBy(desc(shows.updatedAt))
     .limit(1)
   if (!row) return null
@@ -415,18 +457,22 @@ async function recordStamp(db: Db): Promise<string | null> {
 }
 
 /** Public catalogue only. This function does not read visits or leads. */
-export async function loadPublicRecord(db: Db): Promise<{ record: GalleryRecordDto }> {
-  const stamp = await recordStamp(db)
-  const cached = publicRecordCache.get(db)
+export async function loadPublicRecord(db: Db, tenant?: GalleryTenant): Promise<{ record: GalleryRecordDto }> {
+  const own = tenant ?? (await ensureOGalleryTenant(db))
+  const stamp = await recordStamp(db, own.gallery.id)
+  let byGallery = publicRecordCache.get(db)
+  const cached = byGallery?.get(own.gallery.id)
   if (stamp && cached && cached.stamp === stamp) return cached.value
-  const value = await readPublicRecord(db)
-  if (stamp) publicRecordCache.set(db, { stamp, value })
+  const fresh = (await tenantById(db, own.gallery.id)) ?? own
+  const value = { record: await readRecord(db, fresh.gallery, fresh.show) }
+  if (stamp) {
+    if (!byGallery) {
+      byGallery = new Map()
+      publicRecordCache.set(db, byGallery)
+    }
+    byGallery.set(own.gallery.id, { stamp, value })
+  }
   return value
-}
-
-async function readPublicRecord(db: Db): Promise<{ record: GalleryRecordDto }> {
-  const { gallery, show } = await ensureOGalleryTenant(db)
-  return { record: await readRecord(db, gallery, show) }
 }
 
 type StaffReportBody = Omit<GalleryStateDto, 'record'>
@@ -472,7 +518,7 @@ const DUPLICATE_WORK_ERROR_FA = 'دو اثر شناسه یکسان دارند. �
 
 function sanitizeRecord(
   input: unknown,
-): { error: string; errorFa?: string } | { record: Omit<GalleryRecordDto, 'slug' | 'updatedAt' | 'logo'> & { logo?: string | null } } {
+): { error: string; errorFa?: string } | { record: Omit<GalleryRecordDto, 'slug' | 'demo' | 'updatedAt' | 'logo'> & { logo?: string | null } } {
   if (!input || typeof input !== 'object') return { error: 'The record is missing.' }
   const body = input as Record<string, unknown>
   const name = text(body.name, 80)
@@ -786,7 +832,7 @@ async function writeGalleryRecord(
     })
 
     clearPublicRecordCache(db)
-    const published = await loadPublicRecord(db)
+    const published = await loadPublicRecord(db, tenant)
     return { status: 200, body: { ok: true, record: published.record } }
   } catch (error) {
     console.error(error)
@@ -796,6 +842,7 @@ async function writeGalleryRecord(
 
 export async function recordVisit(
   db: Db,
+  tenant: GalleryTenant,
   kind: 'scan' | 'view',
   visitorId: string,
   workId?: string | null,
@@ -805,7 +852,7 @@ export async function recordVisit(
   if (!/^[a-zA-Z0-9-]{8,80}$/.test(visitorId)) {
     return { status: 400, body: { error: 'Visitor id is not valid.' } }
   }
-  const { show } = await ensureOGalleryTenant(db)
+  const { gallery, show } = tenant
   const day = tehranDay(now)
   if (kind === 'scan') {
     let qrCodeId: string | null = null
@@ -834,7 +881,11 @@ export async function recordVisit(
 
   let resolvedWorkId: string | null = null
   if (workId && /^[a-zA-Z0-9-]{8,80}$/.test(workId)) {
-    const [found] = await db.select({ id: works.id }).from(works).where(eq(works.id, workId)).limit(1)
+    const [found] = await db
+      .select({ id: works.id })
+      .from(works)
+      .where(and(eq(works.id, workId), eq(works.galleryId, gallery.id)))
+      .limit(1)
     resolvedWorkId = found?.id ?? null
   }
   await db.insert(visits).values({
@@ -850,6 +901,7 @@ export async function recordVisit(
 
 export async function recordLead(
   db: Db,
+  tenant: GalleryTenant,
   phone: string,
   kind: 'save' | 'ask',
   visitorId: string,
@@ -872,7 +924,7 @@ export async function recordLead(
   if (!workId || !/^[a-zA-Z0-9-]{8,80}$/.test(workId)) {
     return { status: 400, body: { error: 'A work id is required.' } }
   }
-  const { gallery, show } = await ensureOGalleryTenant(db)
+  const { gallery, show } = tenant
   const [found] = await db
     .select({ id: works.id })
     .from(works)

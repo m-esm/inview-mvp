@@ -59,9 +59,11 @@ export function mountApi(app: Express, db: Db, storage: ObjectStorage) {
     res.setHeader('Cache-Control', 'no-store')
     try {
       const sessionId = await sessionGallery(db, req)
+      const verb = (req.method || 'GET').toUpperCase()
+      const body = verb === 'GET' || verb === 'HEAD' ? { gallery: req.query.gallery } : req.body
       writeApiResult(
         res,
-        await runPilotRequest(db, storage, req.method || 'GET', req.body, clientKey(req), undefined, undefined, sessionId),
+        await runPilotRequest(db, storage, verb, body, clientKey(req), undefined, undefined, sessionId),
       )
     } catch (error) {
       console.error(error)

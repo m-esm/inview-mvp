@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { CONSENT_TEXT_VERSION } from '../lib/consent'
-import { reportLead } from '../lib/pilot'
+import { gallerySlugFromPath, reportLead } from '../lib/pilot'
 import { normalizePhone, visitor } from '../lib/store'
 import { useT } from '../lib/i18n'
 import { Heart, Lock } from './Icons'
@@ -56,7 +56,7 @@ export function SignInSheet({ kind, subtitle, workId, onDone, onClose }: Props) 
     if (!/^\d{4}$/.test(c)) return setError(t.badCode)
     if (!agreeOrExplain()) return
     visitor.signIn(phone, CONSENT_TEXT_VERSION)
-    reportLead(phone, kind, workId)
+    reportLead(gallerySlugFromPath(window.location.pathname), phone, kind, workId)
     onDone()
   }
 

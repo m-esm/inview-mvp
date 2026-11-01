@@ -2,13 +2,13 @@ import { Link, useLoaderData, useParams } from 'react-router'
 import { OPrices } from './OGalleryPages'
 import { artworks, gallery } from '../../data/gallery'
 import { useT } from '../../lib/i18n'
-import { O_SLUG } from '../../lib/galleries'
+import { isDatabaseGallery } from '../../lib/galleries'
 import { seed, type GalleryPageData } from '../../lib/pilot'
 
 export default function Prices() {
   const { slug } = useParams()
   const { pilot } = useLoaderData() as GalleryPageData
-  if (slug === O_SLUG) return <OPrices record={pilot ?? seed} />
+  if (isDatabaseGallery(slug)) return <OPrices record={pilot ?? seed} />
   return <RoozPrices />
 }
 

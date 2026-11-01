@@ -2089,3 +2089,24 @@ td {
     justify-content: center;
   }
 }
+
+.demo-badge {
+  align-self: flex-start;
+  margin-block-start: var(--space-1);
+  padding: 2px var(--space-2);
+  border: 1px solid var(--ochre);
+  border-radius: var(--radius-hair);
+  background: var(--ochre-tint);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.demo-banner {
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  background: var(--ochre-tint);
+  color: var(--ink);
+  font-size: 13px;
+  border-block-end: 1px solid var(--line);
+}
