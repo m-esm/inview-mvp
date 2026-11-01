@@ -10,7 +10,6 @@ export default function GalleryLayout() {
   })
   const [pw, setPw] = useState('')
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
   const { pathname } = useLocation()
   const oGalleryPage = pathname.endsWith('/o-gallery')
   const page = pathname.endsWith('/website') ? 'Website and import' : pathname.endsWith('/plans') ? 'Plans' : oGalleryPage ? 'O Gallery landing page' : null
@@ -31,18 +30,13 @@ export default function GalleryLayout() {
           className="gate-card reveal"
           onSubmit={(e) => {
             e.preventDefault()
-            setLoading(true)
             setError('')
-            // Keep unlock sync and immediate for the demo gate.
-            window.setTimeout(() => {
-              if (pw.trim() === gallery.dashboardPassword) {
-                try { sessionStorage.setItem(KEY, '1') } catch { /* ignore */ }
-                setUnlocked(true)
-              } else {
-                setError('That password does not match. Check it and try again.')
-              }
-              setLoading(false)
-            }, 180)
+            if (pw.trim() === gallery.dashboardPassword) {
+              try { sessionStorage.setItem(KEY, '1') } catch { /* ignore */ }
+              setUnlocked(true)
+            } else {
+              setError('That password does not match. Check it and try again.')
+            }
           }}
         >
           <p className="brand">Inview <span>for galleries</span></p>
@@ -58,12 +52,11 @@ export default function GalleryLayout() {
             autoComplete="current-password"
             aria-describedby="pw-msg"
             aria-invalid={error ? true : undefined}
-            disabled={loading}
           />
           <p id="pw-msg" className={error ? 'error' : 'muted small'} role={error ? 'alert' : undefined}>
             {error || 'Demo password: inview'}
           </p>
-          <button className={`btn btn-primary${loading ? ' is-loading' : ''}`} type="submit" disabled={loading} aria-busy={loading || undefined}>
+          <button className="btn btn-primary" type="submit">
             Open dashboard
           </button>
         </form>

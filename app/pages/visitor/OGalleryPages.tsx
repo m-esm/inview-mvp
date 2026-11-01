@@ -18,7 +18,7 @@ function OLanding({ record, preview = false, lang }: { record: PilotRecord, prev
   const dates = pick(language, record.dates, record.datesFa)
   const hours = pick(language, record.hours, record.hoursFa)
   const realWorks = record.works.filter((work) => !work.sample)
-  const empty = !title && realWorks.length === 0
+  const empty = realWorks.length === 0
 
   const brand = pick(language, record.name, record.nameFa)
   const initial = (language === 'fa' ? (record.nameFa || record.name) : (record.name || record.nameFa)).trim().slice(0, 1) || 'O'
@@ -31,19 +31,16 @@ function OLanding({ record, preview = false, lang }: { record: PilotRecord, prev
           <>
             <h1 className="show-title">{title}</h1>
             <span className="ink-rule" aria-hidden />
-            {realWorks.length === 0 && <p className="muted">{copy.catalogue}</p>}
+            {empty && <p className="muted">{copy.catalogue}</p>}
           </>
         ) : (
           <>
             <h1 className="show-title">{brand}</h1>
             <span className="ink-rule" aria-hidden />
-            <p className="show-kind">{copy.catalogue}</p>
+            {empty && <p className="show-kind">{copy.catalogue}</p>}
           </>
         )}
         {(dates || hours) && <p className="muted small">{[dates, hours].filter(Boolean).join(' · ')}</p>}
-        {empty && !preview && (
-          <p className="muted small">{language === 'fa' ? 'به‌زودی فهرست آثار اینجا می‌آید.' : 'The catalogue will appear here soon.'}</p>
-        )}
         <div className="o-actions">
           {preview ? (
             <>
@@ -98,8 +95,8 @@ function WorkList({ works }: { works: PilotWork[] }) {
             <span className="pl-num" aria-hidden>{index + 1}</span>
             {work.image ? <img src={work.image} alt="" loading="lazy" /> : <span className="pl-fallback" aria-hidden />}
             <span className="pl-text">
-              <strong>{work.title}</strong>
-              <span className="muted small">{[work.artist, work.medium, work.size].filter(Boolean).join(' · ') || '—'}</span>
+              <strong dir="auto">{work.title}</strong>
+              <span className="muted small" dir="auto">{[work.artist, work.medium, work.size].filter(Boolean).join(' · ') || '—'}</span>
               {work.sample && <span className="sample-note">{copy.sampleBanner}</span>}
             </span>
             <span className="pl-price"><WorkPrice work={work} /></span>
@@ -107,6 +104,36 @@ function WorkList({ works }: { works: PilotWork[] }) {
         </li>
       ))}
     </ol>
+  )
+}
+
+function WorkWall({ works }: { works: PilotWork[] }) {
+  const { t, lang } = useT()
+  const copy = oCopy(lang)
+  if (works.length === 0) return null
+  return (
+    <div className="grid o-wall">
+      {works.map((work) => (
+        <article key={work.id} className="card">
+          <Link to={`/g/o-gallery/works/${work.id}`} className="card-img" title={work.title}>
+            {work.image
+              ? <img src={work.image} alt="" loading="lazy" />
+              : <span className="pl-fallback wall-fallback" aria-hidden />}
+          </Link>
+          <Link to={`/g/o-gallery/works/${work.id}`} className="label">
+            <span className="label-artist">{work.artist || work.title}</span>
+            <span className="label-meta">
+              {[work.title !== work.artist ? work.title : null, work.medium, work.size].filter(Boolean).join(' · ') || '—'}
+            </span>
+            <span className="label-row">
+              <span className="label-price"><WorkPrice work={work} /></span>
+              <span className={`status s-${work.status}`}>{t[work.status]}</span>
+            </span>
+            {work.sample && <span className="sample-note">{copy.sampleBanner}</span>}
+          </Link>
+        </article>
+      ))}
+    </div>
   )
 }
 
@@ -122,23 +149,26 @@ export function OWorks() {
     return (
       <EmptyState
         title={copy.catalogue}
-        body={lang === 'fa' ? 'گالری هنوز اثری منتشر نکرده است.' : 'The gallery has not published works yet.'}
         action={<Link className="btn btn-outline" to="/g/o-gallery">{copy.currentShow}</Link>}
       />
     )
   }
 
   return (
-    <div className="pad reveal">
-      <p className="eyebrow">{copy.worksTitle}</p>
-      <h1 className="page-title">{title || copy.worksTitle}</h1>
-      <span className="ink-rule" aria-hidden />
-      {real.length === 0 && <p className="muted">{copy.catalogue}</p>}
-      <WorkList works={real} />
+    <div className="reveal">
+      <div className="pad">
+        <p className="eyebrow">{copy.worksTitle}</p>
+        <h1 className="page-title">{title || copy.worksTitle}</h1>
+        <span className="ink-rule" aria-hidden />
+        {real.length === 0 && <p className="muted">{copy.catalogue}</p>}
+      </div>
+      <WorkWall works={real} />
       {samples.length > 0 && (
         <section>
-          <h2 className="section-title">{copy.samplesTitle}</h2>
-          <WorkList works={samples} />
+          <div className="pad">
+            <h2 className="section-title">{copy.samplesTitle}</h2>
+          </div>
+          <WorkWall works={samples} />
         </section>
       )}
     </div>
@@ -156,7 +186,6 @@ export function OPrices() {
     return (
       <EmptyState
         title={copy.catalogue}
-        body={lang === 'fa' ? 'فهرست قیمت وقتی آثار بارگذاری شوند آماده است.' : 'The price list is ready when works are loaded.'}
         action={<Link className="btn btn-outline" to="/g/o-gallery/works">{copy.seeWorks}</Link>}
       />
     )
@@ -219,7 +248,10 @@ export function OWork() {
         )}
         <p className="work-title">{work.title}{work.year ? `, ${work.year}` : ''}</p>
         {(work.medium || work.size) && <p className="muted">{[work.medium, work.size].filter(Boolean).join(', ')}</p>}
-        <p className="work-price"><WorkPrice work={work} /></p>
+        <div className="row between price-row">
+          <span className="work-price"><WorkPrice work={work} /></span>
+          <span className={`status s-${work.status}`}>{t[work.status]}</span>
+        </div>
       </div>
       <div className="pad actions">
         <button

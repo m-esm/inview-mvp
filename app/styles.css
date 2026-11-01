@@ -114,8 +114,7 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; }
   width: 100%;
   max-width: 3.5rem;
   background: var(--ink);
-  margin-block: var(--space-2) 0;
-  transform-origin: inline-start;
+  margin-block: var(--space-2) var(--space-4);
   animation: ink-draw var(--dur) var(--ease-out) both;
 }
 [dir='rtl'] .ink-rule { transform-origin: right; }
@@ -379,20 +378,6 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; }
     display: grid;
     grid-template-rows: auto auto 1fr;
   }
-  .visitor::before {
-    content: '';
-    position: fixed;
-    inset-block: 0;
-    inset-inline-start: 0;
-    width: 4px;
-    background: var(--pine);
-    pointer-events: none;
-    z-index: 8;
-  }
-  [dir='rtl'] .visitor::before {
-    inset-inline-start: auto;
-    inset-inline-end: 0;
-  }
   .v-top {
     position: static;
     padding: var(--space-5) clamp(32px, 5vw, 72px);
@@ -642,12 +627,6 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; }
   .welcome .intro .ink-rule {
     max-width: 5rem;
     height: 3px;
-  }
-  .empty-state {
-    max-width: 40ch;
-    padding-inline: clamp(32px, 5vw, 72px);
-    min-height: 50vh;
-    justify-content: center;
   }
 }
 
@@ -913,6 +892,17 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; }
   background: var(--field);
   flex: none;
 }
+.wall-fallback {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.o-wall {
+  padding-top: var(--space-2);
+}
+.o-wall .sample-note {
+  margin-top: var(--space-2);
+}
 .sample-note {
   display: block;
   margin: 4px 0 0;
@@ -974,6 +964,16 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; }
 }
 .visitor.fa .empty-state h2 { font-family: var(--fa); font-weight: 700; }
 .empty-state p { margin: 0; color: var(--muted); }
+
+@media (min-width: 960px) {
+  .empty-state {
+    max-width: 40ch;
+    padding-inline: clamp(32px, 5vw, 72px);
+    padding-block: var(--space-8);
+    min-height: 50vh;
+    justify-content: center;
+  }
+}
 .skeleton {
   background: linear-gradient(90deg, var(--field) 0%, #f3efe6 50%, var(--field) 100%);
   background-size: 200% 100%;
