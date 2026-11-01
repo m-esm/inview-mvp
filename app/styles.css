@@ -2109,6 +2109,7 @@ td {
   color: var(--ink);
   font-size: 13px;
   border-block-end: 1px solid var(--line);
+}
 .ops-shell, .ops-auth { color: #202b29; background: #f2eee4; min-height: 100svh; }
 .ops-shell[dir="rtl"], .ops-auth[dir="rtl"] { font-family: 'Estedad', sans-serif; }
 .ops-header { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; border-bottom: 2px solid #263b35; padding: 24px 4vw; }

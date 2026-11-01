@@ -1,4 +1,4 @@
-import sharp from 'sharp'
+import sharp, { type Metadata } from 'sharp'
 import { randomUUID } from 'node:crypto'
 import { mediaObjectKey, type ObjectStorage } from './storage'
 
@@ -65,7 +65,7 @@ export async function processAndStoreImage(
   if (input.byteLength > MAX_UPLOAD_BYTES) throw new UploadError('size')
   await sniffImageFormat(input)
 
-  let meta: sharp.Metadata
+  let meta: Metadata
   try {
     meta = await sharp(input).rotate().metadata()
   } catch {

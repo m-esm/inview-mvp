@@ -5,8 +5,6 @@ const allowed = [
   /\.test\.[cm]?[jt]sx?$/,
   /^app\/data\/.+-seed\.json$/,
   /^app\/lib\/galleries\.ts$/,
-  /^app\/routes\.ts$/,
-  /^app\/routes\/dashboard\.o-gallery(?:\..+)?\.tsx?$/,
   /^server\/gallery-bootstrap\.ts$/,
 ]
 

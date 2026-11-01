@@ -14,6 +14,7 @@ import {
 import { gallerySlugOf, handlePilotApi, handleStaffApi } from './pilot-api'
 import { signInWithAccessCode } from './staff-session'
 import type { ObjectStorage } from './storage'
+import type { Principal } from './authz'
 
 type Db = AppDatabase
 
@@ -419,4 +420,16 @@ export async function runSignIn(
   if (after) return { ok: false, result: after }
   if (!created) return { ok: false, result: { status: 401, body: { error: 'That access code does not match.' } } }
   return { ok: true, token: created.token }
+}
+
+export async function principalFromCode(db: Db, gallerySlug: string, code: string, ip: string): Promise<{ principal: Principal | null; result?: ApiResult }> {
+  const now = new Date()
+  const config = rateLimitConfig()
+  const blocked = await beforeAccessCheck(db, ip, now, config, gallerySlug)
+  if (blocked) return { principal: null, result: blocked }
+  const tenant = await tenantBySlug(db, gallerySlug)
+  const valid = tenant?.gallery.sharedCodeEnabled && verifySecret(code, tenant.gallery.accessCodeHash)
+  const after = await afterAccessCheck(db, ip, valid ? 200 : 401, now, config, gallerySlug)
+  if (after) return { principal: null, result: after }
+  return { principal: valid ? { kind: 'shared-code', galleryId: tenant.gallery.id } : null }
 }

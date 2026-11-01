@@ -50,5 +50,5 @@ test('the staff sign-in page renders in Persian from the root language', () => {
   assert.match(html, /dir="rtl"/)
   assert.match(html, /کد دسترسی گالری/)
   assert.match(html, /باز کردن ویرایشگر/)
-  assert.match(html, /این کد دسترسی درست نیست/)
+  assert.match(html, /اطلاعات ورود درست نیست/)
 })

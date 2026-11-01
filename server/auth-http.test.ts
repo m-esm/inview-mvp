@@ -26,7 +26,7 @@ test('Origin check enforces configured and fallback origins, protects actions, a
     assert.equal((await request(app).post('/staff/action').set('Origin', 'https://foreign.example.com')).status, 403)
     assert.equal((await request(app).post('/staff/action')).status, 403)
     assert.equal((await request(app).post('/staff/action').set('Origin', 'https://app.example.com')).status, 200)
-    for (const path of ['/api/pilot', '/api/v1/pilot', '/api/v1/uploads', '/dashboard/sign-in']) {
+    for (const path of ['/api/pilot', '/api/v1/pilot', '/api/v1/uploads']) {
       assert.equal((await request(app).post(path)).status, 200, path)
       assert.equal((await request(app).post(path).set('Sec-Fetch-Site', 'same-origin')).status, 200, path)
       assert.equal((await request(app).post(path).set('Sec-Fetch-Site', 'cross-site')).status, 403, path)

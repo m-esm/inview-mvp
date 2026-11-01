@@ -35,8 +35,8 @@ export const LEADS_CSV_PATH = '/api/v1/pilot/staff/leads.csv'
 export const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024
 const ACCEPTED = /^image\/(png|jpeg|webp)$/
 
-export async function fetchStaffReport(): Promise<StaffReport> {
-  const res = await fetch('/api/v1/pilot/staff', { cache: 'no-store' })
+export async function fetchStaffReport(gallery: string): Promise<StaffReport> {
+  const res = await fetch(`/api/v1/pilot/staff?gallery=${encodeURIComponent(gallery)}`, { cache: 'no-store' })
   if (!res.ok) throw new Error(String(res.status))
   return res.json()
 }
@@ -55,7 +55,7 @@ export function checkImageFile(file: File): UploadProblem | null {
   return null
 }
 
-export function uploadImage(file: File, onProgress: (ratio: number) => void): Promise<{ url: string }> {
+export function uploadImage(file: File, onProgress: (ratio: number) => void, gallery: string): Promise<{ url: string }> {
   return new Promise((resolve, reject) => {
     const problem = checkImageFile(file)
     if (problem) {
@@ -64,6 +64,7 @@ export function uploadImage(file: File, onProgress: (ratio: number) => void): Pr
     }
     const body = new FormData()
     body.append('file', file)
+    body.append('gallery', gallery)
     const xhr = new XMLHttpRequest()
     xhr.open('POST', '/api/v1/uploads')
     xhr.responseType = 'json'

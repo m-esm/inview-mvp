@@ -5,16 +5,15 @@ export type Dir = 'rtl' | 'ltr'
 export const LANG_COOKIE = 'inview-lang'
 const ONE_YEAR = 60 * 60 * 24 * 365
 
-// O Gallery visitors and staff read Persian first. The Rooz demo is shown in English.
-const PERSIAN_FIRST = [`/g/${O_SLUG}`, `/site/${O_SLUG}`, `/dashboard/${O_SLUG}`, '/dashboard/sign-in', '/ops', '/staff/invite']
-const BILINGUAL_STAFF = [`/dashboard/${O_SLUG}`, '/dashboard/sign-in', '/ops', '/staff/invite']
+const PERSIAN_FIRST = [`/g/${O_SLUG}`, `/site/${O_SLUG}`, '/ops', '/staff']
+const BILINGUAL_STAFF = ['/ops', '/staff']
 
 function underPath(pathname: string, base: string): boolean {
   return pathname === base || pathname.startsWith(`${base}/`)
 }
 
 export function isStaffPath(pathname: string): boolean {
-  return underPath(pathname, '/dashboard')
+  return underPath(pathname, '/dashboard') || underPath(pathname, '/staff')
 }
 
 export function defaultLang(pathname: string): Lang {
