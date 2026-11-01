@@ -4,7 +4,7 @@ import { EmptyState } from '../../components/EmptyState'
 import { useSignIn } from '../../components/VisitorShell'
 import { useT } from '../../lib/i18n'
 import { CONSENT_TEXT_VERSION } from '../../lib/consent'
-import { formatDateRange, formatNumber, formatToman, localDigits } from '../../lib/format'
+import { formatDateRange, formatNumber, formatSize, formatToman, localDigits } from '../../lib/format'
 import { oCopy, pick, recordWorkView, reportLead, type PilotRecord, type PilotStatus, type PilotWork } from '../../lib/pilot'
 import { useVisitor, visitor } from '../../lib/store'
 
@@ -160,42 +160,28 @@ function WorkPrice({ work }: { work: PilotWork }) {
   return formatToman(lang, work.price, t.toman)
 }
 
-function WorkMeta({ work, lang, separator = ' · ' }: { work: PilotWork; lang: Lang; separator?: string }) {
-  const text = workText(work, lang)
-  const parts = [text.artist, text.medium, text.size].filter(Boolean)
-  if (parts.length === 0) return <>—</>
-  return (
-    <>
-      {parts.map((part, index) => (
-        <span key={index}>
-          {index > 0 ? separator : null}
-          <bdi className="bidi-plain">{part}</bdi>
-        </span>
-      ))}
-    </>
-  )
-}
-
-function WorkList({ works, slug, galleryName }: { works: PilotWork[]; slug: string; galleryName: string }) {
-  const { lang } = useT()
-  const copy = oCopy(lang, galleryName)
+function WorkList({ works, slug }: { works: PilotWork[]; slug: string }) {
+  const { lang, t } = useT()
   if (works.length === 0) return null
   return (
     <ol className="price-list">
-      {works.map((work, index) => {
+      {works.map((work) => {
         const text = workText(work, lang)
         return (
           <li key={work.id}>
             <Link to={`/g/${slug}/works/${work.id}`} title={text.title}>
-              <span className="pl-num" aria-hidden>{formatNumber(lang, index + 1)}</span>
-              {work.image ? <WorkImage work={work} alt="" sizes="56px" /> : <span className="pl-fallback" aria-hidden />}
+              {work.image ? <WorkImage work={work} alt={text.title} sizes="(min-width: 960px) 64px, 72px" /> : <span className="pl-fallback" aria-hidden />}
               <span className="pl-text">
                 <strong dir="auto" className="bidi-plain">{text.title}</strong>
-                <span className="muted small"><WorkMeta work={work} lang={lang} /></span>
-                {work.sample && <span className="sample-note">{copy.sampleBanner}</span>}
+                <span className="pl-artist" dir="auto">{text.artist}</span>
+                <span className="pl-meta">
+                  <bdi>{text.medium}</bdi>{text.medium && work.size ? ' · ' : ''}
+                  <bdi dir="ltr">{formatSize(lang, work.size)}</bdi>{(text.medium || work.size) && text.year ? ' · ' : ''}
+                  <bdi>{text.year}</bdi>
+                </span>
               </span>
-              <span className="pl-price">
-                {work.status !== 'sold' && <span><WorkPrice work={work} /></span>}
+              <span className={`pl-price${work.status === 'sold' ? ' pl-sold' : ''}`}>
+                <span className="pl-amount">{work.price == null ? (work.status === 'sold' ? t.sold : t.priceOnRequest) : formatNumber(lang, work.price)}</span>
                 <StatusLabel status={work.status} />
               </span>
             </Link>
@@ -330,12 +316,21 @@ export function OPrices({ record }: { record: PilotRecord }) {
 
   return (
     <div className="pad prices reveal">
+      {(record.demo || record.works.some((work) => work.sample)) && (
+        <p className="demo-banner" role="note">{record.demo ? copy.demoNote : t.samplePricesNote}</p>
+      )}
       <p className="eyebrow">{name}</p>
       <h1 className="page-title">{t.priceList}</h1>
       <span className="ink-rule" aria-hidden />
-      {title ? <p className="muted small">{title}</p> : null}
-      <WorkList works={record.works} slug={record.slug} galleryName={name} />
-      {record.pdfUrl && <a className="btn btn-outline wide pdf-action" href={record.pdfUrl}>{copy.downloadPdf}</a>}
+      {title ? <p className="prices-subtitle">{title}</p> : null}
+      <p className="small">{t.allPricesToman}</p>
+      <WorkList works={record.works} slug={record.slug} />
+      {record.pdfUrl && (
+        <a className="btn btn-outline pdf-action" href={record.pdfUrl} download>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5" /></svg>
+          {copy.downloadPdf}
+        </a>
+      )}
     </div>
   )
 }

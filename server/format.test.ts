@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { formatDate, formatDateRange, formatNumber, formatToman, localDigits } from '../app/lib/format.ts'
+import { formatDate, formatDateRange, formatNumber, formatSize, formatToman, localDigits } from '../app/lib/format.ts'
 
 test('numbers group with the locale separator', () => {
   assert.equal(formatNumber('en', 1250000), '1,250,000')
@@ -8,8 +8,8 @@ test('numbers group with the locale separator', () => {
 })
 
 test('toman prices carry the unit in both languages', () => {
-  assert.equal(formatToman('en', 45000000, 'Toman'), '45,000,000 Toman')
-  assert.equal(formatToman('fa', 45000000, 'تومان'), '۴۵٬۰۰۰٬۰۰۰ تومان')
+  assert.equal(formatToman('en', 48000000, 'Toman'), '48,000,000 Toman')
+  assert.equal(formatToman('fa', 48000000, 'تومان'), '۴۸٬۰۰۰٬۰۰۰ تومان')
 })
 
 test('Persian dates use the Jalali calendar', () => {
@@ -30,4 +30,11 @@ test('a date range shows both ends', () => {
 test('sizes and years show Persian digits in Persian only', () => {
   assert.equal(localDigits('fa', '40 x 50 cm, 2024'), '۴۰ x ۵۰ cm, ۲۰۲۴')
   assert.equal(localDigits('en', '40 x 50'), '40 x 50')
+})
+
+test('size separators use multiplication signs in both languages', () => {
+  assert.equal(formatSize('fa', '100 x 140 cm'), '۱۰۰ × ۱۴۰ cm')
+  assert.equal(formatSize('en', '21 X 29.7 cm'), '21 × 29.7 cm')
+  assert.equal(formatSize('fa', '64 × 28 × 47 cm'), '۶۴ × ۲۸ × ۴۷ cm')
+  assert.equal(formatSize('en', 'Mixed dimensions'), 'Mixed dimensions')
 })

@@ -8,7 +8,7 @@ import { langCookie, type Lang } from '../lib/lang'
 import { gallerySlugFromPath, oCopy, pick, recordLandingScan, seed, type GalleryPageData } from '../lib/pilot'
 import { useVisitor } from '../lib/store'
 import { SignInSheet, type SheetKind } from './SignInSheet'
-import { Grid, Home, User } from './Icons'
+import { Calendar, Grid, Home } from './Icons'
 
 interface Ctx {
   requireSignIn: (kind: SheetKind, action: () => void, subtitle?: string, workId?: string) => void
@@ -52,6 +52,13 @@ export function VisitorShell() {
   const brand = isDb ? oName : galleryName
   const demo = isDb && Boolean(layoutData?.pilot?.demo)
   const demoCopy = oCopy(lang)
+  const isPrices = pathname === `${base}/prices`
+  const navItems = [
+    { to: base, label: t.galleryNav, icon: <Home />, end: true },
+    { to: `${base}/works`, label: t.artworks, icon: <Grid />, end: false },
+    { to: `${base}/prices`, label: t.priceList, icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M3 6h1M3 12h1M3 18h1" /></svg>, end: false },
+    { to: `${base}/about`, label: t.visitNav, icon: <Calendar />, end: false },
+  ]
 
   useEffect(() => {
     if (isDb && pathname === `/g/${slug}`) recordLandingScan(slug, new URLSearchParams(window.location.search).get('q'))
@@ -65,13 +72,13 @@ export function VisitorShell() {
             <div className="v-brand-stack">
               {isDb ? (
                 <Link to={`/site/${slug}`} className="v-gallery v-wordmark" title={brand}>
-                  {record.logo ? <img className="v-logo" src={record.logo} alt={oName} /> : brand}
+                  {record.logo && !(demo && isPrices) ? <img className="v-logo" src={record.logo} alt={oName} /> : brand}
                 </Link>
               ) : (
                 <Link to={base} className="v-gallery" title={brand}>{brand}</Link>
               )}
               <span className="ink-rule" aria-hidden />
-              {demo && <span className="demo-badge" title={demoCopy.demoNote}>{demoCopy.demoLabel}</span>}
+              {demo && !isPrices && <span className="demo-badge" title={demoCopy.demoNote}>{demoCopy.demoLabel}</span>}
             </div>
             <div className="lang" role="group" aria-label="Language">
               <button type="button" aria-pressed={lang === 'en'} onClick={() => chooseLang('en')}>EN</button>
@@ -79,18 +86,12 @@ export function VisitorShell() {
             </div>
           </header>
           <nav className="v-desktop-nav" aria-label="Visitor">
-            <NavLink to={base} end>{isDb ? brand : galleryName}</NavLink>
-            <NavLink to={`${base}/works`}>{t.artworks}</NavLink>
-            <NavLink to={`${base}/prices`}>{t.priceList}</NavLink>
-            {!isDb && <NavLink to="/me">{t.profile}</NavLink>}
-            {isDb && <NavLink to={`${base}/about`}>{t.visit}</NavLink>}
+            {navItems.map((item) => <NavLink key={item.to} to={item.to} end={item.end}>{item.label}</NavLink>)}
           </nav>
-          {demo && <p className="demo-banner" role="note">{demoCopy.demoNote}</p>}
+          {demo && !isPrices && <p className="demo-banner" role="note">{demoCopy.demoNote}</p>}
           <main className="v-main"><Outlet /></main>
-          <nav className={`v-tabs${isDb ? ' tabs-2' : ''}`} aria-label="Visitor">
-            <NavLink to={base} end><Home /><span>{isDb ? brand : galleryName}</span></NavLink>
-            <NavLink to={`${base}/works`}><Grid /><span>{t.artworks}</span></NavLink>
-            {!isDb && <NavLink to="/me"><User /><span>{t.profile}</span></NavLink>}
+          <nav className="v-tabs" aria-label="Visitor">
+            {navItems.map((item) => <NavLink key={item.to} to={item.to} end={item.end}>{item.icon}<span>{item.label}</span></NavLink>)}
           </nav>
           {pending && (
             <SignInSheet kind={pending.kind} subtitle={pending.subtitle} workId={pending.workId}
