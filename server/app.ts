@@ -1,5 +1,6 @@
 import { createRequestHandler } from '@react-router/express'
 import express from 'express'
+import { trustClusterProxy } from './proxy.js'
 import type { ErrorRequestHandler } from 'express'
 import 'react-router'
 import { closeDatabase, createDatabase } from '../database/client'
@@ -19,7 +20,7 @@ declare module 'react-router' {
   }
 }
 
-export const app = express()
+export const app = trustClusterProxy(express())
 app.disable('x-powered-by')
 
 const databaseUrl = process.env.DATABASE_URL
