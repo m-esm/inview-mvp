@@ -1,0 +1,367 @@
+{
+  "app": "inview",
+  "baseUrl": "https://inview.moshes.io",
+  "groups": [
+    {
+      "id": "marketing",
+      "label": "Marketing site",
+      "labelFa": "سایت اینویو"
+    },
+    {
+      "id": "visitor-pilot",
+      "label": "Visitor app, O Gallery pilot",
+      "labelFa": "اپ بازدیدکننده، پایلوت گالری اُ"
+    },
+    {
+      "id": "visitor-sample",
+      "label": "Visitor app, sample gallery",
+      "labelFa": "اپ بازدیدکننده، گالری نمونه"
+    },
+    {
+      "id": "staff",
+      "label": "Gallery staff dashboard",
+      "labelFa": "داشبورد کارکنان گالری"
+    },
+    {
+      "id": "operator",
+      "label": "Operator panel (Mohsen and Ali)",
+      "labelFa": "پنل مدیریت (محسن و علی)"
+    },
+    {
+      "id": "demo",
+      "label": "Sales demo (Rooz)",
+      "labelFa": "دموی فروش (روز)"
+    },
+    {
+      "id": "health",
+      "label": "Health and API",
+      "labelFa": "سلامت سرویس و API"
+    },
+    {
+      "id": "ops-tools",
+      "label": "Engineering dashboards",
+      "labelFa": "داشبوردهای مهندسی"
+    }
+  ],
+  "surfaces": [
+    {
+      "id": "landing",
+      "group": "marketing",
+      "label": "Inview landing",
+      "labelFa": "صفحهٔ اصلی اینویو",
+      "path": "/",
+      "access": "public",
+      "screenshot": true
+    },
+    {
+      "id": "o-gallery",
+      "group": "visitor-pilot",
+      "label": "o-gallery: Welcome",
+      "labelFa": "گالری اُ: خوشامد",
+      "path": "/g/o-gallery",
+      "access": "public",
+      "screenshot": true
+    },
+    {
+      "id": "o-gallery-works",
+      "group": "visitor-pilot",
+      "label": "o-gallery: Works",
+      "labelFa": "گالری اُ: آثار",
+      "path": "/g/o-gallery/works",
+      "access": "public",
+      "screenshot": true
+    },
+    {
+      "id": "o-gallery-prices",
+      "group": "visitor-pilot",
+      "label": "o-gallery: Prices",
+      "labelFa": "گالری اُ: قیمت‌ها",
+      "path": "/g/o-gallery/prices",
+      "access": "public",
+      "screenshot": true
+    },
+    {
+      "id": "o-gallery-about",
+      "group": "visitor-pilot",
+      "label": "o-gallery: About",
+      "labelFa": "گالری اُ: درباره",
+      "path": "/g/o-gallery/about",
+      "access": "public",
+      "screenshot": true
+    },
+    {
+      "id": "sample",
+      "group": "visitor-sample",
+      "label": "sample: Welcome",
+      "labelFa": "گالری نمونه: خوشامد",
+      "path": "/g/sample",
+      "access": "public",
+      "screenshot": true
+    },
+    {
+      "id": "sample-works",
+      "group": "visitor-sample",
+      "label": "sample: Works",
+      "labelFa": "گالری نمونه: آثار",
+      "path": "/g/sample/works",
+      "access": "public",
+      "screenshot": true
+    },
+    {
+      "id": "sample-prices",
+      "group": "visitor-sample",
+      "label": "sample: Prices",
+      "labelFa": "گالری نمونه: قیمت‌ها",
+      "path": "/g/sample/prices",
+      "access": "public",
+      "screenshot": true
+    },
+    {
+      "id": "sample-about",
+      "group": "visitor-sample",
+      "label": "sample: About",
+      "labelFa": "گالری نمونه: درباره",
+      "path": "/g/sample/about",
+      "access": "public",
+      "screenshot": true
+    },
+    {
+      "id": "o-gallery-site",
+      "group": "visitor-pilot",
+      "label": "O Gallery website",
+      "labelFa": "وب‌سایت گالری اُ",
+      "path": "/site/o-gallery",
+      "access": "public",
+      "screenshot": true
+    },
+    {
+      "id": "me",
+      "group": "visitor-pilot",
+      "label": "Saved works",
+      "labelFa": "آثار ذخیره‌شده",
+      "path": "/me",
+      "access": "public",
+      "screenshot": true
+    },
+    {
+      "id": "dashboard-sign-in",
+      "group": "staff",
+      "label": "Gallery sign-in",
+      "labelFa": "ورود گالری",
+      "path": "/dashboard/sign-in",
+      "access": "public",
+      "screenshot": true
+    },
+    {
+      "id": "dashboard-o-gallery",
+      "group": "staff",
+      "label": "O Gallery dashboard",
+      "labelFa": "داشبورد گالری اُ",
+      "path": "/dashboard/o-gallery",
+      "access": "staff",
+      "screenshot": false
+    },
+    {
+      "id": "staff-sign-in",
+      "group": "staff",
+      "label": "Staff sign-in",
+      "labelFa": "ورود کارکنان",
+      "path": "/staff/sign-in",
+      "access": "public",
+      "screenshot": true,
+      "note": "Arrives with the staff area release.",
+      "noteFa": "همراه با انتشار بخش کارکنان در دسترس قرار می‌گیرد."
+    },
+    {
+      "id": "staff-o-gallery",
+      "group": "staff",
+      "label": "O Gallery staff area",
+      "labelFa": "بخش کارکنان گالری اُ",
+      "path": "/staff/o-gallery",
+      "access": "staff",
+      "screenshot": false
+    },
+    {
+      "id": "ops-sign-in",
+      "group": "operator",
+      "label": "Operator sign-in",
+      "labelFa": "ورود مدیران",
+      "path": "/ops/sign-in",
+      "access": "public",
+      "screenshot": true
+    },
+    {
+      "id": "ops",
+      "group": "operator",
+      "label": "Operator panel",
+      "labelFa": "پنل مدیریت",
+      "path": "/ops",
+      "access": "operator",
+      "screenshot": false
+    },
+    {
+      "id": "ops-galleries-new",
+      "group": "operator",
+      "label": "Create gallery",
+      "labelFa": "ایجاد گالری",
+      "path": "/ops/galleries/new",
+      "access": "operator",
+      "screenshot": false
+    },
+    {
+      "id": "ops-audit",
+      "group": "operator",
+      "label": "Audit log",
+      "labelFa": "گزارش رویدادها",
+      "path": "/ops/audit",
+      "access": "operator",
+      "screenshot": false
+    },
+    {
+      "id": "ops-health",
+      "group": "operator",
+      "label": "Service health",
+      "labelFa": "سلامت سرویس",
+      "path": "/ops/health",
+      "access": "operator",
+      "screenshot": false
+    },
+    {
+      "id": "demo-dashboard",
+      "group": "demo",
+      "label": "Demo dashboard",
+      "labelFa": "داشبورد دمو",
+      "path": "/dashboard",
+      "access": "public",
+      "screenshot": true
+    },
+    {
+      "id": "demo-artworks",
+      "group": "demo",
+      "label": "Demo artworks",
+      "labelFa": "آثار دمو",
+      "path": "/dashboard/artworks",
+      "access": "public",
+      "screenshot": true
+    },
+    {
+      "id": "demo-audience",
+      "group": "demo",
+      "label": "Demo audience",
+      "labelFa": "مخاطبان دمو",
+      "path": "/dashboard/audience",
+      "access": "public",
+      "screenshot": false
+    },
+    {
+      "id": "demo-website",
+      "group": "demo",
+      "label": "Demo website",
+      "labelFa": "وب‌سایت دمو",
+      "path": "/dashboard/website",
+      "access": "public",
+      "screenshot": false
+    },
+    {
+      "id": "demo-plans",
+      "group": "demo",
+      "label": "Demo plans",
+      "labelFa": "طرح‌های دمو",
+      "path": "/dashboard/plans",
+      "access": "public",
+      "screenshot": false
+    },
+    {
+      "id": "api-health",
+      "group": "health",
+      "label": "API health",
+      "labelFa": "سلامت API",
+      "path": "/api/v1/health",
+      "access": "public",
+      "screenshot": false
+    },
+    {
+      "id": "api-ready",
+      "group": "health",
+      "label": "API readiness",
+      "labelFa": "آمادگی API",
+      "path": "/api/v1/ready",
+      "access": "public",
+      "screenshot": false
+    },
+    {
+      "id": "grafana",
+      "group": "ops-tools",
+      "label": "Grafana",
+      "labelFa": "گرافانا",
+      "url": "https://grafana.moshes.io",
+      "access": "internal",
+      "screenshot": false
+    },
+    {
+      "id": "had-board",
+      "group": "ops-tools",
+      "label": "HAD board",
+      "labelFa": "تابلوی HAD",
+      "url": "https://paper.moshes.io/HAD/issues",
+      "access": "internal",
+      "screenshot": false
+    },
+    {
+      "id": "had-docs",
+      "group": "ops-tools",
+      "label": "HAD docs",
+      "labelFa": "مستندات HAD",
+      "url": "https://paper.moshes.io/HAD/docs",
+      "access": "internal",
+      "screenshot": false
+    },
+    {
+      "id": "had-deployments",
+      "group": "ops-tools",
+      "label": "HAD deployments",
+      "labelFa": "استقرارهای HAD",
+      "url": "https://paper.moshes.io/HAD/deployments",
+      "access": "internal",
+      "screenshot": false
+    },
+    {
+      "id": "github-actions",
+      "group": "ops-tools",
+      "label": "GitHub Actions",
+      "labelFa": "اکشن‌های گیت‌هاب",
+      "url": "https://github.com/m-esm/inview-mvp/actions",
+      "access": "internal",
+      "screenshot": false
+    },
+    {
+      "id": "ghcr-image",
+      "group": "ops-tools",
+      "label": "GHCR image",
+      "labelFa": "ایمیج GHCR",
+      "url": "https://github.com/m-esm/inview-mvp/pkgs/container/inview-mvp",
+      "access": "internal",
+      "screenshot": false
+    },
+    {
+      "id": "cluster-had-app",
+      "group": "ops-tools",
+      "label": "cluster-had app",
+      "labelFa": "اپلیکیشن در cluster-had",
+      "url": "https://github.com/m-esm/cluster-had/tree/main/apps/inview",
+      "access": "internal",
+      "screenshot": false
+    },
+    {
+      "id": "media-host",
+      "group": "ops-tools",
+      "label": "Media bucket host",
+      "labelFa": "میزبان فایل‌های رسانه‌ای",
+      "url": "https://inview-media.moshes.io",
+      "access": "internal",
+      "screenshot": false,
+      "note": "Image host with no index page.",
+      "noteFa": "میزبان تصاویر بدون صفحهٔ فهرست."
+    }
+  ]
+}
