@@ -1,0 +1,152 @@
+name: Deploy status
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/deploy-status.yml"
+
+permissions:
+  contents: write
+
+env:
+  APP_URL: https://inview.moshes.io
+
+jobs:
+  capture:
+    if: >
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wait for Flux rollout
+        if: github.event_name == 'workflow_run'
+        run: sleep 240
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install Playwright
+        run: |
+          npm init -y >/dev/null
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Capture screenshots and write status.json
+        env:
+          CLUSTER_HAD_TOKEN: ${{ secrets.CLUSTER_HAD_TOKEN }}
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const { chromium } = require("playwright");
+          const fs = require("fs");
+          const path = require("path");
+          const outRoot = path.join(process.cwd(), "deploy-status-out");
+          const shotDir = path.join(outRoot, "screenshots", "inview");
+          fs.mkdirSync(shotDir, { recursive: true });
+          const pages = [
+            { id: "o-gallery", path: "/g/o-gallery", label: "Welcome /g/o-gallery" },
+            { id: "works", path: "/g/o-gallery/works", label: "Works /g/o-gallery/works" },
+            { id: "dashboard", path: "/dashboard/o-gallery", label: "Editor /dashboard/o-gallery" },
+          ];
+          const viewports = [
+            { id: "desktop", width: 1280, height: 800 },
+            { id: "mobile", width: 390, height: 844 },
+          ];
+          async function health(url) {
+            const started = new Date().toISOString();
+            try {
+              const res = await fetch(url, { method: "GET" });
+              const body = (await res.text()).slice(0, 180);
+              return { url, ok: res.ok, statusCode: res.status, bodySnippet: body, checkedAt: started, error: null };
+            } catch (err) {
+              return { url, ok: false, statusCode: null, bodySnippet: null, checkedAt: started, error: String(err) };
+            }
+          }
+          async function preferredGhcrTag() {
+            const name = "m-esm/inview-mvp";
+            const tokenRes = await fetch(`https://ghcr.io/token?service=ghcr.io&scope=repository:${encodeURIComponent(name)}:pull`);
+            const tokenJson = await tokenRes.json();
+            const tagsRes = await fetch(`https://ghcr.io/v2/${name}/tags/list`, { headers: { Authorization: `Bearer ${tokenJson.token}` } });
+            const { tags = [] } = await tagsRes.json();
+            const main = tags
+              .map((tag) => { const m = /^main-(\d+)-([0-9a-f]{7,40})$/i.exec(tag); return m ? { tag, n: Number(m[1]), sha: m[2].toLowerCase() } : null; })
+              .filter(Boolean)
+              .sort((a, b) => b.n - a.n);
+            return main[0] || null;
+          }
+          async function clusterHadCommit(token) {
+            if (!token) return null;
+            const commits = await fetch("https://api.github.com/repos/m-esm/cluster-had/commits?path=apps/inview&per_page=1", {
+              headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json", "User-Agent": "inview-deploy-status" },
+            });
+            if (!commits.ok) return null;
+            const list = await commits.json();
+            return list[0]?.sha || null;
+          }
+          (async () => {
+            const takenAt = new Date().toISOString();
+            const browser = await chromium.launch({ headless: true });
+            const screenshots = [];
+            for (const vp of viewports) {
+              const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height } });
+              const page = await context.newPage();
+              for (const target of pages) {
+                const url = `${process.env.APP_URL}${target.path}`;
+                await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
+                await page.waitForTimeout(2000);
+                const file = `${target.id}-${vp.id}.jpg`;
+                await page.screenshot({ path: path.join(shotDir, file), type: "jpeg", quality: 55, fullPage: false });
+                screenshots.push({ pageId: target.id, label: target.label, path: target.path, viewport: vp.id, width: vp.width, height: vp.height, takenAt, url: `screenshots/inview/${file}` });
+              }
+              await context.close();
+            }
+            await browser.close();
+            const tagInfo = await preferredGhcrTag();
+            const clusterHadCommitSha = await clusterHadCommit(process.env.CLUSTER_HAD_TOKEN || "");
+            const inviewHealth = await health(`${process.env.APP_URL}/api/v1/health`);
+            const wishlistHealth = await health("https://wishlist-api.moshes.io/healthz");
+            const status = {
+              fetchedAt: takenAt,
+              apps: [
+                { id: "inview", status: inviewHealth.ok ? "live" : "unknown", imageTag: tagInfo?.tag || null, commitSha: tagInfo?.sha || null, clusterHadCommitSha, health: inviewHealth, screenshots },
+                { id: "wishlist", status: wishlistHealth.ok ? "live" : "unknown", imageTag: null, commitSha: null, clusterHadCommitSha: null, health: wishlistHealth, screenshots: [] },
+                { id: "inview-docs", status: "planned", imageTag: null, commitSha: null, clusterHadCommitSha: null, screenshots: [] },
+              ],
+            };
+            fs.writeFileSync(path.join(outRoot, "status.json"), JSON.stringify(status, null, 2));
+          })().catch((err) => { console.error(err); process.exit(1); });
+          NODE
+      - name: Publish deploy-status branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          work=/tmp/deploy-status-branch
+          rm -rf "$work"
+          repo_url="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if ! git clone --depth 1 --branch deploy-status "$repo_url" "$work"; then
+            git clone --depth 1 "$repo_url" "$work"
+            git -C "$work" checkout --orphan deploy-status
+            git -C "$work" rm -rf . >/dev/null 2>&1 || true
+          fi
+          cd "$work"
+          find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+          cp -a "$GITHUB_WORKSPACE/deploy-status-out/." .
+          echo "# deploy-status" > README.md
+          echo "Public feed for the Paperclip Inview Docs Deployments page. No secrets." >> README.md
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+          git commit -m "chore: refresh deploy-status screenshots and status.json"
+          git push -u origin HEAD:deploy-status
