@@ -27,6 +27,7 @@ ENV PORT=3000
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json server.js ./
+COPY server/http-log.js server/redact.js ./server/
 COPY drizzle ./drizzle
 COPY scripts/migrate.mjs ./scripts/migrate.mjs
 COPY --from=production-dependencies-env /app/node_modules ./node_modules

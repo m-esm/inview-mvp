@@ -74,6 +74,21 @@ jobs:
           exit 1
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+      - name: Boot the production image
+        run: |
+          docker build -t inview-ci .
+          docker run -d --name inview-ci --network host \
+            -e DATABASE_URL -e O_GALLERY_ACCESS_CODE -e PUBLIC_APP_URL -e PORT=3100 -e MEDIA_DIR=/tmp/media \
+            inview-ci node server.js
+          for i in $(seq 1 30); do
+            if curl -fsS "http://127.0.0.1:3100/api/v1/ready" >/dev/null; then
+              curl -fsS "http://127.0.0.1:3100/g/o-gallery" >/dev/null
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs inview-ci >&2
+          exit 1
 
   image:
     needs: test
