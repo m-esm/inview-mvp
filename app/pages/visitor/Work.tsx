@@ -29,7 +29,7 @@ function RoozWork() {
   if (!a) {
     return (
       <div className="pad empty">
-        <p>This work isn’t in the current show.</p>
+        <p>{t.workMissing}</p>
         <Link className="btn btn-outline" to={`${base}/works`}>{t.artworks}</Link>
       </div>
     )

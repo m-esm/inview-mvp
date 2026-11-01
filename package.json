@@ -16,6 +16,7 @@
     "db:seed": "dotenv -- tsx scripts/seed.ts",
     "db:migrate:prod": "node scripts/migrate.mjs",
     "check:tenants": "node scripts/check-tenant-literals.mjs",
+    "check:strings": "node scripts/check-ui-strings.mjs",
     "lint": "react-router typegen && tsc -p tsconfig.vite.json --pretty false --noEmit && tsc -p tsconfig.node.json --pretty false --noEmit",
     "test": "tsx --test --test-concurrency=1 server/*.test.ts",
     "test:coverage": "node --import tsx --test --test-concurrency=1 --experimental-test-coverage --test-coverage-include=server/**/*.ts --test-coverage-exclude=server/**/*.test.ts --test-coverage-exclude=server/test-db.ts --test-coverage-exclude=server/test-render.ts --test-coverage-lines=70 server/*.test.ts",
