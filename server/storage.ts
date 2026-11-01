@@ -8,6 +8,24 @@ export interface ObjectStorage {
   publicUrl(key: string): string
 }
 
+export function publicObjectUrl(base: string, key: string): string {
+  const root = base.replace(/\/+$/, '')
+  const clean = key.replace(/^\/+/, '')
+  return `${root}/${clean}`
+}
+
+// Garage on inview-media serves /inview/<key> and the route allows only /inview/u/.
+export function mediaObjectKey(
+  gallerySlug: string,
+  imageId: string,
+  objectPrefix?: string,
+): string {
+  const raw = objectPrefix === undefined ? process.env.S3_OBJECT_PREFIX : objectPrefix
+  const prefix = (raw === undefined ? 'u' : raw).replace(/^\/+|\/+$/g, '')
+  const rest = `galleries/${gallerySlug}/${imageId}`
+  return prefix ? `${prefix}/${rest}` : rest
+}
+
 export class LocalObjectStorage implements ObjectStorage {
   constructor(
     private readonly rootDir: string,
@@ -34,7 +52,7 @@ export class S3ObjectStorage implements ObjectStorage {
 
   constructor(
     private readonly bucket: string,
-    private readonly publicHost: string,
+    private readonly publicBase: string,
     endpoint: string | undefined,
     region: string,
     accessKeyId: string,
@@ -62,7 +80,7 @@ export class S3ObjectStorage implements ObjectStorage {
   }
 
   publicUrl(key: string): string {
-    return `https://${this.publicHost}/${key}`
+    return publicObjectUrl(this.publicBase, key)
   }
 }
 
@@ -72,9 +90,10 @@ export function createObjectStorage(): ObjectStorage {
   const secretAccessKey = process.env.S3_SECRET_ACCESS_KEY
   const publicHost = process.env.S3_PUBLIC_HOST || 'inview-media.moshes.io'
   if (bucket && accessKeyId && secretAccessKey) {
+    const publicBase = (process.env.S3_PUBLIC_BASE || `https://${publicHost}/${bucket}`).replace(/\/+$/, '')
     return new S3ObjectStorage(
       bucket,
-      publicHost,
+      publicBase,
       process.env.S3_ENDPOINT,
       process.env.S3_REGION || 'us-east-1',
       accessKeyId,

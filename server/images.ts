@@ -1,6 +1,6 @@
 import sharp from 'sharp'
 import { randomUUID } from 'node:crypto'
-import type { ObjectStorage } from './storage'
+import { mediaObjectKey, type ObjectStorage } from './storage'
 
 export const VARIANT_WIDTHS = [320, 640, 1280] as const
 
@@ -35,7 +35,7 @@ export async function processAndStoreImage(
   if (!meta.width || !meta.height) throw new Error('The image size is not valid.')
 
   const id = randomUUID()
-  const prefix = `galleries/${gallerySlug}/${id}`
+  const prefix = mediaObjectKey(gallerySlug, id)
   const variants: ImageVariants = {}
 
   for (const width of VARIANT_WIDTHS) {
