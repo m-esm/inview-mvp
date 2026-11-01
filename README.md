@@ -69,6 +69,36 @@ npm test
 
 Tests use an in-process Postgres (PGlite). They do not need Docker.
 
+## Visual baselines
+
+`e2e/visual.spec.ts` compares each page with a PNG in
+`e2e/visual.spec.ts-snapshots`. A shot fails when more than 600 pixels change.
+That budget absorbs the antialiasing of Linux Chromium. It does not absorb a
+changed button, a changed word or a changed space.
+
+Change the pages, then regenerate the baselines:
+
+```bash
+npx playwright test visual --update-snapshots=all
+```
+
+Use `--update-snapshots=all`. Plain `--update-snapshots` keeps each baseline
+that stays inside the budget, so it leaves a stale baseline in place.
+
+The baselines are for Linux. Generate them in
+`mcr.microsoft.com/playwright:v1.64.1-noble`, the image that matches the
+Playwright version in `package.json`:
+
+```bash
+docker run --rm -it --network host -v "$PWD:/w" -w /w \
+  -e DATABASE_URL -e O_GALLERY_ACCESS_CODE -e PUBLIC_APP_URL \
+  mcr.microsoft.com/playwright:v1.64.1-noble \
+  npx playwright test visual --update-snapshots=all
+```
+
+Read the diff of the PNG files before you commit them. A baseline that you
+regenerate without a page change hides the next regression.
+
 ## Build and run the container
 
 ```bash

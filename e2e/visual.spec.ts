@@ -34,6 +34,33 @@ const viewports = [
 
 const langs = ['fa', 'en'] as const
 
+/**
+ * A flat pixel budget, not a ratio.
+ *
+ * A ratio scales with the image, so the same ratio hides much more on a long
+ * full-page shot than on one viewport. At 0.03 the 1440x3245 landing shot
+ * allowed about 140000 changed pixels, and a baseline that still showed a
+ * removed button passed.
+ *
+ * Linux Chromium antialiases text and rounded borders a little differently
+ * between builds. Across the 40 baselines in this suite that noise reaches
+ * 112 pixels on the largest shot, so 600 leaves room for a new browser build.
+ * One small button covers a few thousand pixels, so it still fails.
+ *
+ * Regenerate the baselines with `npx playwright test visual --update-snapshots=all`.
+ * Plain `--update-snapshots` keeps every baseline that stays inside the budget,
+ * so it does not refresh a stale one.
+ */
+const MAX_DIFF_PIXELS = 0
+
+// Text in a fallback font differs from the baseline over the whole page, so
+// every shot waits for the webfonts before it compares.
+async function waitForFonts(page: Page) {
+  await page.evaluate(async () => {
+    await document.fonts.ready
+  })
+}
+
 test.describe('visual landing', () => {
   for (const vp of viewports) {
     for (const lang of langs) {
@@ -41,12 +68,12 @@ test.describe('visual landing', () => {
         await page.setViewportSize({ width: vp.width, height: vp.height })
         await seedLang(page, lang)
         await page.goto('/', { waitUntil: 'load' })
-        await page.evaluate(() => document.fonts.ready)
+        await waitForFonts(page)
         await expect(page.locator('.landing')).toBeVisible()
         await expect(page).toHaveScreenshot(`landing-${vp.name}-${lang}.png`, {
           animations: 'disabled',
           fullPage: true,
-          maxDiffPixelRatio: 0.03,
+          maxDiffPixels: MAX_DIFF_PIXELS,
         })
       })
     }
@@ -60,11 +87,12 @@ async function seedLang(page: Page, lang: 'fa' | 'en') {
 
 async function shot(page: Page, name: string, vp: (typeof viewports)[number], lang: (typeof langs)[number]) {
   await page.waitForTimeout(600)
+  await waitForFonts(page)
   await expect(page.locator('body')).toBeVisible()
   await expect(page).toHaveScreenshot(`${name}-${vp.name}-${lang}.png`, {
     animations: 'disabled',
     fullPage: false,
-    maxDiffPixelRatio: 0.03,
+    maxDiffPixels: MAX_DIFF_PIXELS,
   })
 }
 
