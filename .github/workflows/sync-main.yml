@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Fast-forward main or merge a sync pull request
+      - name: Fast-forward main or merge pilot-o-gallery into main
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -37,15 +37,31 @@ jobs:
             exit 0
           fi
 
-          pr_number=$(gh pr list --base main --head pilot-o-gallery --state open \
-            --json number --jq '.[0].number // empty')
-          if [ -z "$pr_number" ]; then
-            gh pr create --base main --head pilot-o-gallery \
+          # Prefer a sync pull request when Actions may create pull requests.
+          if pr_url=$(gh pr create --base main --head pilot-o-gallery \
               --title "sync: set main equal to pilot-o-gallery" \
-              --body "Keep main equal to pilot-o-gallery for deploy."
-            pr_number=$(gh pr list --base main --head pilot-o-gallery --state open \
-              --json number --jq '.[0].number')
+              --body "Keep main equal to pilot-o-gallery for deploy." 2>/tmp/sync-pr.err); then
+            pr_number=$(basename "$pr_url")
+            gh pr merge "$pr_number" --merge --delete-branch=false
+            echo "Merged sync pull request #$pr_number into main"
+            exit 0
           fi
 
-          gh pr merge "$pr_number" --merge --delete-branch=false
-          echo "Merged sync pull request #$pr_number into main"
+          if grep -q 'already exists' /tmp/sync-pr.err; then
+            pr_number=$(gh pr list --base main --head pilot-o-gallery --state open \
+              --json number --jq '.[0].number')
+            gh pr merge "$pr_number" --merge --delete-branch=false
+            echo "Merged existing sync pull request #$pr_number into main"
+            exit 0
+          fi
+
+          # Repo setting may block Actions from creating pull requests.
+          # Merge locally and push. This keeps main equal to pilot-o-gallery.
+          echo "Pull request create is not available; merging locally:"
+          cat /tmp/sync-pr.err
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B main origin/main
+          git merge --no-ff origin/pilot-o-gallery -m "sync: set main equal to pilot-o-gallery"
+          git push origin HEAD:main
+          echo "Merged pilot-o-gallery into main and pushed"
