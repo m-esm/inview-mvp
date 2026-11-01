@@ -12,6 +12,7 @@ import {
   visits,
   works,
 } from '../database/schema'
+import { parseToman } from '../app/lib/price'
 import { hashSecret, verifySecret } from './crypto'
 import { decodeDataUrl, processAndStoreImage } from './images'
 import type { ObjectStorage } from './storage'
@@ -284,7 +285,9 @@ export async function readStaffReport(
   }
 }
 
-function sanitizeRecord(input: unknown): { error: string } | { record: Omit<GalleryRecordDto, 'slug' | 'updatedAt'> } {
+function sanitizeRecord(
+  input: unknown,
+): { error: string } | { record: Omit<GalleryRecordDto, 'slug' | 'updatedAt' | 'logo'> & { logo?: string | null } } {
   if (!input || typeof input !== 'object') return { error: 'The record is missing.' }
   const body = input as Record<string, unknown>
   const name = text(body.name, 80)
@@ -304,11 +307,11 @@ function sanitizeRecord(input: unknown): { error: string } | { record: Omit<Gall
     }
     let price: number | null = null
     if (work.price !== null && work.price !== undefined && work.price !== '') {
-      const n = typeof work.price === 'number' ? work.price : Number(String(work.price).replace(/,/g, ''))
-      if (!Number.isFinite(n) || n < 0) {
+      const parsed = parseToman(work.price)
+      if (parsed === 'invalid') {
         return { error: 'Enter a price that is zero or greater, or leave the price empty.' }
       }
-      price = Math.round(n)
+      price = parsed
     }
     if (!['available', 'reserved', 'sold'].includes(String(work.status))) {
       return { error: 'Choose a status for each work.' }
@@ -342,11 +345,21 @@ function sanitizeRecord(input: unknown): { error: string } | { record: Omit<Gall
   }
 
   const nameFa = text(body.nameFa, 80) || name
+  let logo: string | null | undefined
+  if (!Object.prototype.hasOwnProperty.call(body, 'logo') || body.logo === '') {
+    logo = undefined
+  } else if (body.logo === null) {
+    logo = null
+  } else if (typeof body.logo === 'string') {
+    logo = body.logo
+  } else {
+    return { error: 'The logo must be a PNG, JPEG, or WebP upload.' }
+  }
   return {
     record: {
       name,
       nameFa,
-      logo: typeof body.logo === 'string' ? body.logo : null,
+      logo,
       showTitle: text(body.showTitle, 160),
       showTitleFa: text(body.showTitleFa, 160),
       dates: text(body.dates, 80),
@@ -363,6 +376,21 @@ function sanitizeRecord(input: unknown): { error: string } | { record: Omit<Gall
   }
 }
 
+const OWN_IMAGE_ERROR = 'Use an image you upload. Do not use another gallery’s images.'
+
+function isOwnGalleryMedia(image: string, gallerySlug: string): boolean {
+  return (
+    image.startsWith(`/media/galleries/${gallerySlug}/`) ||
+    image.startsWith(`/media/u/galleries/${gallerySlug}/`)
+  )
+}
+
+function isForeignImage(image: string, gallerySlug: string): boolean {
+  if (image.startsWith('/artworks/') || image.startsWith('http://') || image.startsWith('https://')) return true
+  if (!image.startsWith('/media/')) return false
+  return !isOwnGalleryMedia(image, gallerySlug)
+}
+
 async function resolveImageUrl(
   db: Db,
   storage: ObjectStorage,
@@ -371,8 +399,8 @@ async function resolveImageUrl(
   image: string,
 ): Promise<{ url: string; mediaId: string | null }> {
   if (!image) return { url: '', mediaId: null }
-  if (image.startsWith('http://') || image.startsWith('https://') || image.startsWith('/media/')) {
-    return { url: image, mediaId: null }
+  if (isForeignImage(image, gallerySlug) || image.startsWith('/media/')) {
+    throw new Error(OWN_IMAGE_ERROR)
   }
   const decoded = decodeDataUrl(image)
   if (!decoded) throw new Error('A work image must be a PNG, JPEG, or WebP upload.')
@@ -404,78 +432,126 @@ export async function publishGalleryRecord(
   if ('error' in cleaned) return { status: 400, body: { error: cleaned.error } }
 
   try {
+    const currentLogo = await logoUrl(db, gallery.logoMediaId)
     let logoMediaId: string | null = gallery.logoMediaId
-    if (cleaned.record.logo === null) {
+    const logoInput = cleaned.record.logo
+    if (logoInput === null) {
       logoMediaId = null
-    } else if (cleaned.record.logo) {
-      const logo = await resolveImageUrl(db, storage, gallery.id, gallery.slug, cleaned.record.logo)
-      logoMediaId = logo.mediaId
-      if (!logoMediaId && cleaned.record.logo.startsWith('data:')) {
-        return { status: 400, body: { error: 'The logo must be a PNG, JPEG, or WebP upload.' } }
-      }
-    }
-
-    await db
-      .update(galleries)
-      .set({
-        nameEn: cleaned.record.name,
-        nameFa: cleaned.record.nameFa,
-        logoMediaId,
-        updatedAt: new Date(),
-      })
-      .where(eq(galleries.id, gallery.id))
-
-    await db
-      .update(shows)
-      .set({
-        titleEn: cleaned.record.showTitle,
-        titleFa: cleaned.record.showTitleFa,
-        datesEn: cleaned.record.dates,
-        datesFa: cleaned.record.datesFa,
-        hoursEn: cleaned.record.hours,
-        hoursFa: cleaned.record.hoursFa,
-        addressEn: cleaned.record.address,
-        addressFa: cleaned.record.addressFa,
-        textEn: cleaned.record.text,
-        textFa: cleaned.record.textFa,
-        pdfUrl: cleaned.record.pdfUrl,
-        updatedAt: new Date(),
-      })
-      .where(eq(shows.id, show.id))
-
-    await db.delete(showWorks).where(eq(showWorks.showId, show.id))
-    // Replace works for this gallery show (pilot: one show).
-    const existingWorks = await db.select({ id: works.id }).from(works).where(eq(works.galleryId, gallery.id))
-    const keep = new Set(cleaned.record.works.map((w) => w.id))
-    for (const row of existingWorks) {
-      if (!keep.has(row.id)) await db.delete(works).where(eq(works.id, row.id))
-    }
-
-    let order = 0
-    for (const work of cleaned.record.works) {
-      const image = await resolveImageUrl(db, storage, gallery.id, gallery.slug, work.image)
-      const values = {
-        galleryId: gallery.id,
-        artist: work.artist,
-        title: work.title,
-        medium: work.medium,
-        size: work.size,
-        year: work.year,
-        priceToman: work.price,
-        status: work.status,
-        sample: work.sample,
-        mediaId: image.mediaId,
-        imageUrl: image.url,
-        updatedAt: new Date(),
-      }
-      const [found] = await db.select({ id: works.id }).from(works).where(eq(works.id, work.id)).limit(1)
-      if (found) {
-        await db.update(works).set(values).where(eq(works.id, work.id))
+    } else if (typeof logoInput === 'string' && logoInput.length > 0) {
+      if (currentLogo && logoInput === currentLogo) {
+        logoMediaId = gallery.logoMediaId
+      } else if (isForeignImage(logoInput, gallery.slug) || logoInput.startsWith('/media/')) {
+        return { status: 400, body: { error: 'Upload the logo again. A web address is not accepted.' } }
       } else {
-        await db.insert(works).values({ id: work.id, ...values })
+        const logo = await resolveImageUrl(db, storage, gallery.id, gallery.slug, logoInput)
+        if (!logo.mediaId) {
+          return { status: 400, body: { error: 'The logo must be a PNG, JPEG, or WebP upload.' } }
+        }
+        logoMediaId = logo.mediaId
       }
-      await db.insert(showWorks).values({ showId: show.id, workId: work.id, sortOrder: order++ })
     }
+
+    const prepared: Array<{ work: GalleryWorkDto; imageUrl: string; mediaId: string | null }> = []
+    for (const work of cleaned.record.works) {
+      const [owner] = await db
+        .select({
+          id: works.id,
+          galleryId: works.galleryId,
+          imageUrl: works.imageUrl,
+          mediaId: works.mediaId,
+        })
+        .from(works)
+        .where(eq(works.id, work.id))
+        .limit(1)
+      if (owner && owner.galleryId !== gallery.id) {
+        return { status: 400, body: { error: 'That work belongs to another gallery.' } }
+      }
+      if (!work.image) {
+        prepared.push({ work, imageUrl: '', mediaId: null })
+        continue
+      }
+      if (owner && work.image === (owner.imageUrl || '')) {
+        prepared.push({ work, imageUrl: owner.imageUrl || '', mediaId: owner.mediaId })
+        continue
+      }
+      if (isForeignImage(work.image, gallery.slug)) {
+        return { status: 400, body: { error: OWN_IMAGE_ERROR } }
+      }
+      if (isOwnGalleryMedia(work.image, gallery.slug)) {
+        prepared.push({ work, imageUrl: work.image, mediaId: null })
+        continue
+      }
+      const image = await resolveImageUrl(db, storage, gallery.id, gallery.slug, work.image)
+      prepared.push({ work, imageUrl: image.url, mediaId: image.mediaId })
+    }
+
+    const keep = new Set(prepared.map((item) => item.work.id))
+    await db.transaction(async (tx: Db) => {
+      await tx
+        .update(galleries)
+        .set({
+          nameEn: cleaned.record.name,
+          nameFa: cleaned.record.nameFa,
+          logoMediaId,
+          updatedAt: new Date(),
+        })
+        .where(eq(galleries.id, gallery.id))
+
+      await tx
+        .update(shows)
+        .set({
+          titleEn: cleaned.record.showTitle,
+          titleFa: cleaned.record.showTitleFa,
+          datesEn: cleaned.record.dates,
+          datesFa: cleaned.record.datesFa,
+          hoursEn: cleaned.record.hours,
+          hoursFa: cleaned.record.hoursFa,
+          addressEn: cleaned.record.address,
+          addressFa: cleaned.record.addressFa,
+          textEn: cleaned.record.text,
+          textFa: cleaned.record.textFa,
+          pdfUrl: cleaned.record.pdfUrl,
+          updatedAt: new Date(),
+        })
+        .where(eq(shows.id, show.id))
+
+      await tx.delete(showWorks).where(eq(showWorks.showId, show.id))
+      const existingWorks = await tx.select({ id: works.id }).from(works).where(eq(works.galleryId, gallery.id))
+      for (const row of existingWorks) {
+        if (!keep.has(row.id)) {
+          await tx.delete(works).where(and(eq(works.id, row.id), eq(works.galleryId, gallery.id)))
+        }
+      }
+
+      let order = 0
+      for (const item of prepared) {
+        const values = {
+          galleryId: gallery.id,
+          artist: item.work.artist,
+          title: item.work.title,
+          medium: item.work.medium,
+          size: item.work.size,
+          year: item.work.year,
+          priceToman: item.work.price,
+          status: item.work.status,
+          sample: item.work.sample,
+          mediaId: item.mediaId,
+          imageUrl: item.imageUrl,
+          updatedAt: new Date(),
+        }
+        const [found] = await tx
+          .select({ id: works.id })
+          .from(works)
+          .where(and(eq(works.id, item.work.id), eq(works.galleryId, gallery.id)))
+          .limit(1)
+        if (found) {
+          await tx.update(works).set(values).where(and(eq(works.id, item.work.id), eq(works.galleryId, gallery.id)))
+        } else {
+          await tx.insert(works).values({ id: item.work.id, ...values })
+        }
+        await tx.insert(showWorks).values({ showId: show.id, workId: item.work.id, sortOrder: order++ })
+      }
+    })
 
     const published = await loadPublicRecord(db)
     return { status: 200, body: { ok: true, record: published.record } }

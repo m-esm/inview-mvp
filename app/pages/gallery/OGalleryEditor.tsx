@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { OLandingPreview } from '../visitor/OGalleryPages'
+import { parseToman } from '../../lib/price'
 import { fetchPilot, fetchStaff, QR_ADDRESS, seed, type PilotRecord, type PilotWork, type StaffReport } from '../../lib/pilot'
 
 function readImage(file: File): Promise<string> {
@@ -211,7 +212,16 @@ export default function OGalleryEditor() {
                     <label>Medium<input value={work.medium} onChange={(e) => updateWork(work.id, { medium: e.target.value })} /></label>
                     <label>Size<input value={work.size} onChange={(e) => updateWork(work.id, { size: e.target.value })} /></label>
                     <label>Year<input value={work.year} onChange={(e) => updateWork(work.id, { year: e.target.value })} /></label>
-                    <label>Price in Toman<input inputMode="numeric" value={work.price ?? ''} onChange={(e) => updateWork(work.id, { price: e.target.value === '' ? null : Number(e.target.value) })} /></label>
+                    <label>Price in Toman<input inputMode="numeric" value={work.price ?? ''} onChange={(e) => {
+                      const raw = e.target.value
+                      if (raw.trim() === '') {
+                        updateWork(work.id, { price: null })
+                        return
+                      }
+                      const parsed = parseToman(raw)
+                      if (parsed === 'invalid') return
+                      updateWork(work.id, { price: parsed })
+                    }} /></label>
                     <label>Status
                       <select value={work.status} onChange={(e) => updateWork(work.id, { status: e.target.value as PilotWork['status'] })}>
                         <option value="available">Available</option>
