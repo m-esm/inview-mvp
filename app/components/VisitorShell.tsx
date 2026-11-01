@@ -8,7 +8,7 @@ import { langCookie, type Lang } from '../lib/lang'
 import { gallerySlugFromPath, oCopy, pick, recordLandingScan, seed, type GalleryPageData } from '../lib/pilot'
 import { useVisitor } from '../lib/store'
 import { SignInSheet, type SheetKind } from './SignInSheet'
-import { Calendar, Grid, Home } from './Icons'
+import { Calendar, Grid, Home, User } from './Icons'
 
 interface Ctx {
   requireSignIn: (kind: SheetKind, action: () => void, subtitle?: string, workId?: string) => void
@@ -58,6 +58,7 @@ export function VisitorShell() {
     { to: `${base}/works`, label: t.artworks, icon: <Grid />, end: false },
     { to: `${base}/prices`, label: t.priceList, icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M3 6h1M3 12h1M3 18h1" /></svg>, end: false },
     { to: `${base}/about`, label: t.visitNav, icon: <Calendar />, end: false },
+    { to: '/me', label: t.profile, icon: <User />, end: true },
   ]
 
   useEffect(() => {
