@@ -44,6 +44,10 @@ export function localDigits(lang: Lang, text: string): string {
   return text.replace(/\d/g, (digit) => PERSIAN_DIGITS[Number(digit)])
 }
 
+export function formatSize(lang: Lang, text: string): string {
+  return localDigits(lang, text.replace(/(?<=[0-9۰-۹٠-٩])\s*[xX×]\s*(?=[0-9۰-۹٠-٩])/g, ' × '))
+}
+
 function parseDay(value: string | null | undefined): Date | null {
   if (!value || !DATE_ONLY.test(value)) return null
   const date = new Date(`${value}T00:00:00Z`)
