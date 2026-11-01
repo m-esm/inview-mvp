@@ -3,11 +3,9 @@ import express from 'express'
 import 'react-router'
 import { createDatabase } from '../database/client'
 import { DatabaseContext } from '../database/context'
-import { ensureOGalleryTenant, resolveOGalleryAccessCode, syncOGalleryAccessCode } from './gallery-record'
-import { processAndStoreImage } from './images'
-import { handlePilotApi } from './pilot-api'
+import { mountApi } from './api-app'
+import { resolveOGalleryAccessCode, syncOGalleryAccessCode } from './gallery-record'
 import { createObjectStorage, localMediaMiddleware } from './storage'
-import { media } from '../database/schema'
 
 declare module 'react-router' {
   interface AppLoadContext {
@@ -34,74 +32,7 @@ app.use((_req, _res, next) => {
   DatabaseContext.run(db, () => next())
 })
 
-app.get('/api/v1/health', (_req, res) => {
-  res.setHeader('Cache-Control', 'no-store')
-  res.json({ ok: true, service: 'inview-mvp' })
-})
-
-app.all('/api/v1/pilot', async (req, res) => {
-  res.setHeader('Cache-Control', 'no-store')
-  try {
-    const result = await handlePilotApi(db, storage, req.method || 'GET', req.body)
-    res.status(result.status).json(result.body)
-  } catch (error) {
-    console.error(error)
-    res.status(500).json({ error: 'The server could not complete the request.' })
-  }
-})
-
-// Keep the old pilot path for the SPA clients during the migration.
-app.all('/api/pilot', async (req, res) => {
-  res.setHeader('Cache-Control', 'no-store')
-  try {
-    const result = await handlePilotApi(db, storage, req.method || 'GET', req.body)
-    res.status(result.status).json(result.body)
-  } catch (error) {
-    console.error(error)
-    res.status(500).json({ error: 'The server could not complete the request.' })
-  }
-})
-
-app.post('/api/v1/uploads', async (req, res) => {
-  res.setHeader('Cache-Control', 'no-store')
-  try {
-    const { gallery, accessCode, contentType, dataBase64 } = req.body || {}
-    if (gallery !== 'o-gallery') {
-      res.status(400).json({ error: 'Unknown gallery.' })
-      return
-    }
-    const tenant = await ensureOGalleryTenant(db)
-    const { verifySecret } = await import('./crypto')
-    if (!verifySecret(String(accessCode || ''), tenant.gallery.accessCodeHash)) {
-      res.status(401).json({ error: 'That access code does not match.' })
-      return
-    }
-    if (typeof dataBase64 !== 'string' || typeof contentType !== 'string') {
-      res.status(400).json({ error: 'Upload data is missing.' })
-      return
-    }
-    const buffer = Buffer.from(dataBase64, 'base64')
-    const processed = await processAndStoreImage(storage, 'o-gallery', buffer, contentType)
-    const [row] = await db
-      .insert(media)
-      .values({
-        galleryId: tenant.gallery.id,
-        s3Key: processed.key,
-        width: processed.width,
-        height: processed.height,
-        variants: processed.variants,
-      })
-      .returning()
-    res.status(201).json({
-      id: row.id,
-      url: processed.variants['w640.webp'] || processed.primaryUrl,
-      variants: processed.variants,
-    })
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Upload failed.'
-    res.status(400).json({ error: message })
-  }
-})
+mountApi(app, db, storage)
 
 app.use(
   createRequestHandler({

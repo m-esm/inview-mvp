@@ -3,6 +3,7 @@ import {
   publishGalleryRecord,
   recordLead,
   recordVisit,
+  toPublicGallery,
 } from './gallery-record'
 import type { ObjectStorage } from './storage'
 
@@ -14,7 +15,7 @@ export async function handlePilotApi(
 ) {
   const verb = (method || 'GET').toUpperCase()
   if (verb === 'GET' || verb === 'HEAD') {
-    return { status: 200, body: await loadGalleryState(db) }
+    return { status: 200, body: toPublicGallery(await loadGalleryState(db)) }
   }
   if (verb === 'PUT') {
     const payload = (body || {}) as { password?: string; accessCode?: string; record?: unknown }

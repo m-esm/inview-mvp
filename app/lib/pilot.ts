@@ -102,9 +102,27 @@ export function pick(lang: 'en' | 'fa', en: string, fa: string) {
   return en || fa
 }
 
-export async function fetchPilot(): Promise<PilotState> {
+export interface PilotPublic {
+  record: PilotRecord
+  qr: string
+}
+
+export async function fetchPilot(): Promise<PilotPublic> {
   const res = await fetch('/api/pilot', { cache: 'no-store' })
   if (!res.ok) throw new Error('The gallery record did not load.')
+  return res.json()
+}
+
+export async function fetchStaff(accessCode: string): Promise<PilotState> {
+  const res = await fetch('/api/pilot/staff', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ accessCode }),
+  })
+  if (!res.ok) {
+    const data = (await res.json().catch(() => ({}))) as { error?: string }
+    throw new Error(data.error || 'The visitor report did not load.')
+  }
   return res.json()
 }
 

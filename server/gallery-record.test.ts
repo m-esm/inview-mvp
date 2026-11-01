@@ -10,6 +10,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import * as schema from '../database/schema.ts'
+import { loadStaffGallery } from './gallery-record.ts'
 import { handlePilotApi } from './pilot-api.ts'
 import { LocalObjectStorage } from './storage.ts'
 import os from 'node:os'
@@ -36,6 +37,8 @@ test('O Gallery publish, scan dedupe, view and lead use the multi-tenant tables'
   try {
     const first = await handlePilotApi(db, storage, 'GET', null)
     assert.equal(first.status, 200)
+    assert.equal('leads' in (first.body as object), false)
+    assert.equal('visits' in (first.body as object), false)
     assert.equal((first.body as { record: { slug: string } }).record.slug, 'o-gallery')
     assert.equal((first.body as { record: { works: unknown[] } }).record.works.length, 0)
 
@@ -106,9 +109,12 @@ test('O Gallery publish, scan dedupe, view and lead use the multi-tenant tables'
       kind: 'scan',
       visitorId: browserA,
     })
+    assert.equal((scan1.body as { ok: boolean }).ok, true)
     assert.equal((scan1.body as { counted: boolean }).counted, true)
+    assert.equal(JSON.stringify(scan1.body).includes('leads'), false)
     assert.equal((scan2.body as { duplicate: boolean }).duplicate, true)
-    assert.equal((scan2.body as { visits: { scans: number } }).visits.scans, 1)
+    const afterScans = await loadStaffGallery(db, 'inview')
+    assert.equal((afterScans.body as { visits: { scans: number } }).visits.scans, 1)
 
     const browserB = 'browser-b2'
     const scanB = await handlePilotApi(db, storage, 'POST', {
@@ -122,8 +128,12 @@ test('O Gallery publish, scan dedupe, view and lead use the multi-tenant tables'
       visitorId: browserB,
       workId: 'samplework1',
     })
-    assert.equal((scanB.body as { visits: { scans: number } }).visits.scans, 2)
-    assert.equal((viewB.body as { visits: { views: number } }).visits.views, 1)
+    assert.equal(viewB.status, 200)
+    assert.equal(scanB.status, 200)
+    assert.equal((viewB.body as { ok: boolean }).ok, true)
+    const afterViews = await loadStaffGallery(db, 'inview')
+    assert.equal((afterViews.body as { visits: { scans: number; views: number } }).visits.scans, 2)
+    assert.equal((afterViews.body as { visits: { views: number } }).visits.views, 1)
 
     const lead = await handlePilotApi(db, storage, 'POST', {
       op: 'lead',
@@ -133,7 +143,10 @@ test('O Gallery publish, scan dedupe, view and lead use the multi-tenant tables'
       workId: 'samplework1',
     })
     assert.equal(lead.status, 200)
-    const leads = (lead.body as { leads: Array<{ phone: string; verified: boolean }> }).leads
+    assert.equal((lead.body as { ok: boolean }).ok, true)
+    assert.equal(JSON.stringify(lead.body).includes('09120000000'), false)
+    const staff = await loadStaffGallery(db, 'inview')
+    const leads = (staff.body as { leads: Array<{ phone: string; verified: boolean }> }).leads
     assert.equal(leads[0].phone, '09120000000')
     assert.equal(leads[0].verified, false)
   } finally {
