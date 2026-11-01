@@ -1,0 +1,69 @@
+name: Visual QA
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      update_baselines:
+        description: Regenerate the approved images and upload them as an artifact
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  QA_BASE_URL: https://inview.moshes.io
+
+jobs:
+  visual-qa:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - name: Wait for Flux rollout
+        if: github.event_name == 'workflow_run'
+        run: sleep 300
+      - run: npm ci --include=dev
+      - name: Playwright, screenshots and axe
+        env:
+          QA_UPDATE: ${{ inputs.update_baselines && '1' || '0' }}
+        run: |
+          if [ "${{ inputs.update_baselines }}" = "true" ]; then
+            npx playwright test -c playwright.visual-qa.config.ts --update-snapshots=all
+          else
+            npx playwright test -c playwright.visual-qa.config.ts
+          fi
+        continue-on-error: true
+      - name: impeccable rendered scan
+        env:
+          QA_ROUTES: '[{"name":"landing","path":"/"},{"name":"gallery","path":"/g/sample"},{"name":"gallery-works","path":"/g/sample/works"},{"name":"gallery-prices","path":"/g/sample/prices"},{"name":"gallery-about","path":"/g/sample/about"},{"name":"sign-in","path":"/dashboard/sign-in"},{"name":"not-found","path":"/no-such-page"}]'
+        run: |
+          export IMPECCABLE_BROWSER="$(ls /ms-playwright/chromium-*/chrome-linux*/chrome | head -n 1)"
+          node scripts/visual-qa-impeccable.mjs
+      - name: Summary
+        env:
+          QA_COMMIT: ${{ github.event.workflow_run.head_sha || github.sha }}
+          QA_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node scripts/visual-qa-summary.mjs
+      - name: Collect approved images
+        if: inputs.update_baselines
+        run: mkdir -p visual-qa-report/new-baselines && cp visual-qa/baselines/*.png visual-qa-report/new-baselines/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: visual-qa-${{ github.event.workflow_run.head_sha || github.sha }}
+          path: visual-qa-report
+          retention-days: 30
+      - name: Fail on a FAIL verdict
+        if: "!inputs.update_baselines"
+        run: grep -qx PASS visual-qa-report/verdict.txt
