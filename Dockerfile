@@ -33,5 +33,5 @@ COPY scripts/migrate.mjs scripts/seed-sample.mjs scripts/create-operator.mjs ./s
 COPY --from=production-dependencies-env /app/node_modules ./node_modules
 COPY --from=build-env /app/build ./build
 EXPOSE 3000
-# Start the app. Run migrations with: docker run ... npm run db:migrate:prod
+# Migrations: docker run ... npm run db:migrate:prod
 CMD ["npm", "run", "start"]

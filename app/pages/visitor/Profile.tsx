@@ -38,7 +38,6 @@ export default function Profile() {
     )
   }
 
-  // demo history from other galleries + real stamps collected in this browser
   const marks = [...passportHistory, ...stamps.map(() => 'R')]
   const filled = Math.min(marks.length, passportGoal)
   const savedWorks = artworks.filter((a) => saved.includes(a.id))

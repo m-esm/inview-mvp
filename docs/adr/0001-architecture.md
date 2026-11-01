@@ -7,8 +7,7 @@
 
 ## 1. Context
 
-Inview gives art galleries in Iran a visitor app, a price list and a gallery website.
-A visitor scans a QR code at a show. The visitor sees the works and the prices on a mobile phone.
+The product is described in the [README](../../README.md).
 
 The current code is a Vite and React single-page app (SPA). The O Gallery pilot adds a
 JSON file store (`server/pilot-store.mjs`). This store keeps images as base64 text.
@@ -178,7 +177,8 @@ decides which years are leap years. A day that the month does not have returns `
 The server reads the language from the `inview-lang` cookie. When the cookie is absent, the
 O Gallery pages start in Persian and the demo pages start in English. The language switcher
 writes the cookie and revalidates, so the server renders `lang` and `dir` on `<html>` for
-every request. The staff UI stays in English until it is translated.
+every request. The O Gallery staff editor uses the same cookie and has English and Persian text.
+The Rooz Gallery demo dashboard is in English only.
 
 ### D10. Login, sessions and roles
 

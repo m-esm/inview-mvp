@@ -6,7 +6,7 @@ import { useVisitor, visitor } from '../lib/store'
 import { useSignIn } from './VisitorShell'
 import { Heart } from './Icons'
 
-export function ArtworkCard({ a }: { a: Artwork }) {
+export function ArtworkCard({ a, priority = false }: { a: Artwork, priority?: boolean }) {
   const { t, price, status, artist, medium, size } = useT()
   const { saved } = useVisitor()
   const { requireSignIn } = useSignIn()
@@ -15,12 +15,12 @@ export function ArtworkCard({ a }: { a: Artwork }) {
   return (
     <article className="card">
       <Link to={`/g/${gallery.slug}/works/${a.id}`} className="card-img">
-        <img src={a.image} alt={a.alt} loading="lazy" />
+        <img src={a.image} alt={a.alt} width={a.width} height={a.height} loading={priority ? 'eager' : 'lazy'} />
       </Link>
       <button
         className={`heart ${isSaved ? 'on' : ''}`}
         aria-pressed={isSaved}
-        aria-label={`${isSaved ? t.saved : t.save}: ${artist(a)}`}
+        aria-label={`${t.save}: ${artist(a)}`}
         onClick={() => (isSaved ? visitor.toggleSaved(a.id) : requireSignIn('save', () => visitor.save(a.id), artist(a)))}
       >
         <Heart size={18} filled={isSaved} />
@@ -33,7 +33,7 @@ export function ArtworkCard({ a }: { a: Artwork }) {
           <bdi className="bidi-plain">{size(a)}</bdi>
         </span>
         <span className="label-row">
-          <span className="label-price"><bdi className="bidi-plain">{p ?? '—'}</bdi></span>
+          {p && <span className="label-price"><bdi className="bidi-plain">{p}</bdi></span>}
           <span className={`status s-${a.status}`}>{status(a.status)}</span>
         </span>
       </Link>

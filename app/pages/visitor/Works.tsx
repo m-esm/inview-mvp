@@ -40,7 +40,7 @@ function RoozWorks() {
         ))}
       </div>
       <div className="grid">
-        {list.map((a) => <ArtworkCard key={a.id} a={a} />)}
+        {list.map((a, index) => <ArtworkCard key={a.id} a={a} priority={index < 2} />)}
       </div>
       <div className="pad">
         <Link to={`/g/${gallery.slug}/prices`} className="btn btn-outline wide">{t.priceList}</Link>

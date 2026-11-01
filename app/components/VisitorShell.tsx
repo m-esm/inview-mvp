@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
-import { Link, NavLink, Outlet, useLocation, useRouteLoaderData } from 'react-router'
+import { Link, NavLink, Outlet, useLocation, useNavigation, useRouteLoaderData } from 'react-router'
 import { gallery } from '../data/gallery'
 import { useT } from '../lib/i18n'
 import { CONSENT_TEXT_VERSION } from '../lib/consent'
@@ -8,6 +8,7 @@ import { gallerySlugFromPath, oCopy, pick, recordLandingScan, seed, type Gallery
 import { useVisitor } from '../lib/store'
 import { LangSwitch } from './LangSwitch'
 import { SignInSheet, type SheetKind } from './SignInSheet'
+import { SkipLink } from './SkipLink'
 import { Calendar, Grid, Home, User } from './Icons'
 
 interface Ctx {
@@ -21,6 +22,7 @@ export function VisitorShell() {
   const { phone, consentVersion } = useVisitor()
   const [pending, setPending] = useState<{ kind: SheetKind; action: () => void; subtitle?: string; workId?: string } | null>(null)
   const { pathname } = useLocation()
+  const busy = useNavigation().state !== 'idle'
 
   // A language switch revalidates instead of reloading, so keep the document in step.
   useEffect(() => {
@@ -62,10 +64,11 @@ export function VisitorShell() {
     <SignInCtx.Provider value={{ requireSignIn }}>
       <div className="visitor-stage">
         <div className={`visitor ${lang === 'fa' ? 'fa' : ''}`} dir={dir}>
+          <SkipLink label={t.skipToContent} />
           <header className="v-top">
             <div className="v-brand-stack">
               {isDb ? (
-                <Link to={`/site/${slug}`} className="v-gallery v-wordmark" title={brand}>
+                <Link to={`/site/${slug}`} className="v-gallery" title={brand}>
                   {record.logo && !(demo && isPrices) ? <img className="v-logo" src={record.logo} alt={oName} /> : brand}
                 </Link>
               ) : (
@@ -80,7 +83,7 @@ export function VisitorShell() {
             {navItems.map((item) => <NavLink key={item.to} to={item.to} end={item.end}>{item.label}</NavLink>)}
           </nav>
           {demo && !isPrices && <p className="demo-banner" role="note">{demoCopy.demoNote}</p>}
-          <main className="v-main"><Outlet /></main>
+          <main id="main" tabIndex={-1} className="v-main" aria-busy={busy || undefined}><Outlet /></main>
           <nav className="v-tabs" aria-label={t.visitorNav}>
             {navItems.map((item) => <NavLink key={item.to} to={item.to} end={item.end}>{item.icon}<span>{item.label}</span></NavLink>)}
           </nav>

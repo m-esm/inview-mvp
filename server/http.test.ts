@@ -106,9 +106,7 @@ test('HAD-24 public reads and visitor posts hide phone numbers', async () => {
     })
     assert.equal(published.status, 200)
     assert.equal(published.body.record.works[0].title, 'Sample work')
-    // Chosen rule: a successful PUT returns { ok: true, record } only.
-    // Lead phone numbers and visit counts stay on GET /api/pilot/staff
-    // with the X-Access-Code header. PR 14 made staff a GET.
+    // A successful PUT returns { ok: true, record } only. Leads and visit counts stay on GET /api/pilot/staff.
     assert.equal('leads' in published.body, false)
     assert.equal('visits' in published.body, false)
 

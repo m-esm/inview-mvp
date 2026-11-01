@@ -7,7 +7,7 @@
 
 ## Tone
 
-Quiet, editorial, catalogue-confident. The interface should feel like a well-set wall label and a well-printed show booklet — not like a startup dashboard. Sharp hierarchy. Calm pace. No decoration that does not serve reading or finding a work.
+Quiet, editorial, catalogue-confident. The interface should feel like a well-set wall label and a well-printed show booklet, not like a startup dashboard. Sharp hierarchy. Calm pace. No decoration that does not serve reading or finding a work.
 
 ## Type pair
 
@@ -40,19 +40,19 @@ Spacing grid: **4 / 8 / 12 / 16 / 24 / 32 / 48 / 64**. Radius: **2** (hair), **6
 
 ## Layout by breakpoint
 
-### Public gallery — mobile (≤719px)
+### Public gallery: mobile (≤719px)
 
 Full-bleed surface. Sticky top chrome (wordmark + language). Fixed bottom tab bar with 44px targets. One column. Works as a tight wall-label list or 2-up grid. No floating phone frame.
 
-### Public gallery — desktop (≥960px)
+### Public gallery: desktop (≥960px)
 
 Composed stage, not a stretched phone column. Top navigation replaces the bottom tabs. Content sits in an editorial frame (max ~1120px) on the paper stage. Welcome is a split: large show title and meta on the start side, primary actions on the end side. Works open to a 3-column wall grid. Work detail is image-forward with the wall label beside the figure on wide screens.
 
-### Editor — desktop (≥960px)
+### Editor: desktop (≥960px)
 
 Sidebar + dense main. Section rails with clear Publish dock. Preview phone frame stays a preview, not the whole page.
 
-### Editor — mobile (≤719px)
+### Editor: mobile (≤719px)
 
 Top brand bar, horizontal section links, stacked forms. Touch targets stay ≥44px. Preview collapses under Publish.
 

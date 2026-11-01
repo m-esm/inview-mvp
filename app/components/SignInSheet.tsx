@@ -23,13 +23,31 @@ export function SignInSheet({ kind, subtitle, workId, onDone, onClose }: Props) 
   const [consent, setConsent] = useState(false)
   const [error, setError] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+  const sheetRef = useRef<HTMLDivElement>(null)
+  const closeRef = useRef(onClose)
+  closeRef.current = onClose
+
+  // Declared before the focus effect below: React runs effects in order, so this one has to
+  // read the opener while it still holds focus.
+  useEffect(() => {
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const { overflow } = document.body.style
+    document.body.style.overflow = 'hidden'
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') return closeRef.current()
+      if (e.key === 'Tab') trapTab(e, sheetRef.current)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = overflow
+      if (opener?.isConnected) opener.focus()
+    }
+  }, [])
 
   useEffect(() => {
     inputRef.current?.focus()
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [step, onClose])
+  }, [step])
 
   const title = { save: t.sheetSaveTitle, ask: t.sheetAskTitle, follow: t.sheetFollowTitle, stamp: t.sheetStampTitle }[kind]
   const body = kind === 'ask' ? t.sheetAskBody : t.sheetBody
@@ -67,7 +85,7 @@ export function SignInSheet({ kind, subtitle, workId, onDone, onClose }: Props) 
 
   return (
     <div className="sheet-backdrop" onClick={onClose}>
-      <div className="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" dir={dir} onClick={(e) => e.stopPropagation()}>
+      <div ref={sheetRef} className="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" dir={dir} onClick={(e) => e.stopPropagation()}>
         <div className="sheet-handle" aria-hidden />
         <div className="sheet-head">
           <span className="sheet-icon"><Heart size={22} filled /></span>
@@ -83,7 +101,7 @@ export function SignInSheet({ kind, subtitle, workId, onDone, onClose }: Props) 
             <input id="phone" ref={inputRef} type="tel" inputMode="tel" autoComplete="tel" dir="ltr" placeholder="0912 345 6789"
               value={phone} onChange={(e) => setPhone(e.target.value)} aria-invalid={!!error} aria-describedby={error ? 'sheet-error' : undefined} />
             <ConsentField checked={consent} label={t.consent} invalid={error === t.needConsent} describedBy={error ? 'sheet-error' : undefined} onChange={onConsent} />
-            {error && <p id="sheet-error" className="error">{error}</p>}
+            {error && <p id="sheet-error" className="error" role="alert">{error}</p>}
             <button className="btn btn-primary" type="submit">{t.sendCode}</button>
           </form>
         ) : (
@@ -92,7 +110,7 @@ export function SignInSheet({ kind, subtitle, workId, onDone, onClose }: Props) 
             <input id="code" ref={inputRef} inputMode="numeric" autoComplete="one-time-code" dir="ltr" maxLength={4} placeholder="••••"
               value={code} onChange={(e) => setCode(e.target.value)} aria-invalid={!!error} aria-describedby="sheet-error" className="code-input" />
             <ConsentField checked={consent} label={t.consent} invalid={error === t.needConsent} describedBy="sheet-error" onChange={onConsent} />
-            <p id="sheet-error" className={error ? 'error' : 'muted small'}>{error || t.codeHint}</p>
+            <p id="sheet-error" className={error ? 'error' : 'muted small'} role={error ? 'alert' : undefined}>{error || t.codeHint}</p>
             <button className="btn btn-primary" type="submit">{t.confirm}</button>
           </form>
         )}
@@ -128,4 +146,25 @@ function ConsentField({
       <span>{label}</span>
     </label>
   )
+}
+
+const focusable = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
+function trapTab(e: KeyboardEvent, root: HTMLElement | null) {
+  if (!root) return
+  const items = Array.from(root.querySelectorAll<HTMLElement>(focusable))
+  if (items.length === 0) return
+  const first = items[0]
+  const last = items[items.length - 1]
+  const active = document.activeElement
+  if (!root.contains(active)) {
+    e.preventDefault()
+    first.focus()
+  } else if (e.shiftKey && active === first) {
+    e.preventDefault()
+    last.focus()
+  } else if (!e.shiftKey && active === last) {
+    e.preventDefault()
+    first.focus()
+  }
 }

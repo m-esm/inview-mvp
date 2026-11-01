@@ -21,7 +21,8 @@ See `docs/adr/0001-architecture.md` for the architecture decisions.
 | `/api/v1/health` | Health check |
 | `/api/v1/pilot` | O Gallery JSON resource route |
 
-The visitor side works in English and Persian.
+The visitor pages and the O Gallery staff editor work in English and Persian.
+The Rooz Gallery demo dashboard is in English only.
 
 ## Stack
 
@@ -205,3 +206,9 @@ A request with a valid staff session does not use an access limit. The upload li
 
 User-facing English text in this project follows ASD-STE100 rules:
 short sentences, clear verbs, and one idea per sentence.
+
+## Design and copy audits
+
+`anti-slop/` holds the antislop audits and their fix reports, numbered by date.
+Each audit lists findings by rule and priority. Each report lists what was fixed and the test evidence.
+The design direction is in `docs/design/direction.md`.

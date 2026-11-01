@@ -1,5 +1,6 @@
 import { Link, useRevalidator } from 'react-router'
-import { useLang } from '../../lib/i18n'
+import { messages, useLang } from '../../lib/i18n'
+import { SkipLink } from '../../components/SkipLink'
 import { langCookie, type Lang } from '../../lib/lang'
 import { landingContact } from '../../lib/landing-contact'
 
@@ -8,7 +9,7 @@ const DEMO_PATH = '/g/sample'
 export const landingCopy = {
   fa: {
     title: 'اینویو | آثار گالری شما، در دست بازدیدکننده',
-    description: 'با اینویو، بازدیدکننده کد QR گالری را اسکن می‌کند و آثار و قیمت‌ها را روی گوشی می‌بیند. برای گالری‌ها، از معرفی آثار تا شناخت علاقه‌مندان.',
+    description: 'با اینویو، بازدیدکننده کد QR گالری را اسکن می‌کند و آثار و قیمت‌ها را روی گوشی می‌بیند. شما قیمت‌ها را در پنل گالری تغییر می‌دهید و می‌بینید بازدیدکننده‌ها کدام آثار را ذخیره کرده‌اند.',
     brand: 'اینویو',
     forGalleries: 'برای گالری‌ها',
     hero: 'آثار گالری شما، در دست بازدیدکننده.',
@@ -18,19 +19,19 @@ export const landingCopy = {
     persianDemo: 'اپلیکیشن نمونه به فارسی نمایش داده می‌شود',
     screensLabel: 'تصاویر نسخه آزمایشی گالری',
     contact: 'گفت‌وگو درباره گالری شما',
-    noApp: 'بدون نصب اپلیکیشن. به فارسی و انگلیسی.',
+    noApp: 'بازدیدکننده صفحه را در مرورگر، به فارسی یا انگلیسی، باز می‌کند.',
     preview: 'از دیوار گالری تا صفحه گوشی',
     previewCaption: 'پیش‌نمایش نسخه آزمایشی گالری اُ',
-    how: 'از ثبت اثر تا یک اسکن',
+    how: 'از فهرست آثار شما تا گوشی بازدیدکننده',
     steps: [
       ['آثار را اضافه کنید', 'عکس، مشخصات و قیمت هر اثر را در پنل گالری وارد کنید.'],
       ['کد QR را چاپ کنید', 'کد نمایشگاه را کنار ورودی یا روی دیوار گالری قرار دهید.'],
       ['بازدیدکننده اسکن می‌کند', 'آثار را می‌بیند، قیمت‌ها را بررسی می‌کند و اثر دلخواهش را ذخیره می‌کند.'],
     ],
-    benefits: 'یک نمایشگاه، ارتباطی ماندگار',
-    benefitsIntro: 'معرفی آثار در زمان بازدید، شناخت علاقه‌مندان پس از آن.',
+    benefits: 'آنچه گالری شما به دست می‌آورد',
+    benefitsIntro: 'بازدیدکننده هنگام بازدید آثار و قیمت‌ها را می‌بیند. شما بعد از آن می‌بینید چه آثاری را ذخیره کرده است.',
     features: [
-      ['راهنمای بازدید روی گوشی', 'آثار، هنرمندان و اطلاعات نمایشگاه، همیشه همراه بازدیدکننده.'],
+      ['راهنمای نمایشگاه روی گوشی بازدیدکننده', 'آثار، هنرمندان و اطلاعات نمایشگاه در یک صفحه.'],
       ['فهرست قیمت به‌روز', 'قیمت و وضعیت فروش هر اثر را از پنل گالری تغییر دهید.'],
       ['گزارش بازدید و علاقه‌مندی', 'تعداد اسکن‌ها و بازدید آثار را ببینید و علاقه‌مندی‌ها را بشناسید.'],
       ['اطلاعات تماس، با رضایت', 'اطلاعات علاقه‌مندان فقط با رضایت خودشان در اختیار گالری قرار می‌گیرد.'],
@@ -46,33 +47,33 @@ export const landingCopy = {
     email: 'پیام ایمیلی',
     comingSoon: 'جزئیات تماس به‌زودی اعلام می‌شود',
     staff: 'ورود کارکنان گالری',
-    footer: 'همراه آثار، همراه گالری.',
+    footer: 'صفحه نمایشگاه و فهرست قیمت برای گالری‌های ایران.',
   },
   en: {
     title: 'Inview | Your gallery, in your visitor’s hands',
-    description: 'Visitors scan one QR code to see your gallery’s works and prices on their phone. Inview helps galleries present art and connect with interested visitors.',
+    description: 'Visitors scan one QR code to see your gallery’s works and prices on their phone. You change prices in your gallery editor and see which works visitors save.',
     brand: 'Inview',
     forGalleries: 'For galleries',
     hero: 'Your gallery, in your visitor’s hands.',
     intro: 'Inview brings your exhibition’s works and prices to each visitor’s phone with one QR code.',
-    demo: 'Explore the sample gallery',
+    demo: 'Open the sample gallery',
     pilot: 'pilot gallery',
     persianDemo: 'The demo app is shown in Persian',
     screensLabel: 'Gallery demo screenshots',
     contact: 'Talk about your gallery',
-    noApp: 'No app to install. In Persian and English.',
+    noApp: 'Visitors open the page in their browser, in Persian or English.',
     preview: 'From the gallery wall to the phone',
     previewCaption: 'A preview of the O Gallery pilot',
-    how: 'From adding a work to a scan',
+    how: 'From your catalogue to a visitor’s phone',
     steps: [
       ['Add your works', 'Enter each work’s image, details and price in your gallery editor.'],
       ['Print your QR code', 'Place your exhibition’s code at the entrance or on the gallery wall.'],
       ['Visitors scan and explore', 'They browse the works, check prices and save the art that interests them.'],
     ],
-    benefits: 'An exhibition. A lasting connection.',
-    benefitsIntro: 'Present the works during a visit. Understand interest after it.',
+    benefits: 'What your gallery gets',
+    benefitsIntro: 'Visitors see the works and prices during the visit. After it, you see which works they saved.',
     features: [
-      ['A visitor guide on every phone', 'Works, artists and exhibition details, all in one place.'],
+      ['The show guide on the visitor’s phone', 'Works, artists and show details on one page.'],
       ['An up-to-date price list', 'Change each work’s price and sale status in your gallery editor.'],
       ['Scans and interest reports', 'See scan counts, work views and which works visitors save.'],
       ['Contact details, with consent', 'Receive interested visitors’ contact details only when they agree to share them.'],
@@ -88,7 +89,7 @@ export const landingCopy = {
     email: 'Email us',
     comingSoon: 'Contact details coming soon',
     staff: 'Gallery staff sign-in',
-    footer: 'With the art. With the gallery.',
+    footer: 'Show pages and price lists for galleries in Iran.',
   },
 }
 
@@ -134,11 +135,12 @@ export default function InviewLanding({ contact = landingContact }: { contact?: 
 
   return (
     <div className={`landing ${lang === 'fa' ? 'fa' : ''}`}>
+      <SkipLink label={messages[lang].skipToContent} />
       <header className="landing-header landing-width">
         <Link to="/" className="landing-brand">{words.brand}</Link>
         <LandingLangSwitch />
       </header>
-      <main>
+      <main id="main" tabIndex={-1}>
         <section className="landing-hero landing-width" aria-labelledby="landing-title">
           <div className="landing-intro">
             <h1 id="landing-title">{words.hero}</h1>

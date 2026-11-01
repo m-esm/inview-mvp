@@ -7,6 +7,7 @@ import { seed, type GalleryPageData } from '../../lib/pilot'
 import { useVisitor, visitor } from '../../lib/store'
 import { useSignIn } from '../../components/VisitorShell'
 import { Check, Chevron } from '../../components/Icons'
+import { highFetchPriority } from '../../lib/image-priority'
 
 export default function Welcome() {
   const { slug } = useParams()
@@ -35,7 +36,7 @@ function RoozWelcome() {
   return (
     <div className="welcome">
       <div className="cover">
-        <img src={cover.image} alt={cover.alt} />
+        <img src={cover.image} alt={cover.alt} width={cover.width} height={cover.height} {...highFetchPriority} />
       </div>
       <div className="pad intro reveal">
         <p className="eyebrow">{t.welcomeLine(galleryName)}. {t.nowShowing}</p>
@@ -56,8 +57,8 @@ function RoozWelcome() {
         ))}
       </ul>
       <div className="pad">
-        <button className={`btn ${stamped ? 'btn-quiet' : 'btn-primary'} wide`} disabled={stamped}
-          onClick={() => requireSignIn('stamp', () => visitor.stamp(gallery.slug))}>
+        <button className={`btn ${stamped ? 'btn-quiet is-done' : 'btn-primary'} wide`} aria-disabled={stamped || undefined}
+          onClick={() => { if (!stamped) requireSignIn('stamp', () => visitor.stamp(gallery.slug)) }}>
           <Check />{stamped ? t.stamped : t.stamp}
         </button>
         <p className="muted tiny center">{t.noApp}</p>
