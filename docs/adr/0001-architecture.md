@@ -128,12 +128,17 @@ Prices are whole Toman in `bigint`. Times are UTC `timestamptz`.
 |---|---|---|
 | **Make fixed variants at upload with `sharp` (for example 320, 640, 1280 px, WebP and JPEG). Store them in S3. Serve them with long cache headers.** | No extra service. Works the same on any host and any CDN. Static files cache well. | Fixed sizes. A new size needs a backfill job. |
 | imgproxy in front of S3 | Any size on request. AVIF and WebP. | One more service. Signed URLs. A CDN cache is necessary to keep the CPU low. |
-| Base64 in the database or JSON (current pilot) | Simple. | Large pages, no cache, slow on mobile. |
+| Base64 in the database or JSON (the first pilot, removed) | Simple. | Large pages, no cache, slow on mobile. |
 
 Decision: variants at upload. The server checks the type and the size, removes EXIF
 data and writes the variants to S3. Storage is Garage (bucket `inview`, public host
 `inview-media.moshes.io`) now. ArvanCloud Object Storage or Liara storage later.
 Add imgproxy only if we need many sizes.
+
+The editor sends each image as `multipart/form-data` to `POST /api/v1/uploads`. The
+server reads the type from the file bytes with `sharp`. It accepts PNG, JPEG and WebP
+only, and the limit is 8 MB. Publish refuses a `data:` URL in a work image and in the
+logo, so the image bytes never go in the JSON body. The JSON limit is 256 KB.
 
 ### D7. Caching
 
