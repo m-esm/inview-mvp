@@ -1,15 +1,13 @@
 import Welcome from '~/pages/visitor/Welcome'
-import { loadOGalleryPilot } from './pilot.server'
+import { PUBLIC_PAGE_HEADERS } from '~/lib/cache'
+import { loadGalleryPage } from './pilot.server'
 
-export async function loader({ params }: { params: { slug?: string } }) {
-  const headers = new Headers({
-    'Cache-Control': 'public, max-age=0, s-maxage=60, stale-while-revalidate=600',
-  })
-  if (params.slug !== 'o-gallery') {
-    return Response.json({ pilot: null }, { headers })
-  }
-  const pilot = await loadOGalleryPilot()
-  return Response.json({ pilot }, { headers })
+export async function loader({ request, params }: { request: Request; params: { slug?: string } }) {
+  return loadGalleryPage(request, params.slug)
+}
+
+export function headers() {
+  return PUBLIC_PAGE_HEADERS
 }
 
 export default function GalleryWelcome() {

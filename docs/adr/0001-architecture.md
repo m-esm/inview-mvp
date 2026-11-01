@@ -139,6 +139,8 @@ Add imgproxy only if we need many sizes.
 
 - Hashed build files and media: `Cache-Control: public, max-age=31536000, immutable`.
 - Public SSR pages: `public, max-age=0, s-maxage=60, stale-while-revalidate=600`.
+- Public SSR pages also send `Vary: Cookie`. The language cookie changes the HTML, so a
+  shared cache must keep one entry for each language.
 - Editor and API: `no-store`.
 - The CDN (Cloudflare now, ArvanCloud later) follows these headers. We do not use a
   CDN-specific rule.
@@ -161,6 +163,11 @@ Add imgproxy only if we need many sizes.
 Decision: use `Intl.DateTimeFormat('fa-IR-u-ca-persian')` and
 `Intl.NumberFormat('fa-IR')`. Set `dir="rtl"` and `lang="fa"` on the server for Persian.
 Store dates in UTC. Add a Jalali library only for date input in the editor.
+
+The server reads the language from the `inview-lang` cookie. When the cookie is absent, the
+O Gallery pages start in Persian and the demo pages start in English. The language switcher
+writes the cookie and revalidates, so the server renders `lang` and `dir` on `<html>` for
+every request. The staff UI stays in English until it is translated.
 
 ### D10. Login, sessions and roles
 

@@ -1,10 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
-import { Link, NavLink, Outlet, useLocation } from 'react-router'
+import { Link, NavLink, Outlet, useLocation, useRevalidator, useRouteLoaderData } from 'react-router'
 import { gallery } from '../data/gallery'
 import { useT } from '../lib/i18n'
 import { CONSENT_TEXT_VERSION } from '../lib/consent'
-import { pick, recordLandingScan, usePilotRecord } from '../lib/pilot'
-import { visitor, useVisitor } from '../lib/store'
+import { O_SLUG } from '../lib/galleries'
+import { langCookie, type Lang } from '../lib/lang'
+import { pick, recordLandingScan, seed, type GalleryPageData } from '../lib/pilot'
+import { useVisitor } from '../lib/store'
 import { SignInSheet, type SheetKind } from './SignInSheet'
 import { Grid, Home, User } from './Icons'
 
@@ -19,7 +21,9 @@ export function VisitorShell() {
   const { phone, consentVersion } = useVisitor()
   const [pending, setPending] = useState<{ kind: SheetKind; action: () => void; subtitle?: string; workId?: string } | null>(null)
   const { pathname } = useLocation()
+  const revalidator = useRevalidator()
 
+  // A language switch revalidates instead of reloading, so keep the document in step.
   useEffect(() => {
     document.documentElement.lang = lang
     document.documentElement.dir = dir
@@ -33,9 +37,16 @@ export function VisitorShell() {
     else setPending({ kind, action, subtitle, workId })
   }, [phone, consentVersion])
 
+  const chooseLang = useCallback((next: Lang) => {
+    if (next === lang) return
+    document.cookie = langCookie(next)
+    void revalidator.revalidate()
+  }, [lang, revalidator])
+
   const slug = pathname.match(/^\/g\/([^/]+)/)?.[1] ?? ''
-  const isO = slug === 'o-gallery'
-  const { record } = usePilotRecord(isO)
+  const isO = slug === O_SLUG
+  const layoutData = useRouteLoaderData('routes/g') as GalleryPageData | undefined
+  const record = layoutData?.pilot ?? seed
   const oName = pick(lang, record.name, record.nameFa)
   const base = isO ? '/g/o-gallery' : `/g/${gallery.slug}`
   const brand = isO ? oName : galleryName
@@ -60,8 +71,8 @@ export function VisitorShell() {
               <span className="ink-rule" aria-hidden />
             </div>
             <div className="lang" role="group" aria-label="Language">
-              <button type="button" aria-pressed={lang === 'en'} onClick={() => visitor.setLang('en')}>EN</button>
-              <button type="button" aria-pressed={lang === 'fa'} onClick={() => visitor.setLang('fa')} className="fa-btn">فا</button>
+              <button type="button" aria-pressed={lang === 'en'} onClick={() => chooseLang('en')}>EN</button>
+              <button type="button" aria-pressed={lang === 'fa'} onClick={() => chooseLang('fa')} className="fa-btn">فا</button>
             </div>
           </header>
           <nav className="v-desktop-nav" aria-label="Visitor">

@@ -1,11 +1,10 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router'
 import { useT } from '../../lib/i18n'
-import { oCopy, pick, usePilotRecord, type PilotWork } from '../../lib/pilot'
+import { oCopy, pick, type PilotRecord, type PilotWork } from '../../lib/pilot'
 
-export default function OGallerySite() {
+export default function OGallerySite({ record }: { record: PilotRecord }) {
   const { lang, dir } = useT()
-  const { record } = usePilotRecord(true)
   const copy = oCopy(lang)
   const name = pick(lang, record.name, record.nameFa)
   const title = pick(lang, record.showTitle, record.showTitleFa)

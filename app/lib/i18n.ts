@@ -1,6 +1,6 @@
-import { useLocation } from 'react-router'
+import { useLocation, useRouteLoaderData } from 'react-router'
 import { consentText } from './consent'
-import { useVisitor } from './store'
+import { defaultLang, dirFor, type Lang } from './lang'
 import type { Artwork, Status } from '../data/gallery'
 import { gallery, show } from '../data/gallery'
 
@@ -69,6 +69,11 @@ const en = {
   hours: gallery.hours,
   address: gallery.address,
   call: 'Call the gallery',
+  notFound: 'Page not found',
+  notFoundBody: 'This page does not exist. Scan the QR code at the gallery again.',
+  loadFailed: 'The page did not load',
+  loadFailedBody: 'Try again in a moment.',
+  goToGallery: 'Go to the gallery',
 }
 type Dict = typeof en
 
@@ -137,6 +142,11 @@ const fa: Dict = {
   hours: gallery.hoursFa,
   address: gallery.addressFa,
   call: 'تماس با گالری',
+  notFound: 'صفحه پیدا نشد',
+  notFoundBody: 'این صفحه وجود ندارد. کد QR را در گالری دوباره اسکن کنید.',
+  loadFailed: 'صفحه بارگذاری نشد',
+  loadFailedBody: 'چند لحظه بعد دوباره تلاش کنید.',
+  goToGallery: 'رفتن به گالری',
 }
 
 export function toFa(v: number | string): string {
@@ -145,17 +155,21 @@ export function toFa(v: number | string): string {
 
 export const messages = { en, fa }
 
-export function useT() {
-  const { lang, langChosen } = useVisitor()
+/** The server resolved the language from the cookie and the path. Keep both renders equal. */
+export function useLang(): Lang {
+  const root = useRouteLoaderData('root') as { lang?: Lang } | undefined
   const { pathname } = useLocation()
-  const onOGallery = pathname.startsWith('/g/o-gallery') || pathname.startsWith('/site/o-gallery')
-  const effective: 'en' | 'fa' = langChosen ? lang : onOGallery ? 'fa' : lang
-  const t = effective === 'fa' ? fa : en
-  const fa_ = effective === 'fa'
+  return root?.lang ?? defaultLang(pathname)
+}
+
+export function useT() {
+  const lang = useLang()
+  const t = lang === 'fa' ? fa : en
+  const fa_ = lang === 'fa'
   return {
     t,
-    lang: effective,
-    dir: (fa_ ? 'rtl' : 'ltr') as 'rtl' | 'ltr',
+    lang,
+    dir: dirFor(lang),
     n: (v: number | string) => (fa_ ? toFa(typeof v === 'number' ? v.toLocaleString('en-US') : v) : typeof v === 'number' ? v.toLocaleString('en-US') : v),
     price: (a: Artwork) =>
       a.status === 'sold' ? null : `${fa_ ? toFa(a.price.toLocaleString('en-US')) : a.price.toLocaleString('en-US')} ${t.toman}`,

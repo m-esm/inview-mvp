@@ -1,9 +1,13 @@
 import Prices from '~/pages/visitor/Prices'
+import { PUBLIC_PAGE_HEADERS } from '~/lib/cache'
+import { loadGalleryPage } from './pilot.server'
+
+export async function loader({ request, params }: { request: Request; params: { slug?: string } }) {
+  return loadGalleryPage(request, params.slug)
+}
 
 export function headers() {
-  return {
-    'Cache-Control': 'public, max-age=0, s-maxage=60, stale-while-revalidate=600',
-  }
+  return PUBLIC_PAGE_HEADERS
 }
 
 export default function GalleryPrices() {
