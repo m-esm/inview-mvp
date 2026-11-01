@@ -66,7 +66,7 @@ export default function GalleryLayout() {
 
   return (
     <div className="dash">
-      <aside className="side">
+      <aside className="side" aria-label="Gallery">
         <p className="brand">Inview <span>for galleries</span></p>
         <div className="side-gallery">
           <span className="avatar sq">RG</span>

@@ -264,9 +264,9 @@ export default function OGalleryEditor() {
           </form>
         </div>
 
-        <aside className="editor-preview-col box">
+        <aside className="editor-preview-col box" aria-labelledby="ogallery-preview-title">
           <div className="row between wrap gap">
-            <h2>Preview</h2>
+            <h2 id="ogallery-preview-title">Preview</h2>
             <div className="lang" role="group" aria-label="Preview language">
               <button type="button" aria-pressed={previewLang === 'fa'} onClick={() => setPreviewLang('fa')}>فا</button>
               <button type="button" aria-pressed={previewLang === 'en'} onClick={() => setPreviewLang('en')}>EN</button>

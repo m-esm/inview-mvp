@@ -1374,7 +1374,7 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; }
   border: 1px solid transparent;
 }
 .pill.good { background: #E2F0E7; color: var(--good); }
-.pill.warn { background: var(--ochre-tint); color: var(--ochre); }
+.pill.warn { background: var(--ochre-tint); color: #7A4528; }
 .kpis {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
