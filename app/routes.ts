@@ -24,4 +24,5 @@ export default [
     route('plans', 'routes/dashboard.plans.tsx'),
     route('o-gallery', 'routes/dashboard.o-gallery.tsx'),
   ]),
+  route('*', 'routes/not-found.tsx'),
 ] satisfies RouteConfig
