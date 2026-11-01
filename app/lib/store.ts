@@ -8,6 +8,7 @@ export interface VisitorState {
   stamps: string[]
   lang: 'en' | 'fa'
   langChosen: boolean
+  consentVersion: string | null
 }
 
 const KEY = 'inview-demo-v1'
@@ -20,6 +21,7 @@ const empty: VisitorState = {
   stamps: [],
   lang: 'en',
   langChosen: false,
+  consentVersion: null,
 }
 
 function load(): VisitorState {
@@ -67,8 +69,8 @@ export function useVisitor() {
 const toggle = (list: string[], id: string) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id])
 
 export const visitor = {
-  signIn: (phone: string) => set({ phone }),
-  signOut: () => set({ phone: null }),
+  signIn: (phone: string, consentVersion: string) => set({ phone, consentVersion }),
+  signOut: () => set({ phone: null, consentVersion: null }),
   toggleSaved: (id: string) => set({ saved: toggle(state.saved, id) }),
   save: (id: string) => !state.saved.includes(id) && set({ saved: [...state.saved, id] }),
   toggleFollow: (artist: string) => set({ follows: toggle(state.follows, artist) }),

@@ -7,7 +7,6 @@ delete process.env.O_GALLERY_ACCESS_CODE
 import { PGlite } from '@electric-sql/pglite'
 import { drizzle } from 'drizzle-orm/pglite'
 import { eq } from 'drizzle-orm'
-import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import os from 'node:os'
@@ -28,12 +27,13 @@ const BETA = 'beta-code'
 
 async function setup() {
   const client = new PGlite()
-  const migration = readFileSync(
-    path.join(path.dirname(fileURLToPath(import.meta.url)), '../drizzle/0000_adr0001_init.sql'),
-    'utf8',
-  )
-  for (const statement of migration.split('--> statement-breakpoint').map((s) => s.trim()).filter(Boolean)) {
-    await client.exec(statement)
+  const drizzleDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '../drizzle')
+  const files = fs.readdirSync(drizzleDir).filter((name) => name.endsWith('.sql')).sort()
+  for (const file of files) {
+    const migration = fs.readFileSync(path.join(drizzleDir, file), 'utf8')
+    for (const statement of migration.split('--> statement-breakpoint').map((s) => s.trim()).filter(Boolean)) {
+      await client.exec(statement)
+    }
   }
   const db = drizzle(client, { schema })
   const mediaRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'inview-media-'))

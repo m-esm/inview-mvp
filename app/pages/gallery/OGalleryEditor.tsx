@@ -19,6 +19,11 @@ function readImage(file: File): Promise<string> {
   })
 }
 
+function leadWork(workId: string | null, works: PilotWork[]) {
+  if (!workId) return 'No work'
+  return works.find((work) => work.id === workId)?.title || workId
+}
+
 function blankWork(sample: boolean): PilotWork {
   return {
     id: crypto.randomUUID(),
@@ -153,6 +158,7 @@ export default function OGalleryEditor() {
                   <li key={`${lead.at}-${lead.phone}`}>
                     <span dir="ltr">{lead.phone}</span>
                     <span className="muted small">{lead.kind === 'save' ? 'Save' : 'Question'}</span>
+                    <span className="muted small">{leadWork(lead.workId, draft.works)}</span>
                     <span className="pill warn">Unverified</span>
                   </li>
                 ))}

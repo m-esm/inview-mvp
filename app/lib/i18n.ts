@@ -1,4 +1,5 @@
 import { useLocation } from 'react-router'
+import { consentText } from './consent'
 import { useVisitor } from './store'
 import type { Artwork, Status } from '../data/gallery'
 import { gallery, show } from '../data/gallery'
@@ -45,7 +46,9 @@ const en = {
   codeHint: 'Demo: any 4 digits work.',
   confirm: 'Confirm',
   notNow: 'Not now',
-  privacy: 'One sign-in works at every partner gallery. A gallery sees your details only if you ask about one of its works.',
+  privacy: consentText.en.privacy,
+  consent: consentText.en.consent,
+  needConsent: consentText.en.needConsent,
   badPhone: 'Enter a mobile number that starts with 09 and has 11 digits.',
   badCode: 'Enter the 4 digits from the SMS.',
   profile: 'My Inview',
@@ -111,7 +114,9 @@ const fa: Dict = {
   codeHint: 'نسخه نمایشی: هر ۴ رقمی قبول است.',
   confirm: 'تأیید',
   notNow: 'فعلاً نه',
-  privacy: 'یک بار ورود برای همه گالری‌های همکار کافی است. گالری فقط وقتی اطلاعات شما را می‌بیند که درباره اثری از آن بپرسید.',
+  privacy: consentText.fa.privacy,
+  consent: consentText.fa.consent,
+  needConsent: consentText.fa.needConsent,
   badPhone: 'شماره موبایل ۱۱ رقمی که با ۰۹ شروع می‌شود وارد کنید.',
   badCode: '۴ رقم پیامک را وارد کنید.',
   profile: 'Inview من',

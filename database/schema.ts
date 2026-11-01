@@ -223,5 +223,6 @@ export const leads = pgTable('leads', {
   phone: varchar('phone', { length: 20 }).notNull(),
   kind: leadKindEnum('kind').notNull(),
   consentAt: timestamp('consent_at', { withTimezone: true }).notNull(),
+  consentTextVersion: varchar('consent_text_version', { length: 40 }).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })

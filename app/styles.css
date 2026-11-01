@@ -1164,6 +1164,30 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; }
   background: var(--surface);
 }
 .sheet-form input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.sheet-form .consent {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  min-height: 44px;
+  margin-top: 4px;
+  font-size: 15px;
+  line-height: 1.4;
+  font-weight: 500;
+  cursor: pointer;
+}
+.sheet-form .consent span { min-width: 0; }
+.sheet-form .consent input {
+  width: 22px;
+  height: 22px;
+  min-height: 22px;
+  margin: 1px 0 0;
+  padding: 0;
+  flex: none;
+  accent-color: var(--pine);
+  letter-spacing: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
 .code-input { letter-spacing: 0.5em !important; text-align: center; }
 .sheet-form p { margin: 0 0 4px; }
 .privacy {
