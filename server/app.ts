@@ -3,9 +3,16 @@ import express from 'express'
 import 'react-router'
 import { createDatabase } from '../database/client'
 import { DatabaseContext } from '../database/context'
-import { ensureOGalleryTenant, resolveOGalleryAccessCode, syncOGalleryAccessCode } from './gallery-record'
+import {
+  ensureOGalleryTenant,
+  publishGalleryRecordForSession,
+  readStaffReportForSession,
+  resolveOGalleryAccessCode,
+  syncOGalleryAccessCode,
+} from './gallery-record'
+import { readStaffSession } from './staff-session'
 import { processAndStoreImage } from './images'
-import { handlePilotApi, handleStaffApi } from './pilot-api'
+import { handlePilotApi } from './pilot-api'
 import { createObjectStorage, localMediaMiddleware } from './storage'
 import { media } from '../database/schema'
 
@@ -39,28 +46,36 @@ app.get('/api/v1/health', (_req, res) => {
   res.json({ ok: true, service: 'inview-mvp' })
 })
 
-app.all('/api/v1/pilot', async (req, res) => {
+async function sendPilot(req: express.Request, res: express.Response) {
   res.setHeader('Cache-Control', 'no-store')
   try {
-    const result = await handlePilotApi(db, storage, req.method || 'GET', req.body)
+    const verb = (req.method || 'GET').toUpperCase()
+    if (verb === 'PUT') {
+      const session = await readStaffSession(db, req.get('cookie'))
+      if (!session) {
+        res.status(401).json({ error: 'Sign in to publish.' })
+        return
+      }
+      const result = await publishGalleryRecordForSession(
+        db,
+        storage,
+        session.galleryId,
+        (req.body || {}).record,
+      )
+      res.status(result.status).json(result.body)
+      return
+    }
+    const result = await handlePilotApi(db, storage, verb, req.body)
     res.status(result.status).json(result.body)
   } catch (error) {
     console.error(error)
     res.status(500).json({ error: 'The server could not complete the request.' })
   }
-})
+}
 
+app.all('/api/v1/pilot', sendPilot)
 // Keep the old pilot path for the SPA clients during the migration.
-app.all('/api/pilot', async (req, res) => {
-  res.setHeader('Cache-Control', 'no-store')
-  try {
-    const result = await handlePilotApi(db, storage, req.method || 'GET', req.body)
-    res.status(result.status).json(result.body)
-  } catch (error) {
-    console.error(error)
-    res.status(500).json({ error: 'The server could not complete the request.' })
-  }
-})
+app.all('/api/pilot', sendPilot)
 
 async function sendStaffReport(req: express.Request, res: express.Response) {
   res.setHeader('Cache-Control', 'no-store')
@@ -70,7 +85,12 @@ async function sendStaffReport(req: express.Request, res: express.Response) {
     return
   }
   try {
-    const result = await handleStaffApi(db, req.get('x-access-code') || '')
+    const session = await readStaffSession(db, req.get('cookie'))
+    if (!session) {
+      res.status(401).json({ error: 'Sign in to see visits and phone numbers.' })
+      return
+    }
+    const result = await readStaffReportForSession(db, session.galleryId)
     res.status(result.status).json(result.body)
   } catch (error) {
     console.error(error)
@@ -84,15 +104,19 @@ app.all('/api/pilot/staff', sendStaffReport)
 app.post('/api/v1/uploads', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store')
   try {
-    const { gallery, accessCode, contentType, dataBase64 } = req.body || {}
+    const session = await readStaffSession(db, req.get('cookie'))
+    if (!session) {
+      res.status(401).json({ error: 'Sign in to upload.' })
+      return
+    }
+    const { gallery, contentType, dataBase64 } = req.body || {}
     if (gallery !== 'o-gallery') {
       res.status(400).json({ error: 'Unknown gallery.' })
       return
     }
     const tenant = await ensureOGalleryTenant(db)
-    const { verifySecret } = await import('./crypto')
-    if (!verifySecret(String(accessCode || ''), tenant.gallery.accessCodeHash)) {
-      res.status(401).json({ error: 'That access code does not match.' })
+    if (tenant.gallery.id !== session.galleryId) {
+      res.status(401).json({ error: 'Sign in to upload.' })
       return
     }
     if (typeof dataBase64 !== 'string' || typeof contentType !== 'string') {

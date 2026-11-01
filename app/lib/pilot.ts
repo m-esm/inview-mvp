@@ -108,11 +108,8 @@ export async function fetchPilot(): Promise<{ record: PilotRecord }> {
   return res.json()
 }
 
-export async function fetchStaff(accessCode: string): Promise<StaffReport> {
-  const res = await fetch('/api/pilot/staff', {
-    cache: 'no-store',
-    headers: { 'X-Access-Code': accessCode },
-  })
+export async function fetchStaff(): Promise<StaffReport> {
+  const res = await fetch('/api/pilot/staff', { cache: 'no-store' })
   const data = (await res.json().catch(() => ({}))) as { error?: string }
   if (!res.ok) throw new Error(data.error || 'The visit report did not load.')
   return data as StaffReport

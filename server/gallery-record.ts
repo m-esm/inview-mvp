@@ -267,24 +267,38 @@ export async function loadPublicRecord(db: Db): Promise<{ record: GalleryRecordD
   return { record: await readRecord(db, gallery, show) }
 }
 
-export async function readStaffReport(
-  db: Db,
-  accessCode: string,
-): Promise<
+type StaffReportResult =
   | { status: 200; body: { visits: GalleryStateDto['visits']; leads: GalleryStateDto['leads'] } }
   | { status: 401; body: { error: string } }
-> {
+
+async function staffReportForTenant(
+  db: Db,
+  galleryId: string,
+  showId: string,
+): Promise<StaffReportResult> {
+  return {
+    status: 200,
+    body: {
+      visits: await readVisitCounts(db, showId),
+      leads: await readLeadList(db, galleryId),
+    },
+  }
+}
+
+export async function readStaffReport(db: Db, accessCode: string): Promise<StaffReportResult> {
   const { gallery, show } = await ensureOGalleryTenant(db)
   if (!verifySecret(accessCode, gallery.accessCodeHash)) {
     return { status: 401, body: { error: 'That access code does not match.' } }
   }
-  return {
-    status: 200,
-    body: {
-      visits: await readVisitCounts(db, show.id),
-      leads: await readLeadList(db, gallery.id),
-    },
+  return staffReportForTenant(db, gallery.id, show.id)
+}
+
+export async function readStaffReportForSession(db: Db, galleryId: string): Promise<StaffReportResult> {
+  const { gallery, show } = await ensureOGalleryTenant(db)
+  if (gallery.id !== galleryId) {
+    return { status: 401, body: { error: 'Sign in to see visits and phone numbers.' } }
   }
+  return staffReportForTenant(db, gallery.id, show.id)
 }
 
 function sanitizeRecord(input: unknown): { error: string } | { record: Omit<GalleryRecordDto, 'slug' | 'updatedAt'> } {
@@ -393,16 +407,41 @@ async function resolveImageUrl(
   return { url: processed.variants['w640.webp'] || processed.primaryUrl, mediaId: row.id }
 }
 
+type PublishResult = { status: number; body: { ok: true; record: GalleryRecordDto } | { error: string } }
+
 export async function publishGalleryRecord(
   db: Db,
   storage: ObjectStorage,
   accessCode: string,
   input: unknown,
-): Promise<{ status: number; body: { ok: true; record: GalleryRecordDto } | { error: string } }> {
-  const { gallery, show } = await ensureOGalleryTenant(db)
-  if (!verifySecret(accessCode, gallery.accessCodeHash)) {
+): Promise<PublishResult> {
+  const tenant = await ensureOGalleryTenant(db)
+  if (!verifySecret(accessCode, tenant.gallery.accessCodeHash)) {
     return { status: 401, body: { error: 'That access code does not match.' } }
   }
+  return writeGalleryRecord(db, storage, tenant, input)
+}
+
+export async function publishGalleryRecordForSession(
+  db: Db,
+  storage: ObjectStorage,
+  galleryId: string,
+  input: unknown,
+): Promise<PublishResult> {
+  const tenant = await ensureOGalleryTenant(db)
+  if (tenant.gallery.id !== galleryId) {
+    return { status: 401, body: { error: 'Sign in to publish.' } }
+  }
+  return writeGalleryRecord(db, storage, tenant, input)
+}
+
+async function writeGalleryRecord(
+  db: Db,
+  storage: ObjectStorage,
+  tenant: Awaited<ReturnType<typeof ensureOGalleryTenant>>,
+  input: unknown,
+): Promise<PublishResult> {
+  const { gallery, show } = tenant
   const cleaned = sanitizeRecord(input)
   if ('error' in cleaned) return { status: 400, body: { error: cleaned.error } }
 
