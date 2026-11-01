@@ -62,17 +62,11 @@ export interface GalleryStateDto {
     workId: string | null
     verified: false
   }>
-  qr: string
 }
 
 function text(value: unknown, max: number): string {
   if (typeof value !== 'string') return ''
   return value.trim().slice(0, max)
-}
-
-function publicQr(): string {
-  const base = process.env.PUBLIC_APP_URL || 'https://inview.moshes.io'
-  return `${base.replace(/\/$/, '')}/g/o-gallery`
 }
 
 const DEV_ACCESS_CODE = 'inview'
@@ -173,8 +167,25 @@ async function logoUrl(db: Db, logoMediaId: string | null): Promise<string | nul
   return variants['w640.webp'] || variants['w640.jpeg'] || Object.values(variants)[0] || null
 }
 
-export async function loadGalleryState(db: Db): Promise<GalleryStateDto> {
-  const { gallery, show } = await ensureOGalleryTenant(db)
+async function readRecord(
+  db: Db,
+  gallery: { nameEn: string; nameFa: string; logoMediaId: string | null },
+  show: {
+    titleEn: string
+    titleFa: string
+    datesEn: string
+    datesFa: string
+    hoursEn: string
+    hoursFa: string
+    addressEn: string
+    addressFa: string
+    textEn: string
+    textFa: string
+    pdfUrl: string | null
+    updatedAt: Date
+    id: string
+  },
+): Promise<GalleryRecordDto> {
   const linked = await db
     .select({
       work: works,
@@ -198,51 +209,78 @@ export async function loadGalleryState(db: Db): Promise<GalleryStateDto> {
     sample: row.work.sample,
   }))
 
+  return {
+    slug: 'o-gallery',
+    name: gallery.nameEn,
+    nameFa: gallery.nameFa,
+    logo: await logoUrl(db, gallery.logoMediaId),
+    showTitle: show.titleEn,
+    showTitleFa: show.titleFa,
+    dates: show.datesEn,
+    datesFa: show.datesFa,
+    hours: show.hoursEn,
+    hoursFa: show.hoursFa,
+    address: show.addressEn,
+    addressFa: show.addressFa,
+    text: show.textEn,
+    textFa: show.textFa,
+    pdfUrl: show.pdfUrl,
+    works: workDtos,
+    updatedAt: show.updatedAt.toISOString(),
+  }
+}
+
+async function readVisitCounts(db: Db, showId: string): Promise<GalleryStateDto['visits']> {
   const [scanRow] = await db
     .select({ value: count() })
     .from(visits)
-    .where(and(eq(visits.showId, show.id), eq(visits.kind, 'scan')))
+    .where(and(eq(visits.showId, showId), eq(visits.kind, 'scan')))
   const [viewRow] = await db
     .select({ value: count() })
     .from(visits)
-    .where(and(eq(visits.showId, show.id), eq(visits.kind, 'view')))
+    .where(and(eq(visits.showId, showId), eq(visits.kind, 'view')))
+  return { scans: Number(scanRow?.value || 0), views: Number(viewRow?.value || 0) }
+}
 
+async function readLeadList(db: Db, galleryId: string): Promise<GalleryStateDto['leads']> {
   const leadRows = await db
     .select()
     .from(leads)
-    .where(eq(leads.galleryId, gallery.id))
+    .where(eq(leads.galleryId, galleryId))
     .orderBy(desc(leads.createdAt))
     .limit(200)
+  return leadRows.map((lead: typeof leads.$inferSelect) => ({
+    phone: lead.phone,
+    kind: lead.kind,
+    at: lead.consentAt.toISOString(),
+    workId: lead.workId,
+    verified: false as const,
+  }))
+}
 
+/** Public catalogue only. This function does not read visits or leads. */
+export async function loadPublicRecord(db: Db): Promise<{ record: GalleryRecordDto }> {
+  const { gallery, show } = await ensureOGalleryTenant(db)
+  return { record: await readRecord(db, gallery, show) }
+}
+
+export async function readStaffReport(
+  db: Db,
+  accessCode: string,
+): Promise<
+  | { status: 200; body: { visits: GalleryStateDto['visits']; leads: GalleryStateDto['leads'] } }
+  | { status: 401; body: { error: string } }
+> {
+  const { gallery, show } = await ensureOGalleryTenant(db)
+  if (!verifySecret(accessCode, gallery.accessCodeHash)) {
+    return { status: 401, body: { error: 'That access code does not match.' } }
+  }
   return {
-    record: {
-      slug: 'o-gallery',
-      name: gallery.nameEn,
-      nameFa: gallery.nameFa,
-      logo: await logoUrl(db, gallery.logoMediaId),
-      showTitle: show.titleEn,
-      showTitleFa: show.titleFa,
-      dates: show.datesEn,
-      datesFa: show.datesFa,
-      hours: show.hoursEn,
-      hoursFa: show.hoursFa,
-      address: show.addressEn,
-      addressFa: show.addressFa,
-      text: show.textEn,
-      textFa: show.textFa,
-      pdfUrl: show.pdfUrl,
-      works: workDtos,
-      updatedAt: show.updatedAt.toISOString(),
+    status: 200,
+    body: {
+      visits: await readVisitCounts(db, show.id),
+      leads: await readLeadList(db, gallery.id),
     },
-    visits: { scans: Number(scanRow?.value || 0), views: Number(viewRow?.value || 0) },
-    leads: leadRows.map((lead: typeof leads.$inferSelect) => ({
-      phone: lead.phone,
-      kind: lead.kind,
-      at: lead.consentAt.toISOString(),
-      workId: lead.workId,
-      verified: false as const,
-    })),
-    qr: publicQr(),
   }
 }
 
@@ -357,7 +395,7 @@ export async function publishGalleryRecord(
   storage: ObjectStorage,
   accessCode: string,
   input: unknown,
-): Promise<{ status: number; body: GalleryStateDto | { error: string } }> {
+): Promise<{ status: number; body: { ok: true; record: GalleryRecordDto } | { error: string } }> {
   const { gallery, show } = await ensureOGalleryTenant(db)
   if (!verifySecret(accessCode, gallery.accessCodeHash)) {
     return { status: 401, body: { error: 'That access code does not match.' } }
@@ -439,7 +477,8 @@ export async function publishGalleryRecord(
       await db.insert(showWorks).values({ showId: show.id, workId: work.id, sortOrder: order++ })
     }
 
-    return { status: 200, body: await loadGalleryState(db) }
+    const published = await loadPublicRecord(db)
+    return { status: 200, body: { ok: true, record: published.record } }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Publish did not complete.'
     return { status: 400, body: { error: message } }
@@ -451,7 +490,7 @@ export async function recordVisit(
   kind: 'scan' | 'view',
   visitorId: string,
   workId?: string | null,
-): Promise<{ status: number; body: GalleryStateDto & { counted: boolean; duplicate: boolean } | { error: string } }> {
+): Promise<{ status: number; body: { ok: true; counted: boolean; duplicate: boolean } | { error: string } }> {
   if (!/^[a-zA-Z0-9-]{8,80}$/.test(visitorId)) {
     return { status: 400, body: { error: 'Visitor id is not valid.' } }
   }
@@ -465,11 +504,9 @@ export async function recordVisit(
         kind: 'scan',
         day,
       })
-      const state = await loadGalleryState(db)
-      return { status: 200, body: { ...state, counted: true, duplicate: false } }
+      return { status: 200, body: { ok: true, counted: true, duplicate: false } }
     } catch {
-      const state = await loadGalleryState(db)
-      return { status: 200, body: { ...state, counted: false, duplicate: true } }
+      return { status: 200, body: { ok: true, counted: false, duplicate: true } }
     }
   }
 
@@ -485,8 +522,7 @@ export async function recordVisit(
     day,
     workId: resolvedWorkId,
   })
-  const state = await loadGalleryState(db)
-  return { status: 200, body: { ...state, counted: true, duplicate: false } }
+  return { status: 200, body: { ok: true, counted: true, duplicate: false } }
 }
 
 export async function recordLead(
@@ -495,7 +531,7 @@ export async function recordLead(
   kind: 'save' | 'ask',
   visitorId: string,
   workId?: string | null,
-): Promise<{ status: number; body: GalleryStateDto | { error: string } }> {
+): Promise<{ status: number; body: { ok: true } | { error: string } }> {
   if (!/^[a-zA-Z0-9-]{8,80}$/.test(visitorId)) {
     return { status: 400, body: { error: 'Visitor id is not valid.' } }
   }
@@ -511,9 +547,5 @@ export async function recordLead(
     kind,
     consentAt: new Date(),
   })
-  return { status: 200, body: await loadGalleryState(db) }
+  return { status: 200, body: { ok: true } }
 }
-
-// Fix visit uniqueness: scans unique per visitor/day; views always insert.
-// Adjust schema usage — use onConflictDoNothing for scans; for views bypass unique by including work id in visitor? 
-// Better fix the unique index to be partial. Update schema.

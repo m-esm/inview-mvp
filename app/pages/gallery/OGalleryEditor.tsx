@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { OLandingPreview } from '../visitor/OGalleryPages'
-import { fetchPilot, QR_ADDRESS, seed, type PilotRecord, type PilotState, type PilotWork } from '../../lib/pilot'
+import { fetchPilot, fetchStaff, QR_ADDRESS, seed, type PilotRecord, type PilotWork, type StaffReport } from '../../lib/pilot'
 
 function readImage(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -36,24 +36,40 @@ function blankWork(sample: boolean): PilotWork {
 
 export default function OGalleryEditor() {
   const [draft, setDraft] = useState<PilotRecord>(seed)
-  const [stats, setStats] = useState<PilotState | null>(null)
+  const [stats, setStats] = useState<StaffReport | null>(null)
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [reportError, setReportError] = useState('')
   const [message, setMessage] = useState('')
   const [previewLang, setPreviewLang] = useState<'fa' | 'en'>('fa')
   const [loaded, setLoaded] = useState(false)
   const [copied, setCopied] = useState(false)
   const [publishing, setPublishing] = useState(false)
 
-  async function load() {
+  async function loadRecord() {
     const state = await fetchPilot()
     setDraft(state.record)
-    setStats(state)
     setLoaded(true)
   }
 
+  async function loadReport(code: string) {
+    if (!code) {
+      setStats(null)
+      setReportError('Enter the gallery access code to see visits and phone numbers.')
+      return
+    }
+    try {
+      const report = await fetchStaff(code)
+      setStats(report)
+      setReportError('')
+    } catch (err) {
+      setStats(null)
+      setReportError(err instanceof Error ? err.message : 'The visit report did not load.')
+    }
+  }
+
   useEffect(() => {
-    load().catch(() => setError('The saved record did not load. You can still edit and publish.'))
+    loadRecord().catch(() => setError('The saved record did not load. You can still edit and publish.'))
   }, [])
 
   function setField<K extends keyof PilotRecord>(key: K, value: PilotRecord[K]) {
@@ -84,7 +100,7 @@ export default function OGalleryEditor() {
         return
       }
       setDraft(data.record)
-      setStats(data)
+      await loadReport(password)
       setMessage('Published. The QR path is still /g/o-gallery.')
     } finally {
       setPublishing(false)
@@ -108,7 +124,7 @@ export default function OGalleryEditor() {
         <div className="editor-main-col">
           <section className="box">
             <h2>Visits</h2>
-            {!loaded && <p className="muted small">Loading visit counts…</p>}
+            {!loaded && <p className="muted small">Loading the gallery record…</p>}
             {noVisits && <p>There are no visits yet.</p>}
             {stats && !noVisits && (
               <div className="kpis">
@@ -116,12 +132,19 @@ export default function OGalleryEditor() {
                 <div className="kpi"><span className="muted small">Work views</span><strong>{stats.visits.views}</strong></div>
               </div>
             )}
+            <label htmlFor="publish-access-code">Gallery access code</label>
+            <input id="publish-access-code" form="ogallery-publish" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={publishing} />
+            <p className="muted small">This code shows visits and phone numbers. Publish uses the same code.</p>
             <label htmlFor="qr">QR address</label>
             <div className="row gap wrap">
               <input id="qr" readOnly value={QR_ADDRESS} onFocus={(e) => e.currentTarget.select()} />
               <button className="btn btn-outline" type="button" onClick={() => void copyQr()}>{copied ? 'Copied' : 'Copy'}</button>
-              <button className="btn btn-outline" type="button" onClick={() => load().catch(() => setError('The visit report did not refresh.'))}>Refresh</button>
+              <button className="btn btn-outline" type="button" onClick={() => {
+                loadRecord().catch(() => setError('The saved record did not load. You can still edit and publish.'))
+                void loadReport(password)
+              }}>Refresh</button>
             </div>
+            {reportError && <p className="error" role="alert">{reportError}</p>}
             <h3>Phone numbers</h3>
             <p className="muted small">Every saved number is unverified. The 4-digit code is still only a demo.</p>
             {stats && stats.leads.length > 0 ? (
@@ -134,10 +157,14 @@ export default function OGalleryEditor() {
                   </li>
                 ))}
               </ul>
-            ) : <p className="muted small">No phone numbers yet.</p>}
+            ) : stats ? (
+              <p className="muted small">No phone numbers yet.</p>
+            ) : !reportError ? (
+              <p className="muted small">Enter the gallery access code, then choose Refresh, to see visits and phone numbers.</p>
+            ) : null}
           </section>
 
-          <form onSubmit={(e) => void publish(e)}>
+          <form id="ogallery-publish" onSubmit={(e) => void publish(e)}>
             <section className="box">
               <h2>Gallery</h2>
               <div className="editor-grid">
@@ -211,9 +238,7 @@ export default function OGalleryEditor() {
 
             <section className="box editor-publish">
               <h2>Publish</h2>
-              <label htmlFor="publish-access-code">Gallery access code</label>
-              <input id="publish-access-code" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={publishing} />
-              <p className="muted small">The pilot uses one access code for each gallery. OTP login comes later.</p>
+              <p className="muted small">Publish uses the gallery access code in the visits section. OTP login comes later.</p>
               {error && <p className="error" role="alert">{error}</p>}
               {message && <p role="status">{message}</p>}
               <button className={`btn btn-primary${publishing ? ' is-loading' : ''}`} type="submit" disabled={publishing} aria-busy={publishing || undefined}>
