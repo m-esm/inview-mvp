@@ -26,6 +26,8 @@ import { rateLimitConfig, runPilotRequest } from './rate-limit.ts'
 import { signInWithAccessCode } from './staff-session.ts'
 import { createTestDb } from './test-db.ts'
 
+process.env.PUBLIC_APP_URL = 'http://localhost'
+
 const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
 
 async function fixture() {

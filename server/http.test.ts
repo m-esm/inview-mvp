@@ -12,6 +12,8 @@ import { galleries, media, showWorks, shows, works } from '../database/schema.ts
 import { createApiApp } from './api-app.ts'
 import { createTestDb } from './test-db.ts'
 
+process.env.PUBLIC_APP_URL = 'http://localhost'
+
 const PNG =
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
 

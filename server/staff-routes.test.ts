@@ -21,6 +21,8 @@ import { action as signOut } from '../app/routes/staff.sign-out'
 import { loader as legacyGallery } from '../app/routes/dashboard.legacy'
 import { loader as legacySignIn } from '../app/routes/dashboard.sign-in'
 
+process.env.PUBLIC_APP_URL = 'http://localhost'
+
 async function fixture() {
   const fixture = await createTestDb()
   const db = fixture.db as unknown as AppDatabase

@@ -19,6 +19,8 @@ import { createUser, createUserSession } from './accounts.ts'
 import type { AppDatabase } from '../database/context.ts'
 import { createTestDb } from './test-db.ts'
 
+process.env.PUBLIC_APP_URL = 'http://localhost'
+
 type TestDb = Awaited<ReturnType<typeof createTestDb>>
 
 async function withStaff(fn: (args: { app: ReturnType<typeof createApiApp>; db: TestDb['db']; mediaRoot: string; cookie: string }) => Promise<void>) {
