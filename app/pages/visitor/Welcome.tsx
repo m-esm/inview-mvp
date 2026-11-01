@@ -34,9 +34,10 @@ function RoozWelcome() {
       <div className="cover">
         <img src={cover.image} alt={cover.alt} />
       </div>
-      <div className="pad intro">
-        <p className="muted">{t.welcomeLine(galleryName)}. {t.nowShowing}</p>
+      <div className="pad intro reveal">
+        <p className="eyebrow">{t.welcomeLine(galleryName)}. {t.nowShowing}</p>
         <h1 className="show-title">{showTitle}</h1>
+        <span className="ink-rule" aria-hidden />
         <p className="show-kind">{showKind}</p>
         <p className="muted small">{showDates}. {t.hours}</p>
       </div>

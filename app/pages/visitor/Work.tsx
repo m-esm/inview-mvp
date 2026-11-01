@@ -46,8 +46,9 @@ function RoozWork() {
       <figure className="work-figure">
         <img src={a.image} alt={a.alt} />
       </figure>
-      <div className="pad wall-label">
+      <div className="pad wall-label reveal">
         <h1 className="work-artist">{artist(a)}</h1>
+        <span className="ink-rule" aria-hidden />
         <p className="work-title">{title(a)}, {year(a)}</p>
         <p className="muted">{medium(a)}, {size(a)}</p>
         <div className="row between price-row">

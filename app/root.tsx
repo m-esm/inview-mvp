@@ -7,13 +7,15 @@ import {
   ScrollRestoration,
 } from 'react-router'
 import type { Route } from './+types/root'
-import '@fontsource/archivo/400.css'
-import '@fontsource/archivo/500.css'
-import '@fontsource/archivo/600.css'
-import '@fontsource/archivo/700.css'
-import '@fontsource/instrument-serif/400.css'
-import '@fontsource/vazirmatn/400.css'
-import '@fontsource/vazirmatn/600.css'
+import '@fontsource/fraunces/400.css'
+import '@fontsource/fraunces/500.css'
+import '@fontsource/sora/400.css'
+import '@fontsource/sora/500.css'
+import '@fontsource/sora/600.css'
+import '@fontsource/sora/700.css'
+import '@fontsource/estedad/400.css'
+import '@fontsource/estedad/600.css'
+import '@fontsource/estedad/700.css'
 import './styles.css'
 
 export const links: Route.LinksFunction = () => [
@@ -27,7 +29,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <meta name="theme-color" content="#203F3B" />
+        <meta name="theme-color" content="#17332E" />
         <meta name="description" content="Inview: the show, the works and the prices, in your pocket." />
         <Meta />
         <Links />

@@ -1,0 +1,85 @@
+{
+  "record": {
+    "slug": "o-gallery",
+    "name": "O Gallery",
+    "nameFa": "گالری اُ",
+    "logo": null,
+    "showTitle": "Quiet Surfaces",
+    "showTitleFa": "سطح‌های آرام",
+    "dates": "1–30 Nov 2026",
+    "datesFa": "۱۰ آبان – ۹ آذر ۱۴۰۵",
+    "hours": "Tue–Sat, 11:00–19:00",
+    "hoursFa": "سه‌شنبه تا شنبه، ۱۱ تا ۱۹",
+    "address": "No. 12, North Shirazi St, Tehran",
+    "addressFa": "تهران، خیابان شیرازی شمالی، پلاک ۱۲",
+    "text": "A small show of painting and works on paper. The works stay close to the wall and keep the room quiet.",
+    "textFa": "نمایشگاهی کوچک از نقاشی و آثار روی کاغذ. آثار نزدیک دیوار می‌مانند و فضا را آرام نگه می‌دارند.",
+    "pdfUrl": null,
+    "works": [
+      {
+        "id": "vis-work-01",
+        "artist": "Sara Emami",
+        "title": "Morning Line",
+        "medium": "Oil on canvas",
+        "size": "80 × 100 cm",
+        "year": "2025",
+        "price": 185000000,
+        "status": "available",
+        "image": "/artworks/emami.jpg",
+        "sample": false
+      },
+      {
+        "id": "vis-work-02",
+        "artist": "Nima Bakhtiari",
+        "title": "Field Study IV",
+        "medium": "Acrylic on linen",
+        "size": "120 × 90 cm",
+        "year": "2024",
+        "price": 240000000,
+        "status": "reserved",
+        "image": "/artworks/bakhtiari.jpg",
+        "sample": false
+      },
+      {
+        "id": "vis-work-03",
+        "artist": "Leila Fateh",
+        "title": "Window at Noon",
+        "medium": "Ink on paper",
+        "size": "50 × 70 cm",
+        "year": "2026",
+        "price": 72000000,
+        "status": "available",
+        "image": "/artworks/fateh.jpg",
+        "sample": false
+      },
+      {
+        "id": "vis-work-04",
+        "artist": "Sara Emami",
+        "title": "Still Shelf",
+        "medium": "Oil on panel",
+        "size": "40 × 50 cm",
+        "year": "2025",
+        "price": null,
+        "status": "sold",
+        "image": "/artworks/mardali1.jpg",
+        "sample": false
+      },
+      {
+        "id": "vis-work-05",
+        "artist": "Reza Darijani",
+        "title": "Sample study",
+        "medium": "Graphite on paper",
+        "size": "30 × 40 cm",
+        "year": "2023",
+        "price": 18000000,
+        "status": "available",
+        "image": "/artworks/darijani.jpg",
+        "sample": true
+      }
+    ],
+    "updatedAt": "2026-11-01T00:00:00.000Z"
+  },
+  "visits": { "scans": 12, "views": 48 },
+  "leads": [],
+  "qr": "https://inview.moshes.io/g/o-gallery"
+}

@@ -22,19 +22,43 @@ export default function GalleryLayout() {
   if (!unlocked) {
     return (
       <div className="gate">
-        <form className="gate-card" onSubmit={(e) => {
-          e.preventDefault()
-          if (pw.trim() === gallery.dashboardPassword) {
-            try { sessionStorage.setItem(KEY, '1') } catch { /* ignore */ }
-            setUnlocked(true)
-          } else setError('That password doesn’t match. Check it and try again.')
-        }}>
+        <aside className="gate-panel" aria-hidden>
+          <h2>Edit the show. Keep the wall clear.</h2>
+          <p>Inview is the visitor catalogue for your gallery. Open the dashboard to update works, prices and the QR landing page.</p>
+        </aside>
+        <form
+          className="gate-card reveal"
+          onSubmit={(e) => {
+            e.preventDefault()
+            setError('')
+            if (pw.trim() === gallery.dashboardPassword) {
+              try { sessionStorage.setItem(KEY, '1') } catch { /* ignore */ }
+              setUnlocked(true)
+            } else {
+              setError('That password does not match. Check it and try again.')
+            }
+          }}
+        >
           <p className="brand">Inview <span>for galleries</span></p>
+          <span className="ink-rule" aria-hidden />
           <h1>{gallery.name}</h1>
           <label htmlFor="pw">Dashboard password</label>
-          <input id="pw" type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoFocus aria-describedby="pw-msg" />
-          <p id="pw-msg" className={error ? 'error' : 'muted small'}>{error || 'Demo password: inview'}</p>
-          <button className="btn btn-primary" type="submit">Open dashboard</button>
+          <input
+            id="pw"
+            type="password"
+            value={pw}
+            onChange={(e) => setPw(e.target.value)}
+            autoFocus
+            autoComplete="current-password"
+            aria-describedby="pw-msg"
+            aria-invalid={error ? true : undefined}
+          />
+          <p id="pw-msg" className={error ? 'error' : 'muted small'} role={error ? 'alert' : undefined}>
+            {error || 'Demo password: inview'}
+          </p>
+          <button className="btn btn-primary" type="submit">
+            Open dashboard
+          </button>
         </form>
       </div>
     )
@@ -44,7 +68,13 @@ export default function GalleryLayout() {
     <div className="dash">
       <aside className="side">
         <p className="brand">Inview <span>for galleries</span></p>
-        <div className="side-gallery"><span className="avatar sq">RG</span><span><strong>{gallery.name}</strong><span className="muted small">Growth plan</span></span></div>
+        <div className="side-gallery">
+          <span className="avatar sq">RG</span>
+          <span>
+            <strong>{gallery.name}</strong>
+            <span className="muted small">Growth plan</span>
+          </span>
+        </div>
         <nav aria-label="Dashboard">
           <NavLink to="/dashboard" end>Show report</NavLink>
           <NavLink to="/dashboard/o-gallery">O Gallery</NavLink>
@@ -58,7 +88,10 @@ export default function GalleryLayout() {
       <main className="dash-main">
         <header className="dash-head">
           {page ? (
-            <div><p className="muted small">{oGalleryPage ? 'O Gallery' : gallery.name}</p><h1>{page}</h1></div>
+            <div>
+              <p className="muted small">{oGalleryPage ? 'O Gallery' : gallery.name}</p>
+              <h1>{page}</h1>
+            </div>
           ) : (
             <>
               <div>
