@@ -5,7 +5,7 @@ import 'react-router'
 import { closeDatabase, createDatabase } from '../database/client'
 import { DatabaseContext } from '../database/context'
 import { resolveOGalleryAccessCode, syncOGalleryAccessCode } from './gallery-record'
-import { mountApi } from './api-app'
+import { clientKey, mountApi } from './api-app'
 import { metricsText, recordStatus } from './metrics'
 import { contentSecurityPolicy } from './csp'
 import { pingDatabase, sendReady } from './ready'
@@ -14,6 +14,7 @@ import { createObjectStorage, localMediaMiddleware } from './storage'
 declare module 'react-router' {
   interface AppLoadContext {
     storage: ReturnType<typeof createObjectStorage>
+    clientIp: string
   }
 }
 
@@ -75,8 +76,8 @@ mountApi(app, db, storage)
 app.use(
   createRequestHandler({
     build: () => import('virtual:react-router/server-build'),
-    getLoadContext() {
-      return { storage }
+    getLoadContext(req) {
+      return { storage, clientIp: clientKey(req) }
     },
   }),
 )

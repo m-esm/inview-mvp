@@ -168,7 +168,7 @@ Store dates in UTC. Add a Jalali library only for date input in the editor.
 |---|---|---|
 | **Phone OTP behind an `SmsProvider` interface. Server sessions in Postgres with an httpOnly cookie. Roles in `memberships`.** | We can stop a session at once. Simple. The provider can change (Kavenegar, Ghasedak, SMS.ir). | One database read for each request. |
 | JWT in the browser | No session table. | Hard to stop a stolen token. |
-| A shared editor password (current pilot) | Simple. | No users, no roles, no audit. |
+| A shared editor password (old pilot) | Simple. | No users, no roles, no audit. |
 
 Decision: OTP codes have 6 digits. The server stores only a hash. A code is valid for
 2 minutes. The server limits attempts for each phone and each IP address. In
@@ -181,6 +181,17 @@ the code. The log does not show the code or the hash. In production, the server 
 when the variable is missing. A development default is allowed only when `NODE_ENV`
 is not `production`. Until OTP is available, publish, upload and staff sign-in use
 the Postgres limits in D13.
+
+The O Gallery editor uses a staff session until phone OTP is ready. Staff open
+`/dashboard/sign-in` and send the gallery access code once. The server checks the
+scrypt hash. It does not store the code. The server writes a row in `sessions`.
+The row stores the SHA-256 hash of a random token and the gallery id. `user_id`
+stays empty. The cookie name is `inview_staff`. The cookie is httpOnly, Secure,
+and SameSite=Lax. It expires after 12 hours. `/dashboard/o-gallery`, publish,
+image upload, and `/api/pilot/staff` read this cookie. A missing or expired session
+sends the editor to the sign-in page. The staff API returns 401. Sign-out deletes
+the session row and clears the cookie. The Rooz demo pages under `/dashboard` stay
+public. They do not use this gate. The browser bundle does not contain the access code.
 
 ### D11. Payments
 

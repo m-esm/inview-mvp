@@ -19,6 +19,32 @@ test.describe('smoke', () => {
     })
   }
 
+  test('the Rooz dashboard stays public', async ({ request }) => {
+    const response = await request.get('/dashboard', { maxRedirects: 0 })
+    expect(response.status()).toBe(200)
+    const body = await response.text()
+    expect(body).not.toMatch(/Demo password/)
+    expect(body).toMatch(/Quiet Rooms/)
+  })
+
+  test('the O Gallery editor redirects without a staff session', async ({ request }) => {
+    const response = await request.get('/dashboard/o-gallery', { maxRedirects: 0 })
+    expect(response.status()).toBe(302)
+    expect(response.headers().location).toBe('/dashboard/sign-in')
+  })
+
+  test('dashboard routes do not log React error 418', async ({ page }) => {
+    const errors: string[] = []
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') errors.push(msg.text())
+    })
+    page.on('pageerror', (err) => errors.push(err.message))
+    for (const path of ['/dashboard', '/dashboard/artworks', '/dashboard/audience', '/dashboard/website', '/dashboard/plans', '/dashboard/o-gallery']) {
+      await page.goto(path, { waitUntil: 'load' })
+    }
+    expect(errors.join('\n')).not.toMatch(/418|Hydration failed|did not match/)
+  })
+
   test('health API', async ({ request }) => {
     const response = await request.get('/api/v1/health')
     expect(response.status()).toBe(200)

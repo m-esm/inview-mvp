@@ -15,7 +15,8 @@ See `docs/adr/0001-architecture.md` for the architecture decisions.
 | `/g/o-gallery/works/<id>` | One work |
 | `/g/o-gallery/prices` | Price list |
 | `/site/o-gallery` | O Gallery public website |
-| `/dashboard/o-gallery` | Editor (gallery access code) |
+| `/dashboard/sign-in` | Staff sign-in for the O Gallery editor |
+| `/dashboard/o-gallery` | Editor. Staff need a session. |
 | `/g/rooz-gallery` | Rooz Gallery demo (mock data, unchanged) |
 | `/api/v1/health` | Health check |
 | `/api/v1/pilot` | O Gallery JSON resource route |
@@ -57,6 +58,8 @@ npm run dev
 Open the address it prints, usually http://localhost:3000.
 
 In development, the gallery access code is `inview` when `O_GALLERY_ACCESS_CODE` is not set. In production, the server stops when `O_GALLERY_ACCESS_CODE` is missing. At start, the server stores a new scrypt hash when the saved hash is empty or does not match. The log does not show the code or the hash.
+
+Staff open `/dashboard/sign-in` and send that code once. The server sets an httpOnly cookie named `inview_staff`. The editor, publish, upload and the staff report use that cookie. The cookie expires after 12 hours. Sign-out deletes the session. The Rooz dashboard stays public.
 
 ## Tests
 

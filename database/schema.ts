@@ -80,15 +80,19 @@ export const memberships = pgTable(
   ],
 )
 
-export const sessions = pgTable('sessions', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  userId: uuid('user_id')
-    .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  tokenHash: text('token_hash').notNull(),
-  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-})
+export const sessions = pgTable(
+  'sessions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    // Phone OTP sessions set userId. Staff access-code sessions set galleryId.
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
+    galleryId: uuid('gallery_id').references(() => galleries.id, { onDelete: 'cascade' }),
+    tokenHash: text('token_hash').notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex('sessions_token_hash_uidx').on(table.tokenHash)],
+)
 
 export const otpChallenges = pgTable('otp_challenges', {
   id: uuid('id').defaultRandom().primaryKey(),

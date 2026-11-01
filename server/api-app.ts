@@ -3,6 +3,7 @@ import type { Express, Request } from 'express'
 import { media } from '../database/schema'
 import { processAndStoreImage } from './images'
 import { beginUpload, clientIpFrom, runPilotRequest, runStaffRequest, writeApiResult } from './rate-limit'
+import { readStaffSession } from './staff-session'
 import type { ObjectStorage } from './storage'
 
 // Drizzle handle: Postgres.js in production, PGlite in tests.
@@ -22,6 +23,11 @@ function sendJson(res: express.Response, status: number, body: unknown) {
   res.status(status).json(body)
 }
 
+async function sessionGallery(db: Db, req: Request): Promise<string | null> {
+  const session = await readStaffSession(db, req.get('cookie'))
+  return session?.galleryId ?? null
+}
+
 const SERVER_ERROR = {
   error: 'The server could not complete the request.',
   errorFa: 'سرور نتوانست درخواست را انجام دهد.',
@@ -35,7 +41,11 @@ export function mountApi(app: Express, db: Db, storage: ObjectStorage) {
   const pilot = async (req: Request, res: express.Response) => {
     res.setHeader('Cache-Control', 'no-store')
     try {
-      writeApiResult(res, await runPilotRequest(db, storage, req.method || 'GET', req.body, clientKey(req)))
+      const sessionId = await sessionGallery(db, req)
+      writeApiResult(
+        res,
+        await runPilotRequest(db, storage, req.method || 'GET', req.body, clientKey(req), undefined, undefined, sessionId),
+      )
     } catch (error) {
       console.error(error)
       sendJson(res, 500, SERVER_ERROR)
@@ -53,7 +63,11 @@ export function mountApi(app: Express, db: Db, storage: ObjectStorage) {
       return
     }
     try {
-      writeApiResult(res, await runStaffRequest(db, req.get('x-access-code') || '', clientKey(req)))
+      const sessionId = await sessionGallery(db, req)
+      writeApiResult(
+        res,
+        await runStaffRequest(db, req.get('x-access-code') || '', clientKey(req), undefined, undefined, sessionId),
+      )
     } catch (error) {
       console.error(error)
       sendJson(res, 500, SERVER_ERROR)
@@ -67,7 +81,7 @@ export function mountApi(app: Express, db: Db, storage: ObjectStorage) {
     res.setHeader('Cache-Control', 'no-store')
     try {
       const { gallery, accessCode, contentType, dataBase64 } = req.body || {}
-      const gate = await beginUpload(db, { gallery, accessCode, ip: clientKey(req) })
+      const gate = await beginUpload(db, { gallery, accessCode, ip: clientKey(req), sessionGalleryId: await sessionGallery(db, req) })
       if (!gate.ok) {
         writeApiResult(res, gate.result)
         return

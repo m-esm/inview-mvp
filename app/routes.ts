@@ -16,6 +16,7 @@ export default [
     route('g/:slug/about', 'routes/g.$slug.about.tsx'),
     route('me', 'routes/me.tsx'),
   ]),
+  route('dashboard/sign-in', 'routes/dashboard.sign-in.tsx'),
   route('dashboard', 'routes/dashboard.tsx', [
     index('routes/dashboard._index.tsx'),
     route('artworks', 'routes/dashboard.artworks.tsx'),
@@ -23,6 +24,7 @@ export default [
     route('website', 'routes/dashboard.website.tsx'),
     route('plans', 'routes/dashboard.plans.tsx'),
     route('o-gallery', 'routes/dashboard.o-gallery.tsx'),
+    route('sign-out', 'routes/dashboard.sign-out.tsx'),
   ]),
   route('*', 'routes/not-found.tsx'),
 ] satisfies RouteConfig

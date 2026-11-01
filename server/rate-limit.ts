@@ -3,8 +3,9 @@ import { eq } from 'drizzle-orm'
 import type { AppDatabase } from '../database/context'
 import { rateLimits } from '../database/schema'
 import { sha256, verifySecret } from './crypto'
-import { ensureOGalleryTenant } from './gallery-record'
+import { ensureOGalleryTenant, publishGalleryRecordForSession, readStaffReportForSession } from './gallery-record'
 import { handlePilotApi, handleStaffApi } from './pilot-api'
+import { signInWithAccessCode } from './staff-session'
 import type { ObjectStorage } from './storage'
 
 type Db = AppDatabase
@@ -300,9 +301,14 @@ export async function runPilotRequest(
   ip: string,
   now = new Date(),
   config = rateLimitConfig(),
+  sessionGalleryId: string | null = null,
 ): Promise<ApiResult> {
   const verb = (method || 'GET').toUpperCase()
-  const payload = (body && typeof body === 'object' ? body : {}) as { op?: unknown; visitorId?: unknown }
+  const payload = (body && typeof body === 'object' ? body : {}) as { op?: unknown; visitorId?: unknown; record?: unknown }
+  if (verb === 'PUT' && sessionGalleryId) {
+    const result = await publishGalleryRecordForSession(db, storage, sessionGalleryId, payload.record)
+    return { status: result.status, body: result.body }
+  }
   if (verb === 'PUT') {
     const blocked = await beforeAccessCheck(db, ip, now, config)
     if (blocked) return blocked
@@ -324,7 +330,9 @@ export async function runStaffRequest(
   ip: string,
   now = new Date(),
   config = rateLimitConfig(),
+  sessionGalleryId: string | null = null,
 ): Promise<ApiResult> {
+  if (sessionGalleryId) return readStaffReportForSession(db, sessionGalleryId)
   const blocked = await beforeAccessCheck(db, ip, now, config)
   if (blocked) return blocked
   const result = await handleStaffApi(db, accessCode)
@@ -341,6 +349,7 @@ export async function beginUpload(
     ip: string
     now?: Date
     config?: RateLimitConfig
+    sessionGalleryId?: string | null
   },
 ): Promise<{ ok: true; galleryId: string } | { ok: false; result: ApiResult }> {
   const now = input.now ?? new Date()
@@ -348,20 +357,42 @@ export async function beginUpload(
   if (input.gallery !== GALLERY) {
     return { ok: false, result: { status: 400, body: { error: 'Unknown gallery.' } } }
   }
-  const blocked = await beforeAccessCheck(db, input.ip, now, config)
-  if (blocked) return { ok: false, result: blocked }
   const tenant = await ensureOGalleryTenant(db)
-  const code = typeof input.accessCode === 'string' ? input.accessCode : ''
-  if (!verifySecret(code, tenant.gallery.accessCodeHash)) {
-    const failure = await afterAccessCheck(db, input.ip, 401, now, config)
-    return { ok: false, result: failure ?? { status: 401, body: { error: 'That access code does not match.' } } }
+  if (input.sessionGalleryId) {
+    if (input.sessionGalleryId !== tenant.gallery.id) {
+      return { ok: false, result: { status: 401, body: { error: 'Sign in to upload.' } } }
+    }
+  } else {
+    const blocked = await beforeAccessCheck(db, input.ip, now, config)
+    if (blocked) return { ok: false, result: blocked }
+    const code = typeof input.accessCode === 'string' ? input.accessCode : ''
+    if (!verifySecret(code, tenant.gallery.accessCodeHash)) {
+      const failure = await afterAccessCheck(db, input.ip, 401, now, config)
+      return { ok: false, result: failure ?? { status: 401, body: { error: 'That access code does not match.' } } }
+    }
+    const accepted = await afterAccessCheck(db, input.ip, 200, now, config)
+    if (accepted) return { ok: false, result: accepted }
   }
-  const accepted = await afterAccessCheck(db, input.ip, 200, now, config)
-  if (accepted) return { ok: false, result: accepted }
   const uploadBucket = `upload:gallery:${GALLERY}`
   const uploadBlocked = await peekBucket(db, uploadBucket, config.uploadGalleryMax, config.uploadGalleryWindowSec, now)
   if (uploadBlocked) return { ok: false, result: uploadBlocked }
   const upload = await consumeBucket(db, uploadBucket, config.uploadGalleryMax, config.uploadGalleryWindowSec, now)
   if (!upload.allowed) return { ok: false, result: tooMany(upload.retryAfterSeconds) }
   return { ok: true, galleryId: tenant.gallery.id }
+}
+
+export async function runSignIn(
+  db: Db,
+  accessCode: string,
+  ip: string,
+  now = new Date(),
+  config = rateLimitConfig(),
+): Promise<{ ok: true; token: string } | { ok: false; result: ApiResult }> {
+  const blocked = await beforeAccessCheck(db, ip, now, config)
+  if (blocked) return { ok: false, result: blocked }
+  const created = await signInWithAccessCode(db, accessCode)
+  const after = await afterAccessCheck(db, ip, created ? 200 : 401, now, config)
+  if (after) return { ok: false, result: after }
+  if (!created) return { ok: false, result: { status: 401, body: { error: 'That access code does not match.' } } }
+  return { ok: true, token: created.token }
 }
