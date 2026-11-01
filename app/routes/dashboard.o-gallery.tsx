@@ -1,5 +1,6 @@
 import { useLoaderData } from 'react-router'
 import OGalleryEditor from '~/pages/gallery/OGalleryEditor'
+import { OGalleryStaffLayout } from '~/pages/gallery/OGalleryStaffLayout'
 import { database } from '../../database/context'
 import { loadPublicRecord } from '../../server/gallery-record'
 import { guardOGallery } from './staff-session.server'
@@ -17,5 +18,9 @@ export async function loader({ request }: { request: Request }) {
 
 export default function DashboardOGallery() {
   const { record } = useLoaderData<typeof loader>() as Awaited<ReturnType<typeof loadPublicRecord>>
-  return <OGalleryEditor initialRecord={record} />
+  return (
+    <OGalleryStaffLayout>
+      <OGalleryEditor initialRecord={record} />
+    </OGalleryStaffLayout>
+  )
 }

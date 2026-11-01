@@ -28,6 +28,7 @@ export default function Import() {
     <>
       <div className="row between wrap gap">
         <p className="muted small no-m">Your website and its content</p>
+        <p className="pill warn" role="note">Demo: this import is a simulation. No file leaves your device.</p>
         <Link to={siteUrl} className="pill good" target="_blank" rel="noreferrer">● {gallery.subdomain}.inview.ir · Live</Link>
       </div>
 
@@ -70,7 +71,7 @@ export default function Import() {
       </div>
 
       {(stage === 'review' || stage === 'published') && (
-        <section className="box flush scroll-x">
+        <section className="box flush scroll-x" tabIndex={0} aria-label="Import preview table">
           <div className="row between box-head"><h2>Review before publishing</h2><span className="muted small">Showing {importDemo.rows.length} of {importDemo.found.artworks}</span></div>
           <table>
             <thead><tr><th>Work</th><th>Medium and size</th><th>Year</th><th className="num">Price (Toman)</th><th>Found in</th><th>AI note</th><th>Approve</th></tr></thead>

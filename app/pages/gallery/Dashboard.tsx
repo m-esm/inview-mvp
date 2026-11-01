@@ -81,7 +81,7 @@ export function ArtworkInterest() {
         <div className="kpi warm"><span className="small">High interest, still unsold</span><strong>{hot.length} works</strong><span className="tiny">{hot.reduce((s, a) => s + a.saves, 0)} saves, {millions(hot.reduce((s, a) => s + a.price, 0))} Toman open value</span></div>
         <div className="kpi"><span className="muted small">Views from label QR codes</span><strong>58%</strong><span className="muted tiny">vs 42% from the entrance QR code</span></div>
       </div>
-      <div className="box flush scroll-x">
+      <div className="box flush scroll-x" tabIndex={0} role="region" aria-label="Artwork interest table">
         <table>
           <thead><tr><th>Work</th><th className="num">Price (Toman)</th><th className="num">Views</th><th className="num">Avg. time</th><th className="num">Saves</th><th className="num">Inquiries</th><th>Status</th><th>Signal</th></tr></thead>
           <tbody>
@@ -126,7 +126,7 @@ export function Audience() {
           <div className="split"><div><strong>{report.newVisitors}%</strong><span className="muted small">New to your gallery</span></div><div><strong>{100 - report.newVisitors}%</strong><span className="muted small">Returning visitors</span></div></div>
         </section>
       </div>
-      <section className="box flush scroll-x">
+      <section className="box flush scroll-x" tabIndex={0} aria-label="Audience table">
         <div className="row between box-head"><h2>Priority leads: who to contact this week</h2><span className="muted small">Only people who chose to share their contact with you</span></div>
         <table>
           <thead><tr><th>Person</th><th>Profile</th><th>Score</th><th>Why now</th><th>Contact</th></tr></thead>

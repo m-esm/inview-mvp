@@ -5,7 +5,7 @@ import 'react-router'
 import { closeDatabase, createDatabase } from '../database/client'
 import { DatabaseContext } from '../database/context'
 import { resolveOGalleryAccessCode, syncOGalleryAccessCode } from './gallery-record'
-import { clientKey, mountApi } from './api-app'
+import { clientKey, JSON_LIMIT, mountApi } from './api-app'
 import { metricsText, recordStatus } from './metrics'
 import { contentSecurityPolicy } from './csp'
 import { pingDatabase, sendReady } from './ready'
@@ -52,7 +52,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 app.use(localMediaMiddleware())
-app.use(express.json({ limit: '12mb' }))
+app.use(express.json({ limit: JSON_LIMIT }))
 
 app.use((_req, _res, next) => {
   DatabaseContext.run(db, () => next())

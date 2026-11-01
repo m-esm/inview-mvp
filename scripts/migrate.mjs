@@ -5,7 +5,10 @@ import postgres from 'postgres'
 const url = process.env.DATABASE_URL
 if (!url) throw new Error('DATABASE_URL is required')
 
+const MIGRATION_LOCK = 742001
+
 const sql = postgres(url, { max: 1 })
+await sql`SELECT pg_advisory_lock(${MIGRATION_LOCK})`
 await sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`
 await sql`
   CREATE TABLE IF NOT EXISTS inview_migrations (
@@ -30,12 +33,15 @@ for (const file of files) {
     .split('--> statement-breakpoint')
     .map((part) => part.trim())
     .filter(Boolean)
-  for (const statement of statements) {
-    await sql.unsafe(statement)
-  }
-  await sql`INSERT INTO inview_migrations (id) VALUES (${file})`
+  await sql.begin(async (tx) => {
+    for (const statement of statements) {
+      await tx.unsafe(statement)
+    }
+    await tx`INSERT INTO inview_migrations (id) VALUES (${file})`
+  })
   console.info(`apply ${file}`)
 }
 
+await sql`SELECT pg_advisory_unlock(${MIGRATION_LOCK})`
 await sql.end({ timeout: 5 })
 console.info('Migrations complete.')

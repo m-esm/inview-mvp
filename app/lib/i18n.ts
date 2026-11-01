@@ -1,5 +1,6 @@
 import { useLocation, useRouteLoaderData } from 'react-router'
 import { consentText } from './consent'
+import { formatNumber, localDigits } from './format'
 import { defaultLang, dirFor, type Lang } from './lang'
 import type { Artwork, Status } from '../data/gallery'
 import { gallery, show } from '../data/gallery'
@@ -150,7 +151,7 @@ const fa: Dict = {
 }
 
 export function toFa(v: number | string): string {
-  return String(v).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)])
+  return typeof v === 'number' ? formatNumber('fa', v) : localDigits('fa', v)
 }
 
 export const messages = { en, fa }
@@ -170,14 +171,13 @@ export function useT() {
     t,
     lang,
     dir: dirFor(lang),
-    n: (v: number | string) => (fa_ ? toFa(typeof v === 'number' ? v.toLocaleString('en-US') : v) : typeof v === 'number' ? v.toLocaleString('en-US') : v),
-    price: (a: Artwork) =>
-      a.status === 'sold' ? null : `${fa_ ? toFa(a.price.toLocaleString('en-US')) : a.price.toLocaleString('en-US')} ${t.toman}`,
+    n: (v: number | string) => (typeof v === 'number' ? formatNumber(lang, v) : localDigits(lang, v)),
+    price: (a: Artwork) => (a.status === 'sold' ? null : `${formatNumber(lang, a.price)} ${t.toman}`),
     status: (s: Status) => t[s],
     artist: (a: Artwork) => (fa_ && a.artistFa ? a.artistFa : a.artist),
     medium: (a: Artwork) => (fa_ ? a.mediumFa : a.medium),
-    size: (a: Artwork) => (fa_ ? toFa(a.size).replace('cm', 'سانتی‌متر') : a.size),
-    year: (a: Artwork) => (fa_ ? toFa(a.year) : a.year),
+    size: (a: Artwork) => (fa_ ? localDigits('fa', a.size).replace('cm', 'سانتی‌متر') : a.size),
+    year: (a: Artwork) => localDigits(lang, a.year),
     title: (a: Artwork) => a.title ?? t.untitled,
     galleryName: fa_ ? gallery.nameFa : gallery.name,
     showTitle: fa_ ? show.titleFa : show.title,

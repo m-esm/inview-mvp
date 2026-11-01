@@ -4,8 +4,9 @@ export type Dir = 'rtl' | 'ltr'
 export const LANG_COOKIE = 'inview-lang'
 const ONE_YEAR = 60 * 60 * 24 * 365
 
-// O Gallery visitors read Persian first. The Rooz demo is shown in English.
-const PERSIAN_FIRST = ['/g/o-gallery', '/site/o-gallery']
+// O Gallery visitors and staff read Persian first. The Rooz demo is shown in English.
+const PERSIAN_FIRST = ['/g/o-gallery', '/site/o-gallery', '/dashboard/o-gallery', '/dashboard/sign-in']
+const BILINGUAL_STAFF = ['/dashboard/o-gallery', '/dashboard/sign-in']
 
 function underPath(pathname: string, base: string): boolean {
   return pathname === base || pathname.startsWith(`${base}/`)
@@ -30,9 +31,13 @@ export function readLangCookie(header: string | null | undefined): Lang | null {
   return null
 }
 
-/** The staff UI has English labels only, so the cookie does not apply there. */
+export function isBilingualStaffPath(pathname: string): boolean {
+  return BILINGUAL_STAFF.some((base) => underPath(pathname, base))
+}
+
+/** The Rooz demo dashboard has English labels only, so the cookie does not apply there. */
 export function resolveLang(pathname: string, cookieHeader: string | null | undefined): Lang {
-  if (isStaffPath(pathname)) return 'en'
+  if (isStaffPath(pathname) && !isBilingualStaffPath(pathname)) return 'en'
   return readLangCookie(cookieHeader) ?? defaultLang(pathname)
 }
 

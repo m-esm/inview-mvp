@@ -60,7 +60,17 @@ if (DEVELOPMENT) {
       },
     }),
   )
-  app.use(express.static('build/client', { maxAge: '1h' }))
+  const REVALIDATE = new Set(['/sw.js', '/manifest.webmanifest', '/offline.html'])
+  app.use(
+    express.static('build/client', {
+      maxAge: '1h',
+      setHeaders(res, filePath) {
+        const name = filePath.slice(filePath.lastIndexOf('/'))
+        if (REVALIDATE.has(name) || name.startsWith('/workbox-')) res.setHeader('Cache-Control', 'no-cache')
+        if (name === '/sw.js') res.setHeader('Service-Worker-Allowed', '/')
+      },
+    }),
+  )
   try {
     const mod = await import(BUILD_PATH)
     remember(mod)
