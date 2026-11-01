@@ -28,10 +28,22 @@ test.describe('smoke', () => {
   })
 
   test('the O Gallery editor redirects without a staff session', async ({ request }) => {
-    const response = await request.get('/dashboard/o-gallery', { maxRedirects: 0 })
+    const response = await request.get('/staff/o-gallery', { maxRedirects: 0 })
     expect(response.status()).toBe(302)
-    expect(response.headers().location).toBe('/dashboard/sign-in')
+    expect(response.headers().location).toBe('/staff/sign-in?next=%2Fstaff%2Fo-gallery')
   })
+
+  for (const [legacy, destination] of [
+    ['/dashboard/o-gallery', '/staff/o-gallery'],
+    ['/dashboard/sign-in', '/staff/sign-in'],
+  ]) {
+    test(`${legacy} redirects to ${destination} and preserves the query`, async ({ request }) => {
+      const query = '?next=%2Fstaff%2Fo-gallery%2Freport&lang=en'
+      const response = await request.get(legacy + query, { maxRedirects: 0 })
+      expect(response.status()).toBe(302)
+      expect(response.headers().location).toBe(destination + query)
+    })
+  }
 
   test('dashboard routes do not log React error 418', async ({ page }) => {
     const errors: string[] = []
@@ -39,7 +51,7 @@ test.describe('smoke', () => {
       if (msg.type() === 'error') errors.push(msg.text())
     })
     page.on('pageerror', (err) => errors.push(err.message))
-    for (const path of ['/dashboard', '/dashboard/artworks', '/dashboard/audience', '/dashboard/website', '/dashboard/plans', '/dashboard/o-gallery']) {
+    for (const path of ['/dashboard', '/dashboard/artworks', '/dashboard/audience', '/dashboard/website', '/dashboard/plans', '/staff/o-gallery']) {
       await page.goto(path, { waitUntil: 'load' })
     }
     expect(errors.join('\n')).not.toMatch(/418|Hydration failed|did not match/)

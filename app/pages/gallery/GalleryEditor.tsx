@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useState } from 'react'
 import { OLandingPreview } from '../visitor/OGalleryPages'
 import { parseToman } from '../../lib/price'
-import { fetchPilot, QR_ADDRESS, type PilotRecord, type PilotWork } from '../../lib/pilot'
+import { type PilotRecord, type PilotWork } from '../../lib/pilot'
 import { useStaffT, type StaffDict } from '../../lib/i18n-staff'
 import {
   fetchStaffReport,
@@ -45,11 +45,13 @@ function priceText(price: number | null) {
 }
 
 function ImageField({
+  gallery,
   label,
   value,
   onChange,
   onError,
 }: {
+  gallery: string
   label: string
   value: string
   onChange: (url: string) => void
@@ -63,7 +65,7 @@ function ImageField({
     if (!file) return
     setProgress(0)
     try {
-      const saved = await uploadImage(file, setProgress)
+      const saved = await uploadImage(file, setProgress, gallery)
       onChange(saved.url)
     } catch (error) {
       onError(uploadMessage(t, lang, error))
@@ -111,14 +113,15 @@ function ImageField({
   )
 }
 
-export default function OGalleryEditor({ initialRecord }: { initialRecord: PilotRecord }) {
+export default function GalleryEditor({ initialRecord, initialReport = null, reportOnly = false, canExport = false }: { initialRecord: PilotRecord; initialReport?: StaffReport | null; reportOnly?: boolean; canExport?: boolean }) {
+  const qrAddress = `/g/${initialRecord.slug}`
   const { t, lang, format } = useStaffT()
   const [draft, setDraft] = useState<PilotRecord>(initialRecord)
   const [published, setPublished] = useState(() => JSON.stringify(initialRecord))
   const [prices, setPrices] = useState<Record<string, string>>(() =>
     Object.fromEntries(initialRecord.works.map((work) => [work.id, priceText(work.price)])),
   )
-  const [stats, setStats] = useState<StaffReport | null>(null)
+  const [stats, setStats] = useState<StaffReport | null>(initialReport)
   const [reportFailed, setReportFailed] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -139,13 +142,15 @@ export default function OGalleryEditor({ initialRecord }: { initialRecord: Pilot
   }
 
   async function loadRecord() {
-    const state = await fetchPilot()
+    const response = await fetch(`/api/v1/pilot/staff/record?gallery=${encodeURIComponent(initialRecord.slug)}`, { cache: 'no-store' })
+    if (!response.ok) throw new Error(String(response.status))
+    const state = await response.json()
     adopt(state.record)
   }
 
   async function loadReport() {
     try {
-      setStats(await fetchStaffReport())
+      setStats(await fetchStaffReport(initialRecord.slug))
       setReportFailed(false)
     } catch {
       setStats(null)
@@ -196,7 +201,7 @@ export default function OGalleryEditor({ initialRecord }: { initialRecord: Pilot
       const res = await fetch('/api/v1/pilot', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ record: draft }),
+        body: JSON.stringify({ gallery: initialRecord.slug, record: draft }),
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
@@ -215,7 +220,7 @@ export default function OGalleryEditor({ initialRecord }: { initialRecord: Pilot
 
   async function copyQr() {
     try {
-      await navigator.clipboard.writeText(QR_ADDRESS)
+      await navigator.clipboard.writeText(new URL(qrAddress, window.location.origin).href)
       setCopied(true)
     } catch {
       setCopied(false)
@@ -223,6 +228,7 @@ export default function OGalleryEditor({ initialRecord }: { initialRecord: Pilot
   }
 
   const noVisits = !!stats && stats.visits.scans === 0 && stats.visits.views === 0
+  const ReportHeading = reportOnly ? 'h1' : 'h2'
   const titleOf = (workId: string | null, fallback: string | null) =>
     fallback || (workId ? draft.works.find((work) => work.id === workId)?.title || workId : t.noWork)
 
@@ -230,13 +236,13 @@ export default function OGalleryEditor({ initialRecord }: { initialRecord: Pilot
     <div className="editor">
       <section className="box staff-report" id="report" aria-labelledby="report-title">
         <div className="row between wrap gap">
-          <h2 id="report-title">{t.reportTitle}</h2>
+          <ReportHeading id="report-title">{t.reportTitle}</ReportHeading>
           <div className="row gap wrap">
             <button className="btn btn-outline small-btn" type="button" onClick={() => {
               loadRecord().catch(() => setError(t.publishFailed))
               void loadReport()
             }}>{t.refresh}</button>
-            <a className="btn btn-quiet small-btn" href={LEADS_CSV_PATH} download>{t.downloadCsv}</a>
+            {canExport && <a className="btn btn-quiet small-btn" href={`${LEADS_CSV_PATH}?gallery=${encodeURIComponent(initialRecord.slug)}`} download>{t.downloadCsv}</a>}
           </div>
         </div>
         {reportFailed && <p className="error" role="alert">{t.reportFailed}</p>}
@@ -301,12 +307,12 @@ export default function OGalleryEditor({ initialRecord }: { initialRecord: Pilot
         )}
         <label htmlFor="qr" className="staff-qr-label">{t.qrAddress}</label>
         <div className="row gap wrap">
-          <input id="qr" readOnly dir="ltr" value={QR_ADDRESS} onFocus={(e) => e.currentTarget.select()} />
+          <input id="qr" readOnly dir="ltr" value={qrAddress} onFocus={(e) => e.currentTarget.select()} />
           <button className="btn btn-outline small-btn" type="button" onClick={() => void copyQr()}>{copied ? t.copied : t.copy}</button>
         </div>
       </section>
 
-      <div className="editor-layout">
+      {!reportOnly && <div className="editor-layout">
         <form id="catalogue" className="editor-main-col" onSubmit={(e) => void publish(e)}>
           <section className="box" aria-labelledby="gallery-title">
             <h2 id="gallery-title">{t.galleryTitle}</h2>
@@ -315,6 +321,7 @@ export default function OGalleryEditor({ initialRecord }: { initialRecord: Pilot
               <label>{t.nameFa}<input dir="rtl" value={draft.nameFa} onChange={(e) => setField('nameFa', e.target.value)} /></label>
               <div className="span-2">
                 <ImageField
+                  gallery={initialRecord.slug}
                   label={t.logo}
                   value={draft.logo ?? ''}
                   onChange={(url) => setField('logo', url || null)}
@@ -362,6 +369,7 @@ export default function OGalleryEditor({ initialRecord }: { initialRecord: Pilot
                   </legend>
                   <div className="work-edit-body">
                     <ImageField
+                      gallery={initialRecord.slug}
                       label={t.image}
                       value={work.image}
                       onChange={(url) => updateWork(work.id, { image: url })}
@@ -430,9 +438,9 @@ export default function OGalleryEditor({ initialRecord }: { initialRecord: Pilot
           </section>
         </form>
 
-        <aside className="editor-preview-col box" aria-labelledby="ogallery-preview-title">
+        <aside className="editor-preview-col box" aria-labelledby="gallery-preview-title">
           <div className="row between wrap gap">
-            <h2 id="ogallery-preview-title">{t.preview}</h2>
+            <h2 id="gallery-preview-title">{t.preview}</h2>
             <div className="lang" role="group" aria-label={t.previewLanguage}>
               <button type="button" aria-pressed={previewLang === 'fa'} onClick={() => setPreviewLang('fa')} lang="fa">فا</button>
               <button type="button" aria-pressed={previewLang === 'en'} onClick={() => setPreviewLang('en')} lang="en">EN</button>
@@ -442,7 +450,7 @@ export default function OGalleryEditor({ initialRecord }: { initialRecord: Pilot
             <OLandingPreview record={draft} lang={previewLang} />
           </div>
         </aside>
-      </div>
+      </div>}
     </div>
   )
 }

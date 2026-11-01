@@ -26,7 +26,7 @@ test('Origin check enforces configured and fallback origins, protects actions, a
     assert.equal((await request(app).post('/staff/action').set('Origin', 'https://foreign.example.com')).status, 403)
     assert.equal((await request(app).post('/staff/action')).status, 403)
     assert.equal((await request(app).post('/staff/action').set('Origin', 'https://app.example.com')).status, 200)
-    for (const path of ['/api/pilot', '/api/v1/pilot', '/api/v1/uploads', '/dashboard/sign-in']) {
+    for (const path of ['/api/pilot', '/api/v1/pilot', '/api/v1/uploads']) {
       assert.equal((await request(app).post(path)).status, 200, path)
       assert.equal((await request(app).post(path).set('Sec-Fetch-Site', 'same-origin')).status, 200, path)
       assert.equal((await request(app).post(path).set('Sec-Fetch-Site', 'cross-site')).status, 403, path)
@@ -96,7 +96,7 @@ test('invite HTTP metadata and acceptance reveal no secrets and set a session co
     const path = `/api/v1/invites/${invite.token}`
     const metadata = await request(app).get(path)
     assert.equal(metadata.status, 200)
-    assert.deepEqual(metadata.body, { kind: 'operator', galleryName: null, role: 'admin' })
+    assert.deepEqual(metadata.body, { kind: 'operator', galleryName: null, galleryNameFa: null, gallerySlug: null, role: 'admin' })
     const accepted = await request(app).post(`${path}/accept`).set('Origin', 'https://app.example.com')
       .send({ name: 'New Admin', password: 'new-password' })
     assert.equal(accepted.status, 200)

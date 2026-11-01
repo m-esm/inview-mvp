@@ -35,7 +35,7 @@ const publicRoutes = [
   '/dashboard/audience',
   '/dashboard/website',
   '/dashboard/plans',
-  '/dashboard/sign-in',
+  '/staff/sign-in',
 ]
 
 const viewports = [
@@ -81,10 +81,12 @@ for (const viewport of viewports) {
 
     test('the signed-in editor has no serious or critical violation', async ({ page, baseURL }) => {
       await page.context().addCookies([{ name: 'inview-lang', value: 'en', url: baseURL || 'http://127.0.0.1:3000' }])
-      await page.goto('/dashboard/sign-in')
-      await page.getByLabel('Gallery access code').fill(accessCode)
-      await page.getByRole('button', { name: 'Open the editor' }).click()
-      await expect(page).toHaveURL(/\/dashboard\/o-gallery$/)
+      await page.goto('/staff/sign-in')
+      const form = page.locator('form').filter({ has: page.getByLabel('Gallery access code', { exact: true }) })
+      await form.getByLabel('Gallery address name', { exact: true }).fill('o-gallery')
+      await form.getByLabel('Gallery access code', { exact: true }).fill(accessCode)
+      await form.getByRole('button', { name: 'Open the editor', exact: true }).click()
+      await expect(page).toHaveURL(/\/staff\/o-gallery$/)
       expect(await blocking(page)).toEqual([])
     })
   })

@@ -17,7 +17,7 @@ test('parseToman keeps grouped digits and Persian digits', () => {
 
 test('HAD-31 the editor does not turn a grouped price into NaN', () => {
   const source = readFileSync(
-    path.join(path.dirname(fileURLToPath(import.meta.url)), '../app/pages/gallery/OGalleryEditor.tsx'),
+    path.join(path.dirname(fileURLToPath(import.meta.url)), '../app/pages/gallery/GalleryEditor.tsx'),
     'utf8',
   )
   assert.equal(source.includes('Number(e.target.value)'), false)

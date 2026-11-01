@@ -36,7 +36,7 @@ test('staff invite hashes its token, accepts once, records membership attributio
     assert.ok(Math.abs(invite.expiresAt.getTime() - Date.now() - 7 * 86400000) < 10000)
     const [stored] = await db.select().from(invitations)
     assert.equal(stored.tokenHash, sha256(invite.token))
-    assert.deepEqual(await readInvite(db, invite.token), { kind: 'staff', galleryName: 'Gallery', role: 'owner' })
+    assert.deepEqual(await readInvite(db, invite.token), { kind: 'staff', galleryName: 'Gallery', galleryNameFa: gallery.nameFa, gallerySlug: gallery.slug, role: 'owner' })
     await assert.rejects(acceptInvite(db, invite.token, 'Owner', 'short'), /10 to 1024/)
     assert.ok(await readInvite(db, invite.token))
     const results = await Promise.allSettled([

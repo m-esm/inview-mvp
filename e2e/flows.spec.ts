@@ -11,12 +11,14 @@ const viewports = [
   { name: 'desk', width: 1440, height: 900 },
 ] as const
 
-async function publishFlowWork(page: Page) {
-  const current = await page.request.get('/api/pilot')
+async function publishFlowWork(page: Page, origin: string) {
+  const current = await page.request.get('/api/pilot?gallery=o-gallery')
   expect(current.ok()).toBeTruthy()
   const body = (await current.json()) as { record: Record<string, unknown> }
   const published = await page.request.put('/api/pilot', {
+    headers: { Origin: origin },
     data: {
+      gallery: 'o-gallery',
       accessCode,
       record: {
         ...body.record,
@@ -40,6 +42,14 @@ async function publishFlowWork(page: Page) {
     },
   })
   expect(published.ok(), await published.text()).toBeTruthy()
+}
+
+async function signInWithGalleryCode(page: Page) {
+  const form = page.locator('form').filter({ has: page.getByLabel('Gallery access code', { exact: true }) })
+  await form.getByLabel('Gallery address name', { exact: true }).fill('o-gallery')
+  await form.getByLabel('Gallery access code', { exact: true }).fill(accessCode)
+  await form.getByRole('button', { name: 'Open the editor', exact: true }).click()
+  await expect(page).toHaveURL(/\/staff\/o-gallery$/)
 }
 
 async function expectAxe(page: Page, label: string) {
@@ -74,8 +84,8 @@ for (const viewport of viewports) {
       reducedMotion: 'reduce',
     })
 
-    test.beforeEach(async ({ page }) => {
-      await publishFlowWork(page)
+    test.beforeEach(async ({ page, baseURL }) => {
+      await publishFlowWork(page, new URL(baseURL || 'http://127.0.0.1:3000').origin)
     })
 
     test('visitor scans, opens a work, saves and asks', async ({ page }) => {
@@ -133,44 +143,39 @@ for (const viewport of viewports) {
 
     test('staff signs in, edits and publishes', async ({ page, baseURL }) => {
       await page.context().addCookies([{ name: 'inview-lang', value: 'en', url: baseURL || 'http://127.0.0.1:3000' }])
-      await page.goto('/dashboard/o-gallery')
-      await expect(page).toHaveURL(/\/dashboard\/sign-in$/)
+      await page.goto('/staff/o-gallery')
+      await expect(page).toHaveURL(/\/staff\/sign-in\?next=%2Fstaff%2Fo-gallery$/)
       await expectAxe(page, 'staff sign-in')
-      await page.getByLabel('Gallery access code').fill(accessCode)
-      await page.getByRole('button', { name: 'Open the editor' }).click()
-      await expect(page).toHaveURL(/\/dashboard\/o-gallery$/)
+      await signInWithGalleryCode(page)
       const title = page.getByLabel('Show title', { exact: true })
       await expect(title).toBeVisible()
       await title.fill('Staff flow show')
       await page.getByRole('button', { name: 'Publish' }).click()
-      await expect(page.getByRole('status')).toHaveText('Published. The QR path is still /g/o-gallery.')
+      await expect(page.getByRole('status')).toHaveText('Saved. The QR address stays the same.')
       await expect(page.getByRole('heading', { name: 'Visits and leads', level: 2 })).toBeVisible()
       await expect(page.getByRole('term').filter({ hasText: 'Landing scans' })).toBeVisible()
       await expectAxe(page, 'staff editor')
 
-      const live = await page.request.get('/api/pilot')
+      const live = await page.request.get('/api/pilot?gallery=o-gallery')
       const body = (await live.json()) as { record: { showTitle: string }; leads?: unknown; visits?: unknown }
       expect(body.record.showTitle).toBe('Staff flow show')
       expect(body.leads).toBeUndefined()
       expect(body.visits).toBeUndefined()
 
-      const csv = await page.request.get('/api/v1/pilot/staff/leads.csv')
-      expect(csv.status()).toBe(200)
-      expect(csv.headers()['content-type']).toContain('text/csv')
-      expect(await csv.text()).toContain('created_at,kind,phone,work_id,work_title')
+      await expect(page.getByRole('link', { name: 'Download CSV', exact: true })).toHaveCount(0)
+      const csv = await page.request.get('/api/v1/pilot/staff/leads.csv?gallery=o-gallery')
+      expect(csv.status()).toBe(403)
 
       await page.getByRole('button', { name: 'فا' }).first().click()
       await expect(page.locator('html')).toHaveAttribute('dir', 'rtl')
-      await expect(page.getByRole('heading', { name: 'فهرست آثار گالری اُ' })).toBeVisible()
+      await expect(page.getByRole('heading', { name: 'فهرست آثار گالری', exact: true })).toBeVisible()
       await expectAxe(page, 'staff editor persian')
     })
 
     test('staff upload sends the file and shows a preview', async ({ page, baseURL }) => {
       await page.context().addCookies([{ name: 'inview-lang', value: 'en', url: baseURL || 'http://127.0.0.1:3000' }])
-      await page.goto('/dashboard/sign-in')
-      await page.getByLabel('Gallery access code').fill(accessCode)
-      await page.getByRole('button', { name: 'Open the editor' }).click()
-      await expect(page).toHaveURL(/\/dashboard\/o-gallery$/)
+      await page.goto('/staff/sign-in')
+      await signInWithGalleryCode(page)
       const upload = page.waitForResponse((response) => response.url().includes('/api/v1/uploads'))
       await page.getByLabel('Image', { exact: true }).first().setInputFiles({ name: 'work.png', mimeType: 'image/png', buffer: Buffer.from(PNG, 'base64') })
       const response = await upload
@@ -180,7 +185,7 @@ for (const viewport of viewports) {
       const publish = page.waitForRequest((request) => request.method() === 'PUT' && request.url().includes('/api/v1/pilot'))
       await page.getByRole('button', { name: 'Publish' }).click()
       expect((await publish).postData() || '').not.toContain('data:')
-      await expect(page.getByRole('status')).toHaveText('Published. The QR path is still /g/o-gallery.')
+      await expect(page.getByRole('status')).toHaveText('Saved. The QR address stays the same.')
     })
   })
 }

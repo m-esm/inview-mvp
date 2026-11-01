@@ -16,7 +16,7 @@ const pages = [
   { path: '/g/o-gallery/works', name: 'works' },
   { path: '/g/o-gallery/prices', name: 'prices' },
   { path: '/g/o-gallery/about', name: 'about' },
-  { path: '/dashboard/o-gallery', name: 'dashboard-login' },
+  { path: '/staff/o-gallery', name: 'dashboard-login' },
 ]
 
 const viewports = [
@@ -36,6 +36,7 @@ for (const vp of viewports) {
       locale: lang === 'fa' ? 'fa-IR' : 'en-US',
     })
     const page = await context.newPage()
+    await context.addCookies([{ name: 'inview-lang', value: lang, url: base }])
     await page.addInitScript((l) => {
       try {
         localStorage.setItem('inview-demo-v1', JSON.stringify({
