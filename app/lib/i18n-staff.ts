@@ -66,6 +66,15 @@ const en = {
   showTitleFa: 'Show title in Persian',
   dates: 'Dates',
   datesFa: 'Dates in Persian',
+  startsOn: 'First day',
+  endsOn: 'Last day',
+  dateYear: 'Year',
+  dateMonth: 'Month',
+  dateDay: 'Day',
+  dateClear: 'Clear',
+  dateEmpty: 'No day is set. The visitor page shows the dates you type above.',
+  dateBad: 'This month does not have that day.',
+  dateOrder: 'The last day is before the first day.',
   hours: 'Hours',
   hoursFa: 'Hours in Persian',
   address: 'Address',
@@ -212,6 +221,15 @@ const fa: StaffDict = {
   showTitleFa: 'عنوان فارسی نمایشگاه',
   dates: 'تاریخ‌ها به انگلیسی',
   datesFa: 'تاریخ‌ها به فارسی',
+  startsOn: 'روز آغاز',
+  endsOn: 'روز پایان',
+  dateYear: 'سال',
+  dateMonth: 'ماه',
+  dateDay: 'روز',
+  dateClear: 'پاک کردن',
+  dateEmpty: 'روزی ثبت نشده است. صفحه بازدیدکننده تاریخ‌های بالا را نشان می‌دهد.',
+  dateBad: 'این ماه چنین روزی ندارد.',
+  dateOrder: 'روز پایان پیش از روز آغاز است.',
   hours: 'ساعت‌ها به انگلیسی',
   hoursFa: 'ساعت‌ها به فارسی',
   address: 'نشانی به انگلیسی',
@@ -325,11 +343,18 @@ export function staffFormat(lang: Lang) {
     timeZone: STAFF_TIME_ZONE,
   })
   const dayOnly = new Intl.DateTimeFormat(calendar, { dateStyle: 'medium', timeZone: 'UTC' })
+  const otherDayOnly = new Intl.DateTimeFormat(otherCalendar, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
   return {
     number: (value: number) => number.format(value),
     dateTime: (iso: string) => dateTime.format(new Date(iso)),
     otherDate: (iso: string) => withoutEra(otherDate, new Date(iso)),
     day: (isoDay: string) => dayOnly.format(new Date(`${isoDay}T12:00:00Z`)),
+    otherDay: (isoDay: string) => withoutEra(otherDayOnly, new Date(`${isoDay}T12:00:00Z`)),
   }
 }
 

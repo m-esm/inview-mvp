@@ -1,11 +1,4 @@
-const PERSIAN = '۰۱۲۳۴۵۶۷۸۹'
-const ARABIC = '٠١٢٣٤٥٦٧٨٩'
-
-function toAsciiDigits(value: string): string {
-  return value
-    .replace(/[۰-۹]/g, (digit) => String(PERSIAN.indexOf(digit)))
-    .replace(/[٠-٩]/g, (digit) => String(ARABIC.indexOf(digit)))
-}
+import { asciiDigits } from './format'
 
 // Grouping marks: comma, Arabic thousands separator, and spaces.
 // "1.000.000" is a grouped integer. A single dot is not a toman price.
@@ -16,7 +9,7 @@ export function parseToman(value: unknown): number | null | 'invalid' {
     return Math.round(value)
   }
   if (typeof value !== 'string') return 'invalid'
-  let text = toAsciiDigits(value).trim()
+  let text = asciiDigits(value).trim()
   if (!text) return null
   text = text.replace(/[,٬\s]/g, '')
   if (/^\d{1,3}(\.\d{3})+$/.test(text)) text = text.replace(/\./g, '')
