@@ -1,18 +1,18 @@
 {
-  "fetchedAt": "2026-11-02T01:57:23.531Z",
+  "fetchedAt": "2026-11-02T02:29:08.678Z",
   "apps": [
     {
       "id": "inview",
       "status": "live",
-      "imageTag": "main-115-aebe9cb",
-      "commitSha": "aebe9cb",
+      "imageTag": "main-126-c561c79",
+      "commitSha": "c561c79",
       "clusterHadCommitSha": null,
       "health": {
         "url": "https://inview.moshes.io/api/v1/health",
         "ok": true,
         "statusCode": 200,
         "bodySnippet": "{\"ok\":true,\"service\":\"inview-mvp\"}",
-        "checkedAt": "2026-11-02T01:57:50.489Z",
+        "checkedAt": "2026-11-02T02:29:41.889Z",
         "error": null
       },
       "screenshots": [
@@ -23,7 +23,7 @@
           "viewport": "desktop",
           "width": 1440,
           "height": 900,
-          "takenAt": "2026-11-02T01:57:23.531Z",
+          "takenAt": "2026-11-02T02:29:08.678Z",
           "url": "screenshots/inview/landing-desktop.jpg"
         },
         {
@@ -33,7 +33,7 @@
           "viewport": "desktop",
           "width": 1440,
           "height": 900,
-          "takenAt": "2026-11-02T01:57:23.531Z",
+          "takenAt": "2026-11-02T02:29:08.678Z",
           "url": "screenshots/inview/o-gallery-desktop.jpg"
         },
         {
@@ -43,7 +43,7 @@
           "viewport": "desktop",
           "width": 1440,
           "height": 900,
-          "takenAt": "2026-11-02T01:57:23.531Z",
+          "takenAt": "2026-11-02T02:29:08.678Z",
           "url": "screenshots/inview/o-gallery-works-desktop.jpg"
         },
         {
@@ -53,7 +53,7 @@
           "viewport": "desktop",
           "width": 1440,
           "height": 900,
-          "takenAt": "2026-11-02T01:57:23.531Z",
+          "takenAt": "2026-11-02T02:29:08.678Z",
           "url": "screenshots/inview/o-gallery-prices-desktop.jpg"
         },
         {
@@ -63,7 +63,7 @@
           "viewport": "desktop",
           "width": 1440,
           "height": 900,
-          "takenAt": "2026-11-02T01:57:23.531Z",
+          "takenAt": "2026-11-02T02:29:08.678Z",
           "url": "screenshots/inview/o-gallery-about-desktop.jpg"
         },
         {
@@ -73,7 +73,7 @@
           "viewport": "desktop",
           "width": 1440,
           "height": 900,
-          "takenAt": "2026-11-02T01:57:23.531Z",
+          "takenAt": "2026-11-02T02:29:08.678Z",
           "url": "screenshots/inview/sample-desktop.jpg"
         },
         {
@@ -83,7 +83,7 @@
           "viewport": "desktop",
           "width": 1440,
           "height": 900,
-          "takenAt": "2026-11-02T01:57:23.531Z",
+          "takenAt": "2026-11-02T02:29:08.678Z",
           "url": "screenshots/inview/sample-works-desktop.jpg"
         },
         {
@@ -93,7 +93,7 @@
           "viewport": "desktop",
           "width": 1440,
           "height": 900,
-          "takenAt": "2026-11-02T01:57:23.531Z",
+          "takenAt": "2026-11-02T02:29:08.678Z",
           "url": "screenshots/inview/sample-prices-desktop.jpg"
         },
         {
@@ -103,7 +103,7 @@
           "viewport": "desktop",
           "width": 1440,
           "height": 900,
-          "takenAt": "2026-11-02T01:57:23.531Z",
+          "takenAt": "2026-11-02T02:29:08.678Z",
           "url": "screenshots/inview/sample-about-desktop.jpg"
         },
         {
@@ -113,7 +113,7 @@
           "viewport": "desktop",
           "width": 1440,
           "height": 900,
-          "takenAt": "2026-11-02T01:57:23.531Z",
+          "takenAt": "2026-11-02T02:29:08.678Z",
           "url": "screenshots/inview/o-gallery-site-desktop.jpg"
         },
         {
@@ -123,7 +123,7 @@
           "viewport": "desktop",
           "width": 1440,
           "height": 900,
-          "takenAt": "2026-11-02T01:57:23.531Z",
+          "takenAt": "2026-11-02T02:29:08.678Z",
           "url": "screenshots/inview/me-desktop.jpg"
         },
         {
@@ -133,7 +133,7 @@
           "viewport": "desktop",
           "width": 1440,
           "height": 900,
-          "takenAt": "2026-11-02T01:57:23.531Z",
+          "takenAt": "2026-11-02T02:29:08.678Z",
           "url": "screenshots/inview/staff-sign-in-desktop.jpg"
         },
         {
@@ -143,7 +143,7 @@
           "viewport": "desktop",
           "width": 1440,
           "height": 900,
-          "takenAt": "2026-11-02T01:57:23.531Z",
+          "takenAt": "2026-11-02T02:29:08.678Z",
           "url": "screenshots/inview/ops-sign-in-desktop.jpg"
         },
         {
@@ -153,7 +153,7 @@
           "viewport": "desktop",
           "width": 1440,
           "height": 900,
-          "takenAt": "2026-11-02T01:57:23.531Z",
+          "takenAt": "2026-11-02T02:29:08.678Z",
           "url": "screenshots/inview/demo-dashboard-desktop.jpg"
         },
         {
@@ -163,7 +163,7 @@
           "viewport": "desktop",
           "width": 1440,
           "height": 900,
-          "takenAt": "2026-11-02T01:57:23.531Z",
+          "takenAt": "2026-11-02T02:29:08.678Z",
           "url": "screenshots/inview/demo-artworks-desktop.jpg"
         },
         {
@@ -173,7 +173,7 @@
           "viewport": "mobile",
           "width": 390,
           "height": 844,
-          "takenAt": "2026-11-02T01:57:23.531Z",
+          "takenAt": "2026-11-02T02:29:08.678Z",
           "url": "screenshots/inview/landing-mobile.jpg"
         },
         {
@@ -183,7 +183,7 @@
           "viewport": "mobile",
           "width": 390,
           "height": 844,
-          "takenAt": "2026-11-02T01:57:23.531Z",
+          "takenAt": "2026-11-02T02:29:08.678Z",
           "url": "screenshots/inview/o-gallery-mobile.jpg"
         },
         {
@@ -193,7 +193,7 @@
           "viewport": "mobile",
           "width": 390,
           "height": 844,
-          "takenAt": "2026-11-02T01:57:23.531Z",
+          "takenAt": "2026-11-02T02:29:08.678Z",
           "url": "screenshots/inview/o-gallery-works-mobile.jpg"
         },
         {
@@ -203,7 +203,7 @@
           "viewport": "mobile",
           "width": 390,
           "height": 844,
-          "takenAt": "2026-11-02T01:57:23.531Z",
+          "takenAt": "2026-11-02T02:29:08.678Z",
           "url": "screenshots/inview/o-gallery-prices-mobile.jpg"
         },
         {
@@ -213,7 +213,7 @@
           "viewport": "mobile",
           "width": 390,
           "height": 844,
-          "takenAt": "2026-11-02T01:57:23.531Z",
+          "takenAt": "2026-11-02T02:29:08.678Z",
           "url": "screenshots/inview/o-gallery-about-mobile.jpg"
         },
         {
@@ -223,7 +223,7 @@
           "viewport": "mobile",
           "width": 390,
           "height": 844,
-          "takenAt": "2026-11-02T01:57:23.531Z",
+          "takenAt": "2026-11-02T02:29:08.678Z",
           "url": "screenshots/inview/sample-mobile.jpg"
         },
         {
@@ -233,7 +233,7 @@
           "viewport": "mobile",
           "width": 390,
           "height": 844,
-          "takenAt": "2026-11-02T01:57:23.531Z",
+          "takenAt": "2026-11-02T02:29:08.678Z",
           "url": "screenshots/inview/sample-works-mobile.jpg"
         },
         {
@@ -243,7 +243,7 @@
           "viewport": "mobile",
           "width": 390,
           "height": 844,
-          "takenAt": "2026-11-02T01:57:23.531Z",
+          "takenAt": "2026-11-02T02:29:08.678Z",
           "url": "screenshots/inview/sample-prices-mobile.jpg"
         },
         {
@@ -253,7 +253,7 @@
           "viewport": "mobile",
           "width": 390,
           "height": 844,
-          "takenAt": "2026-11-02T01:57:23.531Z",
+          "takenAt": "2026-11-02T02:29:08.678Z",
           "url": "screenshots/inview/sample-about-mobile.jpg"
         },
         {
@@ -263,7 +263,7 @@
           "viewport": "mobile",
           "width": 390,
           "height": 844,
-          "takenAt": "2026-11-02T01:57:23.531Z",
+          "takenAt": "2026-11-02T02:29:08.678Z",
           "url": "screenshots/inview/o-gallery-site-mobile.jpg"
         },
         {
@@ -273,7 +273,7 @@
           "viewport": "mobile",
           "width": 390,
           "height": 844,
-          "takenAt": "2026-11-02T01:57:23.531Z",
+          "takenAt": "2026-11-02T02:29:08.678Z",
           "url": "screenshots/inview/me-mobile.jpg"
         },
         {
@@ -283,7 +283,7 @@
           "viewport": "mobile",
           "width": 390,
           "height": 844,
-          "takenAt": "2026-11-02T01:57:23.531Z",
+          "takenAt": "2026-11-02T02:29:08.678Z",
           "url": "screenshots/inview/staff-sign-in-mobile.jpg"
         },
         {
@@ -293,7 +293,7 @@
           "viewport": "mobile",
           "width": 390,
           "height": 844,
-          "takenAt": "2026-11-02T01:57:23.531Z",
+          "takenAt": "2026-11-02T02:29:08.678Z",
           "url": "screenshots/inview/ops-sign-in-mobile.jpg"
         },
         {
@@ -303,7 +303,7 @@
           "viewport": "mobile",
           "width": 390,
           "height": 844,
-          "takenAt": "2026-11-02T01:57:23.531Z",
+          "takenAt": "2026-11-02T02:29:08.678Z",
           "url": "screenshots/inview/demo-dashboard-mobile.jpg"
         },
         {
@@ -313,7 +313,7 @@
           "viewport": "mobile",
           "width": 390,
           "height": 844,
-          "takenAt": "2026-11-02T01:57:23.531Z",
+          "takenAt": "2026-11-02T02:29:08.678Z",
           "url": "screenshots/inview/demo-artworks-mobile.jpg"
         }
       ],
@@ -326,7 +326,7 @@
           "url": "https://inview.moshes.io/",
           "access": "public",
           "httpStatus": 200,
-          "checkedAt": "2026-11-02T01:57:23.531Z",
+          "checkedAt": "2026-11-02T02:29:08.678Z",
           "note": null
         },
         {
@@ -337,7 +337,7 @@
           "url": "https://inview.moshes.io/g/o-gallery",
           "access": "public",
           "httpStatus": 200,
-          "checkedAt": "2026-11-02T01:57:23.558Z",
+          "checkedAt": "2026-11-02T02:29:08.701Z",
           "note": null
         },
         {
@@ -348,7 +348,7 @@
           "url": "https://inview.moshes.io/g/o-gallery/works",
           "access": "public",
           "httpStatus": 200,
-          "checkedAt": "2026-11-02T01:57:23.560Z",
+          "checkedAt": "2026-11-02T02:29:08.702Z",
           "note": null
         },
         {
@@ -359,7 +359,7 @@
           "url": "https://inview.moshes.io/g/o-gallery/prices",
           "access": "public",
           "httpStatus": 200,
-          "checkedAt": "2026-11-02T01:57:23.561Z",
+          "checkedAt": "2026-11-02T02:29:08.703Z",
           "note": null
         },
         {
@@ -370,7 +370,7 @@
           "url": "https://inview.moshes.io/g/o-gallery/about",
           "access": "public",
           "httpStatus": 200,
-          "checkedAt": "2026-11-02T01:57:23.562Z",
+          "checkedAt": "2026-11-02T02:29:08.704Z",
           "note": null
         },
         {
@@ -381,7 +381,7 @@
           "url": "https://inview.moshes.io/g/sample",
           "access": "public",
           "httpStatus": 200,
-          "checkedAt": "2026-11-02T01:57:23.563Z",
+          "checkedAt": "2026-11-02T02:29:08.705Z",
           "note": null
         },
         {
@@ -392,7 +392,7 @@
           "url": "https://inview.moshes.io/g/sample/works",
           "access": "public",
           "httpStatus": 200,
-          "checkedAt": "2026-11-02T01:57:23.564Z",
+          "checkedAt": "2026-11-02T02:29:08.706Z",
           "note": null
         },
         {
@@ -403,7 +403,7 @@
           "url": "https://inview.moshes.io/g/sample/prices",
           "access": "public",
           "httpStatus": 200,
-          "checkedAt": "2026-11-02T01:57:23.565Z",
+          "checkedAt": "2026-11-02T02:29:08.707Z",
           "note": null
         },
         {
@@ -414,7 +414,7 @@
           "url": "https://inview.moshes.io/g/sample/about",
           "access": "public",
           "httpStatus": 200,
-          "checkedAt": "2026-11-02T01:57:23.565Z",
+          "checkedAt": "2026-11-02T02:29:08.708Z",
           "note": null
         },
         {
@@ -425,7 +425,7 @@
           "url": "https://inview.moshes.io/site/o-gallery",
           "access": "public",
           "httpStatus": 200,
-          "checkedAt": "2026-11-02T01:57:23.571Z",
+          "checkedAt": "2026-11-02T02:29:08.710Z",
           "note": null
         },
         {
@@ -436,7 +436,7 @@
           "url": "https://inview.moshes.io/me",
           "access": "public",
           "httpStatus": 200,
-          "checkedAt": "2026-11-02T01:57:23.572Z",
+          "checkedAt": "2026-11-02T02:29:08.711Z",
           "note": null
         },
         {
@@ -447,7 +447,7 @@
           "url": "https://inview.moshes.io/dashboard/sign-in",
           "access": "public",
           "httpStatus": 302,
-          "checkedAt": "2026-11-02T01:57:23.573Z",
+          "checkedAt": "2026-11-02T02:29:08.712Z",
           "note": null
         },
         {
@@ -458,7 +458,7 @@
           "url": "https://inview.moshes.io/dashboard/o-gallery",
           "access": "staff",
           "httpStatus": 302,
-          "checkedAt": "2026-11-02T01:57:23.575Z",
+          "checkedAt": "2026-11-02T02:29:08.716Z",
           "note": null
         },
         {
@@ -469,7 +469,7 @@
           "url": "https://inview.moshes.io/staff/sign-in",
           "access": "public",
           "httpStatus": 200,
-          "checkedAt": "2026-11-02T01:57:23.576Z",
+          "checkedAt": "2026-11-02T02:29:08.717Z",
           "note": "Arrives with the staff area release."
         },
         {
@@ -480,7 +480,7 @@
           "url": "https://inview.moshes.io/staff",
           "access": "staff",
           "httpStatus": 302,
-          "checkedAt": "2026-11-02T01:57:23.577Z",
+          "checkedAt": "2026-11-02T02:29:08.717Z",
           "note": null
         },
         {
@@ -491,7 +491,7 @@
           "url": "https://inview.moshes.io/staff/o-gallery",
           "access": "staff",
           "httpStatus": 302,
-          "checkedAt": "2026-11-02T01:57:23.578Z",
+          "checkedAt": "2026-11-02T02:29:08.718Z",
           "note": null
         },
         {
@@ -502,7 +502,7 @@
           "url": "https://inview.moshes.io/ops/sign-in",
           "access": "public",
           "httpStatus": 200,
-          "checkedAt": "2026-11-02T01:57:23.579Z",
+          "checkedAt": "2026-11-02T02:29:08.721Z",
           "note": null
         },
         {
@@ -513,7 +513,7 @@
           "url": "https://inview.moshes.io/ops",
           "access": "operator",
           "httpStatus": 302,
-          "checkedAt": "2026-11-02T01:57:23.579Z",
+          "checkedAt": "2026-11-02T02:29:08.722Z",
           "note": null
         },
         {
@@ -524,7 +524,7 @@
           "url": "https://inview.moshes.io/ops/galleries/new",
           "access": "operator",
           "httpStatus": 302,
-          "checkedAt": "2026-11-02T01:57:23.583Z",
+          "checkedAt": "2026-11-02T02:29:08.723Z",
           "note": null
         },
         {
@@ -535,7 +535,7 @@
           "url": "https://inview.moshes.io/ops/operators",
           "access": "operator",
           "httpStatus": 302,
-          "checkedAt": "2026-11-02T01:57:23.584Z",
+          "checkedAt": "2026-11-02T02:29:08.723Z",
           "note": null
         },
         {
@@ -546,7 +546,7 @@
           "url": "https://inview.moshes.io/ops/audit",
           "access": "operator",
           "httpStatus": 302,
-          "checkedAt": "2026-11-02T01:57:23.584Z",
+          "checkedAt": "2026-11-02T02:29:08.723Z",
           "note": null
         },
         {
@@ -557,7 +557,7 @@
           "url": "https://inview.moshes.io/ops/health",
           "access": "operator",
           "httpStatus": 302,
-          "checkedAt": "2026-11-02T01:57:23.585Z",
+          "checkedAt": "2026-11-02T02:29:08.724Z",
           "note": null
         },
         {
@@ -568,7 +568,7 @@
           "url": "https://inview.moshes.io/dashboard",
           "access": "public",
           "httpStatus": 200,
-          "checkedAt": "2026-11-02T01:57:23.585Z",
+          "checkedAt": "2026-11-02T02:29:08.724Z",
           "note": null
         },
         {
@@ -579,7 +579,7 @@
           "url": "https://inview.moshes.io/dashboard/artworks",
           "access": "public",
           "httpStatus": 200,
-          "checkedAt": "2026-11-02T01:57:23.586Z",
+          "checkedAt": "2026-11-02T02:29:08.725Z",
           "note": null
         },
         {
@@ -590,7 +590,7 @@
           "url": "https://inview.moshes.io/dashboard/audience",
           "access": "public",
           "httpStatus": 200,
-          "checkedAt": "2026-11-02T01:57:23.586Z",
+          "checkedAt": "2026-11-02T02:29:08.725Z",
           "note": null
         },
         {
@@ -601,7 +601,7 @@
           "url": "https://inview.moshes.io/dashboard/website",
           "access": "public",
           "httpStatus": 200,
-          "checkedAt": "2026-11-02T01:57:23.587Z",
+          "checkedAt": "2026-11-02T02:29:08.725Z",
           "note": null
         },
         {
@@ -612,7 +612,7 @@
           "url": "https://inview.moshes.io/dashboard/plans",
           "access": "public",
           "httpStatus": 200,
-          "checkedAt": "2026-11-02T01:57:23.587Z",
+          "checkedAt": "2026-11-02T02:29:08.726Z",
           "note": null
         },
         {
@@ -623,7 +623,7 @@
           "url": "https://inview.moshes.io/api/v1/health",
           "access": "public",
           "httpStatus": 200,
-          "checkedAt": "2026-11-02T01:57:23.587Z",
+          "checkedAt": "2026-11-02T02:29:08.726Z",
           "note": null
         },
         {
@@ -634,7 +634,7 @@
           "url": "https://inview.moshes.io/api/v1/ready",
           "access": "public",
           "httpStatus": 200,
-          "checkedAt": "2026-11-02T01:57:23.588Z",
+          "checkedAt": "2026-11-02T02:29:08.727Z",
           "note": null
         },
         {
@@ -644,7 +644,7 @@
           "url": "https://grafana.moshes.io",
           "access": "internal",
           "httpStatus": 302,
-          "checkedAt": "2026-11-02T01:57:23.588Z",
+          "checkedAt": "2026-11-02T02:29:08.727Z",
           "note": null
         },
         {
@@ -654,7 +654,7 @@
           "url": "https://paper.moshes.io/HAD/issues",
           "access": "internal",
           "httpStatus": 200,
-          "checkedAt": "2026-11-02T01:57:23.589Z",
+          "checkedAt": "2026-11-02T02:29:08.728Z",
           "note": null
         },
         {
@@ -664,7 +664,7 @@
           "url": "https://paper.moshes.io/HAD/docs",
           "access": "internal",
           "httpStatus": 200,
-          "checkedAt": "2026-11-02T01:57:23.589Z",
+          "checkedAt": "2026-11-02T02:29:08.729Z",
           "note": null
         },
         {
@@ -674,7 +674,7 @@
           "url": "https://paper.moshes.io/HAD/deployments",
           "access": "internal",
           "httpStatus": 200,
-          "checkedAt": "2026-11-02T01:57:23.590Z",
+          "checkedAt": "2026-11-02T02:29:08.729Z",
           "note": null
         },
         {
@@ -684,7 +684,7 @@
           "url": "https://github.com/m-esm/inview-mvp/actions",
           "access": "internal",
           "httpStatus": 200,
-          "checkedAt": "2026-11-02T01:57:23.590Z",
+          "checkedAt": "2026-11-02T02:29:08.729Z",
           "note": null
         },
         {
@@ -694,7 +694,7 @@
           "url": "https://github.com/m-esm/inview-mvp/pkgs/container/inview-mvp",
           "access": "internal",
           "httpStatus": 200,
-          "checkedAt": "2026-11-02T01:57:23.591Z",
+          "checkedAt": "2026-11-02T02:29:08.730Z",
           "note": null
         },
         {
@@ -704,7 +704,7 @@
           "url": "https://github.com/m-esm/cluster-had/tree/main/apps/inview",
           "access": "internal",
           "httpStatus": 404,
-          "checkedAt": "2026-11-02T01:57:23.591Z",
+          "checkedAt": "2026-11-02T02:29:08.730Z",
           "note": null
         },
         {
@@ -714,7 +714,7 @@
           "url": "https://inview-media.moshes.io",
           "access": "internal",
           "httpStatus": 404,
-          "checkedAt": "2026-11-02T01:57:23.591Z",
+          "checkedAt": "2026-11-02T02:29:08.731Z",
           "note": "Image host with no index page."
         }
       ],
@@ -772,7 +772,7 @@
         "ok": true,
         "statusCode": 200,
         "bodySnippet": "ok",
-        "checkedAt": "2026-11-02T01:57:50.626Z",
+        "checkedAt": "2026-11-02T02:29:42.131Z",
         "error": null
       },
       "screenshots": []
