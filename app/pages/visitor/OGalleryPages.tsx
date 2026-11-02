@@ -426,7 +426,7 @@ export function OAbout({ record }: { record: PilotRecord }) {
   const artists = artistCounts(record.works.filter((work) => !work.sample), lang)
   return (
     <div className="pad about reveal">
-      <p className="eyebrow" style={record.slug === 'sample' ? { color: '#C9C2B4' } : undefined}>{copy.currentShow}</p>
+      <p className="eyebrow">{copy.currentShow}</p>
       <h1 className="page-title">{pick(lang, record.name, record.nameFa)}</h1>
       <span className="ink-rule" aria-hidden />
       {text ? <p className="reading">{text}</p> : <p className="muted">{copy.emptyNote}</p>}
