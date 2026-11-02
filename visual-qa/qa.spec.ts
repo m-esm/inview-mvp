@@ -31,6 +31,7 @@ for (const vp of viewports) {
           viewport: vp.name,
           lang,
           httpStatus: status,
+          expectedStatus: expected,
           httpOk: status === expected,
           pageErrors: errors,
         }
