@@ -18,15 +18,33 @@ const diffs = existsSync(`${dir}/diffs`)
   : []
 const visualFailed = new Set(diffs.map((f) => f.split('/').pop().replace(/-diff\.png$/, '')))
 
+// Rules accepted in HAD-91 as the paper-and-ink look. They are listed, not failed.
+// Advisory findings from impeccable (straggler, unbalanced-heading) are also listed, not failed.
+// Any other finding fails the verdict.
+const acceptedRules = {
+  'cream-palette': 'warm paper background is the brand look',
+  'kicker-above-heading': 'small label above a heading is part of the gallery type system',
+  'hero-eyebrow-chip': 'the "Current show" label is the gallery type system',
+}
+
 const rows = []
+const notes = []
 const issues = []
 for (const p of pages) {
   const changed = visualFailed.has(p.id)
   const axeCount = p.axe.length
   const imp = impeccable[p.id.replace(/-(fa|en)$/, '')]
-  const impCount = Array.isArray(imp) ? imp.length : null
-  if (imp && !Array.isArray(imp)) issues.push(`${p.id}: impeccable did not run (${imp.error})`)
-  if (impCount) issues.push(`${p.id}: impeccable found ${impCount} anti-patterns`)
+  const expectedError = p.expectedStatus >= 400
+  const skipped = imp && !Array.isArray(imp) && expectedError && p.httpOk
+  if (imp && !Array.isArray(imp) && !skipped) issues.push(`${p.id}: impeccable did not run (${imp.error})`)
+  const failing = Array.isArray(imp)
+    ? imp.filter((f) => f.antipattern === 'low-contrast' || (!f.advisory && !(f.antipattern in acceptedRules)))
+    : []
+  const impCount = Array.isArray(imp) ? failing.length : null
+  for (const f of failing) issues.push(`${p.id}: impeccable ${f.antipattern}: ${f.snippet} (${f.selector})`)
+  if (Array.isArray(imp)) {
+    for (const f of imp) if (!failing.includes(f)) notes.push(`${p.id}: ${f.antipattern}`)
+  }
   if (!p.httpOk) issues.push(`${p.id}: HTTP ${p.httpStatus}`)
   if (changed) issues.push(`${p.id}: screenshot differs from the approved image`)
   for (const v of p.axe) issues.push(`${p.id}: axe ${v.impact} ${v.id} (${v.nodes} nodes)`)
@@ -37,7 +55,7 @@ for (const p of pages) {
   }
   for (const [e, n] of errorCounts) issues.push(`${p.id}: page error x${n}: ${e}`)
   rows.push(
-    `| ${p.id} | ${p.httpStatus} | ${p.visual === 'no-baseline' ? 'no baseline' : changed ? 'changed' : 'same'} | ${axeCount} | ${impCount ?? 'n/a'} |`,
+    `| ${p.id} | ${p.httpStatus} | ${p.visual === 'no-baseline' ? 'no baseline' : changed ? 'changed' : 'same'} | ${axeCount} | ${skipped ? 'skipped (error page)' : impCount ?? 'n/a'} |`,
   )
 }
 
@@ -58,6 +76,14 @@ const lines = [
   '',
   issues.length ? '### Issues' : '### Issues\n\nNone.',
   ...issues.map((i) => `- ${i}`),
+  notes.length ? '\n### Accepted or advisory impeccable findings (not failing)' : '',
+  ...Object.entries(
+    notes.reduce((acc, n) => {
+      const rule = n.split(': ')[1]
+      acc[rule] = (acc[rule] || 0) + 1
+      return acc
+    }, {}),
+  ).map(([rule, n]) => `- ${rule}: ${n} pages${acceptedRules[rule] ? ` (accepted: ${acceptedRules[rule]})` : ' (advisory)'}`),
 ].filter((l) => l !== '')
 
 writeFileSync(`${dir}/summary.md`, lines.join('\n') + '\n')
