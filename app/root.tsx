@@ -20,9 +20,9 @@ import '@fontsource/sora/400.css'
 import '@fontsource/sora/500.css'
 import '@fontsource/sora/600.css'
 import '@fontsource/sora/700.css'
-import '@fontsource/estedad/400.css'
-import '@fontsource/estedad/600.css'
-import '@fontsource/estedad/700.css'
+import fraunces400 from '@fontsource/fraunces/files/fraunces-latin-400-normal.woff2?url'
+import fraunces500 from '@fontsource/fraunces/files/fraunces-latin-500-normal.woff2?url'
+import persianFonts from './styles-fa.css?url'
 import './styles.css'
 
 export const links: Route.LinksFunction = () => [
@@ -45,6 +45,7 @@ export const meta: Route.MetaFunction = ({ data }) => {
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const data = useRouteLoaderData<typeof loader>('root')
+  const persian = data?.lang === 'fa'
   return (
     <html lang={data?.lang ?? 'en'} dir={data?.dir ?? 'ltr'}>
       <head>
@@ -53,6 +54,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <meta name="theme-color" content="#17332E" />
         <Meta />
         <Links />
+        {persian ? (
+          <link rel="stylesheet" href={persianFonts} />
+        ) : (
+          <>
+            <link rel="preload" href={fraunces400} as="font" type="font/woff2" crossOrigin="anonymous" />
+            <link rel="preload" href={fraunces500} as="font" type="font/woff2" crossOrigin="anonymous" />
+          </>
+        )}
       </head>
       <body>
         {children}

@@ -109,6 +109,10 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; }
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+@keyframes settle {
+  from { transform: translateY(10px); }
+  to { transform: translateY(0); }
+}
 
 .ink-rule {
   display: block;
@@ -123,7 +127,7 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; }
 [dir='ltr'] .ink-rule { transform-origin: left; }
 
 .reveal > * {
-  animation: rise calc(var(--dur) + 80ms) var(--ease-out) both;
+  animation: settle calc(var(--dur) + 80ms) var(--ease-out) both;
 }
 .reveal > *:nth-child(1) { animation-delay: 40ms; }
 .reveal > *:nth-child(2) { animation-delay: 100ms; }
