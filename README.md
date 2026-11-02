@@ -82,8 +82,11 @@ baseline that still showed a removed button passed.
 
 ### Regenerate the baselines
 
-Change the pages first. Then regenerate in the image that matches the
-Playwright version in `package.json`:
+CI compares the baselines inside `mcr.microsoft.com/playwright:v1.64.1-noble`.
+Regenerate them in the same image, or the comparison fails on the host
+difference instead of on the page.
+
+Change the pages first. Then run:
 
 ```bash
 docker run --rm --network host -v "$PWD:/w" -w /w \
