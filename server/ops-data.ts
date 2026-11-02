@@ -5,6 +5,7 @@ import { QR_CODE_PATTERN, tehranDay } from '../app/lib/tehran-day'
 import { AccountInputError, type AccountDb } from './accounts'
 import { writeAudit } from './audit'
 import { can, leadPhoneAccess, type Principal } from './authz'
+import { leadsCsv } from './gallery-record'
 import { requireOperator } from './ops'
 import { PermissionError } from './team'
 
@@ -45,11 +46,6 @@ export function requireLeadExport(principal: Principal | null, galleryId: string
   return actor
 }
 
-function csvCell(value: string): string {
-  const safe = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value
-  return /[",\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe
-}
-
 export async function exportGalleryLeads(db: AccountDb, principal: Principal | null, galleryId: string) {
   const actor = requireLeadExport(principal, galleryId)
   return db.transaction(async (tx) => {
@@ -57,12 +53,9 @@ export async function exportGalleryLeads(db: AccountDb, principal: Principal | n
       workId: leads.workId, workTitle: works.title, consentTextVersion: leads.consentTextVersion })
       .from(leads).leftJoin(works, and(eq(works.id, leads.workId), eq(works.galleryId, galleryId)))
       .where(eq(leads.galleryId, galleryId)).orderBy(desc(leads.createdAt), desc(leads.id)).limit(10000)
-    const lines = ['created_at,kind,phone,work_id,work_title,consent_text_version,verified']
-    for (const lead of rows) {
-      lines.push([lead.consentAt.toISOString(), lead.kind, lead.phone, lead.workId ?? '', lead.workTitle ?? '', lead.consentTextVersion, 'no'].map(csvCell).join(','))
-    }
+    const csv = leadsCsv(rows.map((lead) => ({ ...lead, at: lead.consentAt })))
     await writeAudit(tx, { actorUserId: actor.userId, galleryId, action: 'leads-export', targetType: 'gallery', targetId: galleryId, summary: { rows: rows.length } })
-    return `\uFEFF${lines.join('\r\n')}\r\n`
+    return csv
   })
 }
 
