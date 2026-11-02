@@ -286,7 +286,7 @@ export default function GalleryEditor({ initialRecord, initialReport = null, rep
               </div>
             </div>
             <h3>{t.leadsTitle}</h3>
-            <p className="muted small">{t.leadsNote}</p>
+            <p className="muted small">{t.leadsNote} {t.leadsTimeNote}</p>
             {stats.leads.length > 0 ? (
               <ul className="lead-list">
                 {stats.leads.map((lead) => (
@@ -294,7 +294,10 @@ export default function GalleryEditor({ initialRecord, initialReport = null, rep
                     <span dir="ltr" className="lead-phone">{lead.phone}</span>
                     <span className="small">{lead.kind === 'save' ? t.leadSave : t.leadAsk}</span>
                     <span className="small">{titleOf(lead.workId, lead.workTitle)}</span>
-                    <time className="muted small" dateTime={lead.at}>{format.dateTime(lead.at)}</time>
+                    <time className="muted small lead-time" dateTime={lead.at}>
+                      {format.dateTime(lead.at)}
+                      <span className="tiny" dir="ltr">{format.otherDate(lead.at)}</span>
+                    </time>
                     <span className="muted tiny">{t.consentVersion} {lead.consentTextVersion}</span>
                     <span className="pill warn">{t.unverified}</span>
                   </li>

@@ -170,7 +170,7 @@ for (const width of [390, 1440]) {
       const csv = await page.request.get(`/api/v1/pilot/staff/leads.csv?gallery=${owner.slug}`)
       expect(csv.status()).toBe(200)
       expect(csv.headers()['content-type']).toContain('text/csv')
-      expect(await csv.text()).toContain('created_at,kind,phone,work_id,work_title')
+      expect(await csv.text()).toContain('created_at_utc_iso,created_at_tehran_gregorian,created_at_tehran_jalali,kind,phone,work_id,work_title')
     } finally {
       await Promise.all(contexts.map((context) => context.close()))
     }
