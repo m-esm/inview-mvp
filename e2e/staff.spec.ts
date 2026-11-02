@@ -206,3 +206,56 @@ for (const width of [390, 1440]) {
     })
   }
 }
+
+test('the editor takes the show days in the Jalali calendar', async ({ page, baseURL, owner }) => {
+  test.setTimeout(90_000)
+  const origin = new URL(baseURL || 'http://127.0.0.1:3000').origin
+  await page.setViewportSize({ width: 390, height: 900 })
+  await page.context().addCookies([{ name: 'inview-lang', value: 'fa', url: origin }])
+  await signIn(page, owner)
+  await page.goto(`/staff/${owner.slug}`)
+
+  async function setDay(legend: string, year: string, month: string, day: string) {
+    const group = page.getByRole('group', { name: legend, exact: true })
+    await group.getByLabel('سال', { exact: true }).fill(year)
+    await group.getByLabel('ماه', { exact: true }).selectOption({ label: month })
+    await group.getByLabel('روز', { exact: true }).selectOption(day)
+    return group
+  }
+
+  const first = await setDay('روز آغاز', '1405', 'آبان', '10')
+  await expect(first.getByLabel('سال', { exact: true })).toHaveValue('۱۴۰۵')
+  await expect(first.getByText('1 November 2026', { exact: true })).toBeVisible()
+  await setDay('روز پایان', '1405', 'آبان', '29')
+  await accessible(page, `/staff/${owner.slug}`)
+
+  const published = page.waitForResponse((response) =>
+    response.url().includes('/api/v1/pilot') && response.request().method() === 'PUT')
+  await page.getByRole('button', { name: 'انتشار', exact: true }).click()
+  expect((await published).status()).toBe(200)
+
+  await page.goto(`/g/${owner.slug}`)
+  await expect(page.getByText('۱۰ تا ۲۹ آبان ۱۴۰۵', { exact: true })).toBeVisible()
+  await page.context().addCookies([{ name: 'inview-lang', value: 'en', url: origin }])
+  await page.goto(`/g/${owner.slug}`)
+  await expect(page.getByText('November 1 – 20, 2026', { exact: true })).toBeVisible()
+})
+
+test('the editor refuses a last day that comes before the first day', async ({ page, baseURL, owner }) => {
+  test.setTimeout(90_000)
+  const origin = new URL(baseURL || 'http://127.0.0.1:3000').origin
+  await page.context().addCookies([{ name: 'inview-lang', value: 'en', url: origin }])
+  await signIn(page, owner)
+  await page.goto(`/staff/${owner.slug}`)
+  for (const [legend, day] of [['First day', '20'], ['Last day', '1']] as const) {
+    const group = page.getByRole('group', { name: legend, exact: true })
+    await group.getByLabel('Year', { exact: true }).fill('2026')
+    await group.getByLabel('Month', { exact: true }).selectOption({ label: 'November' })
+    await group.getByLabel('Day', { exact: true }).selectOption(day)
+  }
+  await expect(page.getByRole('alert')).toHaveText('The last day is before the first day.')
+  await page.getByRole('button', { name: 'Publish', exact: true }).click()
+  await expect(page.getByRole('alert').last()).toHaveText('The last day is before the first day.')
+  const current = await page.request.get(`/api/v1/pilot?gallery=${owner.slug}`)
+  expect((await current.json()).record.startsOn).toBe(null)
+})
