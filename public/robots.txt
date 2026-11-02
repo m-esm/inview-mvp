@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /me
+Disallow: /dashboard
+Disallow: /staff
+Disallow: /ops
