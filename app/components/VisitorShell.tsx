@@ -1,12 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
-import { Link, NavLink, Outlet, useLocation, useRevalidator, useRouteLoaderData } from 'react-router'
+import { Link, NavLink, Outlet, useLocation, useRouteLoaderData } from 'react-router'
 import { gallery } from '../data/gallery'
 import { useT } from '../lib/i18n'
 import { CONSENT_TEXT_VERSION } from '../lib/consent'
 import { isDatabaseGallery } from '../lib/galleries'
-import { langCookie, type Lang } from '../lib/lang'
 import { gallerySlugFromPath, oCopy, pick, recordLandingScan, seed, type GalleryPageData } from '../lib/pilot'
 import { useVisitor } from '../lib/store'
+import { LangSwitch } from './LangSwitch'
 import { SignInSheet, type SheetKind } from './SignInSheet'
 import { Calendar, Grid, Home, User } from './Icons'
 
@@ -21,7 +21,6 @@ export function VisitorShell() {
   const { phone, consentVersion } = useVisitor()
   const [pending, setPending] = useState<{ kind: SheetKind; action: () => void; subtitle?: string; workId?: string } | null>(null)
   const { pathname } = useLocation()
-  const revalidator = useRevalidator()
 
   // A language switch revalidates instead of reloading, so keep the document in step.
   useEffect(() => {
@@ -36,12 +35,6 @@ export function VisitorShell() {
     if (phone && consentVersion === CONSENT_TEXT_VERSION) action()
     else setPending({ kind, action, subtitle, workId })
   }, [phone, consentVersion])
-
-  const chooseLang = useCallback((next: Lang) => {
-    if (next === lang) return
-    document.cookie = langCookie(next)
-    void revalidator.revalidate()
-  }, [lang, revalidator])
 
   const slug = gallerySlugFromPath(pathname) ?? ''
   const isDb = isDatabaseGallery(slug)
@@ -81,17 +74,14 @@ export function VisitorShell() {
               <span className="ink-rule" aria-hidden />
               {demo && !isPrices && <span className="demo-badge" title={demoCopy.demoNote}>{demoCopy.demoLabel}</span>}
             </div>
-            <div className="lang" role="group" aria-label="Language">
-              <button type="button" aria-pressed={lang === 'en'} onClick={() => chooseLang('en')}>EN</button>
-              <button type="button" aria-pressed={lang === 'fa'} onClick={() => chooseLang('fa')} className="fa-btn">فا</button>
-            </div>
+            <LangSwitch />
           </header>
-          <nav className="v-desktop-nav" aria-label="Visitor">
+          <nav className="v-desktop-nav" aria-label={t.visitorNav}>
             {navItems.map((item) => <NavLink key={item.to} to={item.to} end={item.end}>{item.label}</NavLink>)}
           </nav>
           {demo && !isPrices && <p className="demo-banner" role="note">{demoCopy.demoNote}</p>}
           <main className="v-main"><Outlet /></main>
-          <nav className="v-tabs" aria-label="Visitor">
+          <nav className="v-tabs" aria-label={t.visitorNav}>
             {navItems.map((item) => <NavLink key={item.to} to={item.to} end={item.end}>{item.icon}<span>{item.label}</span></NavLink>)}
           </nav>
           {pending && (
