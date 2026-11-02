@@ -76,6 +76,27 @@ test.describe('smoke', () => {
     })
   }
 
+  test('robots.txt comes from the app and keeps the visitor routes crawlable', async ({ request }) => {
+    const response = await request.get('/robots.txt')
+    expect(response.status()).toBe(200)
+    expect(response.headers()['content-type']).toMatch(/text\/plain/)
+    const body = await response.text()
+    const directives = body
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0 && !line.startsWith('#'))
+      .map((line) => line.split(':')[0].toLowerCase())
+    expect(directives.length).toBeGreaterThan(0)
+    for (const directive of directives) {
+      expect(['user-agent', 'allow', 'disallow', 'sitemap'], body).toContain(directive)
+    }
+    expect(body).toMatch(/^User-agent: \*$/m)
+    expect(body).toMatch(/^Allow: \/$/m)
+    for (const path of ['/me', '/dashboard', '/staff', '/ops']) {
+      expect(body, path).toContain(`Disallow: ${path}`)
+    }
+  })
+
   test('health API', async ({ request }) => {
     const response = await request.get('/api/v1/health')
     expect(response.status()).toBe(200)
