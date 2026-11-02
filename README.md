@@ -97,7 +97,7 @@ merges a sync pull request when a fast-forward is not possible.
 | `MEDIA_DIR` | Local media folder when S3 is not set |
 | `S3_BUCKET`, `S3_ENDPOINT`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_PUBLIC_HOST` | Garage / S3 |
 | `KAVENEGAR_API_KEY`, `KAVENEGAR_SENDER` | SMS OTP (optional; console provider is the default) |
-| `RATE_LIMIT_IP_SALT` | Salt for client-address hashes. Set this in production. The server does not store the address. |
+| `RATE_LIMIT_*` | Rate-limit salt, counts and windows. The server does not store the address. See [Rate limits](#rate-limits) for each variable. |
 | `S3_PUBLIC_BASE` | Public origin plus the bucket path. Production: `https://inview-media.moshes.io/inview` |
 | `S3_OBJECT_PREFIX` | Object key prefix the media route can serve. Production: `u` |
 
@@ -105,7 +105,7 @@ merges a sync pull request when a fast-forward is not possible.
 
 The server stores fixed windows in Postgres. It does not use Redis.
 
-Publish, staff sign-in and upload check the access code.
+Publish, the staff report, upload and staff sign-in check the access code.
 A failed check counts for the client address and for the gallery.
 An accepted check counts on separate limits.
 Visits and leads count for the visitor id and for the client address.
@@ -116,40 +116,42 @@ The client address comes from `CF-Connecting-IP`.
 When that header is absent or not an address, the server uses the socket address.
 It does not read `X-Forwarded-For`.
 The stored key is a SHA-256 hash of `RATE_LIMIT_IP_SALT`, the UTC date and the address.
-Set `RATE_LIMIT_IP_SALT` in production.
-If it is missing there, the process creates a salt that changes on restart.
 The log does not show the salt or the address.
 
 A request over a limit returns status 429.
 The response has a `Retry-After` header.
 `error` is English. `errorFa` is Persian.
 
+Each `*_MAX` value is the number of requests that one subject can make in its window.
+Each `*_WINDOW_SEC` value is the length of that window in seconds.
 An empty or invalid number uses the default.
-Window values are seconds.
+The defaults are in `rateLimitConfig` in `server/rate-limit.ts`.
 
-| Variable | Default |
-|---|---|
-| `RATE_LIMIT_ACCESS_FAIL_IP_MAX` | 8 |
-| `RATE_LIMIT_ACCESS_FAIL_IP_WINDOW_SEC` | 900 |
-| `RATE_LIMIT_ACCESS_FAIL_GALLERY_MAX` | 100 |
-| `RATE_LIMIT_ACCESS_FAIL_GALLERY_WINDOW_SEC` | 900 |
-| `RATE_LIMIT_ACCESS_ACCEPT_IP_MAX` | 120 |
-| `RATE_LIMIT_ACCESS_ACCEPT_IP_WINDOW_SEC` | 900 |
-| `RATE_LIMIT_ACCESS_ACCEPT_GALLERY_MAX` | 300 |
-| `RATE_LIMIT_ACCESS_ACCEPT_GALLERY_WINDOW_SEC` | 900 |
-| `RATE_LIMIT_VISIT_VISITOR_MAX` | 40 |
-| `RATE_LIMIT_VISIT_VISITOR_WINDOW_SEC` | 600 |
-| `RATE_LIMIT_VISIT_IP_MAX` | 600 |
-| `RATE_LIMIT_VISIT_IP_WINDOW_SEC` | 600 |
-| `RATE_LIMIT_LEAD_VISITOR_MAX` | 5 |
-| `RATE_LIMIT_LEAD_VISITOR_WINDOW_SEC` | 3600 |
-| `RATE_LIMIT_LEAD_IP_MAX` | 40 |
-| `RATE_LIMIT_LEAD_IP_WINDOW_SEC` | 3600 |
-| `RATE_LIMIT_UPLOAD_GALLERY_MAX` | 80 |
-| `RATE_LIMIT_UPLOAD_GALLERY_WINDOW_SEC` | 3600 |
+| Variable | Default | Meaning |
+|---|---|---|
+| `RATE_LIMIT_IP_SALT` | none | Salt for the client-address hash. Set this in production. Give both replicas the same value. Without it, a production process makes a salt that changes on restart. |
+| `RATE_LIMIT_ACCESS_FAIL_IP_MAX` | 8 | Failed access-code checks for one client address. |
+| `RATE_LIMIT_ACCESS_FAIL_IP_WINDOW_SEC` | 900 | Window for failed checks from one client address. |
+| `RATE_LIMIT_ACCESS_FAIL_GALLERY_MAX` | 100 | Failed access-code checks for one gallery, from all addresses. |
+| `RATE_LIMIT_ACCESS_FAIL_GALLERY_WINDOW_SEC` | 900 | Window for failed checks on one gallery. |
+| `RATE_LIMIT_ACCESS_ACCEPT_IP_MAX` | 120 | Accepted access-code checks for one client address. |
+| `RATE_LIMIT_ACCESS_ACCEPT_IP_WINDOW_SEC` | 900 | Window for accepted checks from one client address. |
+| `RATE_LIMIT_ACCESS_ACCEPT_GALLERY_MAX` | 300 | Accepted access-code checks for one gallery, from all addresses. |
+| `RATE_LIMIT_ACCESS_ACCEPT_GALLERY_WINDOW_SEC` | 900 | Window for accepted checks on one gallery. |
+| `RATE_LIMIT_VISIT_VISITOR_MAX` | 40 | Visit events for one visitor id in one gallery. |
+| `RATE_LIMIT_VISIT_VISITOR_WINDOW_SEC` | 600 | Window for visit events from one visitor id. |
+| `RATE_LIMIT_VISIT_IP_MAX` | 600 | Visit events for one client address in one gallery. |
+| `RATE_LIMIT_VISIT_IP_WINDOW_SEC` | 600 | Window for visit events from one client address. |
+| `RATE_LIMIT_LEAD_VISITOR_MAX` | 5 | Lead submits for one visitor id in one gallery. |
+| `RATE_LIMIT_LEAD_VISITOR_WINDOW_SEC` | 3600 | Window for lead submits from one visitor id. |
+| `RATE_LIMIT_LEAD_IP_MAX` | 40 | Lead submits for one client address in one gallery. |
+| `RATE_LIMIT_LEAD_IP_WINDOW_SEC` | 3600 | Window for lead submits from one client address. |
+| `RATE_LIMIT_UPLOAD_GALLERY_MAX` | 80 | Upload starts for one gallery. |
+| `RATE_LIMIT_UPLOAD_GALLERY_WINDOW_SEC` | 3600 | Window for upload starts on one gallery. |
 
 The visit limit per address is high because many phones can share one network at a show.
 Failed checks and accepted checks are separate, so wrong codes do not consume the upload budget.
+A request with a valid staff session does not use an access limit. The upload limit still applies to it.
 
 ## Deploy notes
 
