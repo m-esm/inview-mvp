@@ -9,7 +9,7 @@ type MetaMatch = { id: string; data?: unknown } | undefined
 const copy = {
   en: {
     site: 'Inview',
-    tagline: 'The show, the works and the prices, in your pocket.',
+    tagline: 'The current show, its works and their prices, on your phone.',
     works: 'Works',
     prices: 'Price list',
     about: 'Visit and contact',
@@ -24,7 +24,7 @@ const copy = {
   },
   fa: {
     site: 'اینویو',
-    tagline: 'نمایشگاه، آثار و قیمت‌ها در جیب شما.',
+    tagline: 'نمایشگاه جاری، آثار و قیمت‌هایشان روی گوشی شما.',
     works: 'آثار',
     prices: 'فهرست قیمت',
     about: 'بازدید و تماس',

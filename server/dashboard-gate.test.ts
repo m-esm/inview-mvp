@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import * as React from 'react'
 import { createElement } from 'react'
 import { renderToString } from 'react-dom/server'
-import { Route, Routes, StaticRouter } from 'react-router'
+import { createRoutesStub } from 'react-router'
 import GalleryLayout from '../app/pages/gallery/GalleryLayout.tsx'
 import { StaffSignIn } from '../app/pages/gallery/StaffSignIn.tsx'
 import { renderStaff } from './test-render.ts'
@@ -11,21 +11,14 @@ import { renderStaff } from './test-render.ts'
 ;(globalThis as unknown as { React: typeof React }).React = React
 
 test('the Rooz dashboard renders without the client password gate', () => {
-  const html = renderToString(
-    createElement(
-      StaticRouter,
-      { location: '/dashboard' },
-      createElement(
-        Routes,
-        null,
-        createElement(
-          Route,
-          { path: '/dashboard', element: createElement(GalleryLayout) },
-          createElement(Route, { index: true, element: createElement('p', null, 'rooz-demo') }),
-        ),
-      ),
-    ),
-  )
+  const Stub = createRoutesStub([
+    {
+      path: '/dashboard',
+      Component: GalleryLayout,
+      children: [{ index: true, Component: () => createElement('p', null, 'rooz-demo') }],
+    },
+  ])
+  const html = renderToString(createElement(Stub, { initialEntries: ['/dashboard'] }))
   assert.match(html, /rooz-demo/)
   assert.match(html, /Quiet Rooms/)
   assert.match(html, /Demo/)

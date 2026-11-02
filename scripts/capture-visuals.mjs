@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Capture before/after screenshots for the redesign PR.
+ * Capture before/after screenshots.
  * Usage:
  *   BASE_URL=https://inview.moshes.io OUT_DIR=artifacts/before node scripts/capture-visuals.mjs
  *   BASE_URL=http://127.0.0.1:3000 OUT_DIR=artifacts/after node scripts/capture-visuals.mjs

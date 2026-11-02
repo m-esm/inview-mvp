@@ -18,8 +18,8 @@ export function LangSwitch() {
 
   return (
     <div className="lang" role="group" aria-label={t.language}>
-      <button type="button" aria-pressed={lang === 'en'} onClick={() => choose('en')}>EN</button>
-      <button type="button" aria-pressed={lang === 'fa'} onClick={() => choose('fa')} className="fa-btn">فا</button>
+      <button type="button" aria-pressed={lang === 'en'} onClick={() => choose('en')} lang="en">EN</button>
+      <button type="button" aria-pressed={lang === 'fa'} onClick={() => choose('fa')} className="fa-btn" lang="fa">فا</button>
     </div>
   )
 }

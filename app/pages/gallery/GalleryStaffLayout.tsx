@@ -1,11 +1,14 @@
-import { Link } from 'react-router'
+import { Link, useNavigation } from 'react-router'
+import { SkipLink } from '../../components/SkipLink'
 import { StaffLangSwitch } from '../../components/StaffLangSwitch'
 import { useStaffT } from '../../lib/i18n-staff'
 
 export function GalleryStaffLayout({ children, gallery, permissions = [], titleKey = 'pageTitle' }: { children: React.ReactNode; gallery: { slug: string; nameEn: string; nameFa: string }; permissions?: string[]; titleKey?: 'pageTitle' | 'team' | 'createQr' | null }) {
   const { t, lang, dir } = useStaffT()
+  const busy = useNavigation().state !== 'idle'
   return (
     <div className={`staff staff-${lang}`} dir={dir}>
+      <SkipLink label={t.skipToContent} />
       <header className="staff-bar">
         <div className="staff-id">
           <p className="brand">{t.brand} <span>{t.brandSub}</span></p>
@@ -29,7 +32,7 @@ export function GalleryStaffLayout({ children, gallery, permissions = [], titleK
           </form>
         </div>
       </header>
-      <main className="staff-main">
+      <main id="main" tabIndex={-1} className="staff-main" aria-busy={busy || undefined}>
         {titleKey && <header className="dash-head">
           <div>
             <p className="muted small">{t.pageEyebrow}</p>

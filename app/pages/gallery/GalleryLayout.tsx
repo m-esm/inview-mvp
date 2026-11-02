@@ -1,9 +1,12 @@
 import { useEffect } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router'
+import { NavLink, Outlet, useLocation, useNavigation } from 'react-router'
+import { SkipLink } from '../../components/SkipLink'
+import { staffDictionaries } from '../../lib/i18n-staff'
 import { gallery, report, show } from '../../data/gallery'
 
 export default function GalleryLayout() {
   const { pathname } = useLocation()
+  const busy = useNavigation().state !== 'idle'
   const page = pathname.endsWith('/website') ? 'Website and import' : pathname.endsWith('/plans') ? 'Plans' : null
 
   useEffect(() => {
@@ -13,6 +16,7 @@ export default function GalleryLayout() {
 
   return (
     <div className="dash">
+      <SkipLink label={staffDictionaries.en.skipToContent} />
       <aside className="side" aria-label="Gallery">
         <p className="brand">Inview <span>for galleries</span></p>
         <p className="demo-flag" role="note"><strong>Demo</strong> Sample gallery with illustrative numbers. It is not O Gallery data.</p>
@@ -20,7 +24,7 @@ export default function GalleryLayout() {
           <span className="avatar sq">RG</span>
           <span>
             <strong>{gallery.name}</strong>
-            <span className="muted small">Growth plan</span>
+            <span className="muted small">Demo plan</span>
           </span>
         </div>
         <nav aria-label="Dashboard">
@@ -31,7 +35,7 @@ export default function GalleryLayout() {
           <NavLink to="/dashboard/plans">Plans</NavLink>
         </nav>
       </aside>
-      <main className="dash-main">
+      <main id="main" tabIndex={-1} className="dash-main" aria-busy={busy || undefined}>
         <header className="dash-head">
           {page ? (
             <div>

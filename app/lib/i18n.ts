@@ -12,7 +12,7 @@ const en = {
   artworksSub: 'Browse, save and share the works',
   priceList: 'Price list',
   allPricesToman: 'All prices in Toman',
-  samplePricesNote: 'This catalogue includes sample works that do not belong to the gallery.',
+  samplePricesNote: 'Some works in this catalogue are samples. They do not belong to the gallery.',
   galleryNav: 'Gallery',
   visitNav: 'Visit',
   language: 'Language',
@@ -69,8 +69,8 @@ const en = {
   passport: 'Gallery passport',
   passportLeft: (n: number) => `Visit ${n} more galleries to receive a private preview invitation.`,
   noSaved: 'Tap the heart on any work to keep it here.',
-  thisFriday: 'This Friday: 3 openings for you',
-  thisFridaySub: 'Including an artist you follow',
+  thisFriday: 'Openings',
+  thisFridaySub: 'Follow a gallery to hear about its next opening.',
   resetDemo: 'Reset demo',
   workOf: (i: number, n: number) => `Work ${i} of ${n}`,
   workMissing: 'This work is not in the current show.',
@@ -83,6 +83,7 @@ const en = {
   loadFailed: 'The page did not load',
   loadFailedBody: 'Try again in a moment.',
   goToGallery: 'Go to the gallery',
+  skipToContent: 'Skip to content',
 }
 type Dict = typeof en
 
@@ -93,7 +94,7 @@ const fa: Dict = {
   artworksSub: 'آثار را ببینید، ذخیره و به اشتراک بگذارید',
   priceList: 'فهرست قیمت',
   allPricesToman: 'همه قیمت‌ها به تومان',
-  samplePricesNote: 'این فهرست شامل آثار نمونه است که متعلق به گالری نیستند.',
+  samplePricesNote: 'برخی آثار این فهرست نمونه‌اند و متعلق به گالری نیستند.',
   galleryNav: 'گالری',
   visitNav: 'بازدید',
   language: 'زبان',
@@ -150,8 +151,8 @@ const fa: Dict = {
   passport: 'پاسپورت گالری',
   passportLeft: (n) => `برای دعوت به پیش‌نمایش خصوصی، ${toFa(n)} گالری دیگر را ببینید.`,
   noSaved: 'روی قلب هر اثر بزنید تا اینجا بماند.',
-  thisFriday: 'این جمعه: ۳ افتتاحیه برای شما',
-  thisFridaySub: 'از جمله هنرمندی که دنبالش می‌کنید',
+  thisFriday: 'افتتاحیه‌ها',
+  thisFridaySub: 'گالری را دنبال کنید تا از افتتاحیه بعدی‌اش باخبر شوید.',
   resetDemo: 'شروع دوباره نسخه نمایشی',
   workOf: (i, n) => `اثر ${toFa(i)} از ${toFa(n)}`,
   workMissing: 'این اثر در نمایشگاه جاری نیست.',
@@ -164,6 +165,7 @@ const fa: Dict = {
   loadFailed: 'صفحه بارگذاری نشد',
   loadFailedBody: 'چند لحظه بعد دوباره تلاش کنید.',
   goToGallery: 'رفتن به گالری',
+  skipToContent: 'رفتن به محتوا',
 }
 
 export function toFa(v: number | string): string {

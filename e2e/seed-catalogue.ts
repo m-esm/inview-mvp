@@ -4,13 +4,7 @@ import postgres from 'postgres'
 import * as schema from '../database/schema'
 import { ensureOGalleryTenant } from '../server/gallery-bootstrap'
 
-/**
- * Writes an O Gallery catalogue straight into the database.
- *
- * The pages now render on the server, so a test that needs a filled or an empty
- * catalogue has to put that state in the database. The publish API refuses the
- * demo image paths these fixtures use, so this helper writes the rows itself.
- */
+/** Writes an O Gallery catalogue straight into the database. The publish API refuses the demo image paths these fixtures use. */
 export interface SeedWork {
   id: string
   title: string

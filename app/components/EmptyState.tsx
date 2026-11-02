@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 
 export function EmptyState({
   title,
@@ -9,12 +9,13 @@ export function EmptyState({
   body?: string
   action?: ReactNode
 }) {
+  const titleId = useId()
   return (
-    <div className="empty-state reveal" role="status">
+    <section className="empty-state reveal" aria-labelledby={titleId}>
       <span className="ink-rule" aria-hidden />
-      <h2>{title}</h2>
+      <h2 id={titleId}>{title}</h2>
       {body ? <p>{body}</p> : null}
       {action}
-    </div>
+    </section>
   )
 }

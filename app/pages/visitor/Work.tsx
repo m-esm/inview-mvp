@@ -1,4 +1,4 @@
-import { Link, useLoaderData, useNavigate, useParams } from 'react-router'
+import { Link, useLoaderData, useLocation, useNavigate, useParams } from 'react-router'
 import { useState } from 'react'
 import { OWork } from './OGalleryPages'
 import { artworks, gallery } from '../../data/gallery'
@@ -7,6 +7,7 @@ import type { GalleryPageData, PilotWork } from '../../lib/pilot'
 import { useVisitor, visitor } from '../../lib/store'
 import { useSignIn } from '../../components/VisitorShell'
 import { Back, Chat, Heart } from '../../components/Icons'
+import { highFetchPriority } from '../../lib/image-priority'
 
 export default function Work() {
   const { work, pilot } = useLoaderData() as GalleryPageData & { work: PilotWork | null }
@@ -18,6 +19,7 @@ export default function Work() {
 function RoozWork() {
   const { id } = useParams()
   const nav = useNavigate()
+  const location = useLocation()
   const { t, price, status, artist, medium, size, year, title } = useT()
   const { saved, follows } = useVisitor()
   const { requireSignIn } = useSignIn()
@@ -42,11 +44,11 @@ function RoozWork() {
   return (
     <div className="work">
       <div className="pad row between">
-        <button className="btn-text inline" onClick={() => nav(-1)}><Back />{t.back}</button>
+        <button className="btn-text inline" onClick={() => (location.key === 'default' ? nav(`${base}/works`) : nav(-1))}><Back />{t.back}</button>
         <span className="muted small">{t.workOf(i + 1, artworks.length)}</span>
       </div>
       <figure className="work-figure">
-        <img src={a.image} alt={a.alt} />
+        <img src={a.image} alt={a.alt} width={a.width} height={a.height} {...highFetchPriority} />
       </figure>
       <div className="pad wall-label reveal">
         <h1 className="work-artist">{artist(a)}</h1>
@@ -59,17 +61,17 @@ function RoozWork() {
         </div>
       </div>
       <div className="pad actions">
-        <button className={`btn ${isSaved ? 'btn-quiet' : 'btn-primary'}`} aria-pressed={isSaved}
+        <button className={`btn ${isSaved ? 'btn-quiet' : 'btn-primary'}`}
           onClick={() => (isSaved ? visitor.toggleSaved(a.id) : requireSignIn('save', () => visitor.save(a.id), `${artist(a)}, ${title(a)}`))}>
           <Heart filled={isSaved} />{isSaved ? t.saved : t.save}
         </button>
         {a.status !== 'sold' && (
-          <button className="btn btn-outline" disabled={asked === a.id}
-            onClick={() => requireSignIn('ask', () => setAsked(a.id), `${artist(a)}, ${title(a)}`)}>
+          <button className={`btn btn-outline ${asked === a.id ? 'is-done' : ''}`} aria-disabled={asked === a.id || undefined}
+            onClick={() => { if (asked !== a.id) requireSignIn('ask', () => setAsked(a.id), `${artist(a)}, ${title(a)}`) }}>
             <Chat />{asked === a.id ? t.asked : t.ask}
           </button>
         )}
-        <button className="btn-text" aria-pressed={isFollowing}
+        <button className="btn-text"
           onClick={() => (isFollowing ? visitor.toggleFollow(a.artist) : requireSignIn('follow', () => visitor.toggleFollow(a.artist), artist(a)))}>
           {isFollowing ? `${t.following}: ${artist(a)}` : `${t.follow}: ${artist(a)}`}
         </button>

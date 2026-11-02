@@ -40,7 +40,7 @@ function RoozAbout() {
                   <strong>{artist(works[0])}</strong>
                   <span className="muted small">{n(works.length)} {t.artworks.toLowerCase()}</span>
                 </span>
-                <button className={`btn small-btn ${on ? 'btn-quiet' : 'btn-outline'}`} aria-pressed={on}
+                <button className={`btn small-btn ${on ? 'btn-quiet' : 'btn-outline'}`}
                   onClick={() => (on ? visitor.toggleFollow(name) : requireSignIn('follow', () => visitor.toggleFollow(name), name))}>
                   {on ? t.following : t.follow}
                 </button>

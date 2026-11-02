@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Link } from 'react-router'
 import { LangSwitch } from '../../components/LangSwitch'
 import { useT } from '../../lib/i18n'
+import { SkipLink } from '../../components/SkipLink'
 import { oCopy, pick, type PilotRecord, type PilotWork } from '../../lib/pilot'
 
 export default function OGallerySite({ record }: { record: PilotRecord }) {
@@ -24,6 +25,7 @@ export default function OGallerySite({ record }: { record: PilotRecord }) {
 
   return (
     <div className={`site o-site ${lang === 'fa' ? 'fa' : ''}`} dir={dir}>
+      <SkipLink label={t.skipToContent} />
       {record.demo && <p className="demo-banner" role="note"><strong>{copy.demoLabel}</strong> {copy.demoNote}</p>}
       <header className="site-top">
         {record.logo
@@ -37,7 +39,7 @@ export default function OGallerySite({ record }: { record: PilotRecord }) {
           <LangSwitch />
         </div>
       </header>
-      <main>
+      <main id="main" tabIndex={-1}>
         <section className="o-site-intro" id="current">
           <p className="muted">{copy.currentShow}{dates ? `, ${dates}` : ''}</p>
           <h1>{title || name}</h1>
@@ -84,7 +86,7 @@ function WorkGrid({ works, lang, slug, galleryName }: { works: PilotWork[], lang
         <Link key={work.id} to={`/g/${slug}/works/${work.id}`} className="site-card link">
           {work.image && <img src={work.image} alt="" />}
           <h3>{work.title}</h3>
-          <p className="muted small">{[work.artist, work.medium, work.size].filter(Boolean).join(' · ') || '—'}</p>
+          {[work.artist, work.medium, work.size].some(Boolean) && <p className="muted small">{[work.artist, work.medium, work.size].filter(Boolean).join(' · ')}</p>}
           {work.sample && <p className="sample-note">{copy.sampleBanner}</p>}
           <p className="small"><strong>{work.status === 'sold' ? t.sold : work.price == null ? t.priceOnRequest : `${n(work.price)} ${t.toman}`}</strong></p>
         </Link>
