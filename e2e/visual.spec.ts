@@ -34,6 +34,21 @@ const viewports = [
 
 const langs = ['fa', 'en'] as const
 
+const MAX_DIFF_PIXELS = 250
+
+const PERSIAN_SYSTEM_SERIF_FALLBACK = ['.gate-panel h2', '.gate-card .brand span']
+
+function hostFontMasks(page: Page, lang: (typeof langs)[number]) {
+  if (lang !== 'fa') return []
+  return PERSIAN_SYSTEM_SERIF_FALLBACK.map((selector) => page.locator(selector))
+}
+
+async function waitForFonts(page: Page) {
+  await page.evaluate(async () => {
+    await document.fonts.ready
+  })
+}
+
 test.describe('visual landing', () => {
   for (const vp of viewports) {
     for (const lang of langs) {
@@ -41,12 +56,13 @@ test.describe('visual landing', () => {
         await page.setViewportSize({ width: vp.width, height: vp.height })
         await seedLang(page, lang)
         await page.goto('/', { waitUntil: 'load' })
-        await page.evaluate(() => document.fonts.ready)
+        await waitForFonts(page)
         await expect(page.locator('.landing')).toBeVisible()
         await expect(page).toHaveScreenshot(`landing-${vp.name}-${lang}.png`, {
           animations: 'disabled',
           fullPage: true,
-          maxDiffPixelRatio: 0.03,
+          mask: hostFontMasks(page, lang),
+          maxDiffPixels: MAX_DIFF_PIXELS,
         })
       })
     }
@@ -60,11 +76,13 @@ async function seedLang(page: Page, lang: 'fa' | 'en') {
 
 async function shot(page: Page, name: string, vp: (typeof viewports)[number], lang: (typeof langs)[number]) {
   await page.waitForTimeout(600)
+  await waitForFonts(page)
   await expect(page.locator('body')).toBeVisible()
   await expect(page).toHaveScreenshot(`${name}-${vp.name}-${lang}.png`, {
     animations: 'disabled',
     fullPage: false,
-    maxDiffPixelRatio: 0.03,
+    mask: hostFontMasks(page, lang),
+    maxDiffPixels: MAX_DIFF_PIXELS,
   })
 }
 
