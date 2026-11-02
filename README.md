@@ -105,7 +105,7 @@ merges a sync pull request when a fast-forward is not possible.
 
 The server stores fixed windows in Postgres. It does not use Redis.
 
-Publish, staff sign-in and upload check the access code.
+Publish, the staff report, upload and staff sign-in check the access code.
 A failed check counts for the client address and for the gallery.
 An accepted check counts on separate limits.
 Visits and leads count for the visitor id and for the client address.
