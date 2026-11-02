@@ -69,6 +69,43 @@ npm test
 
 Tests use an in-process Postgres (PGlite). They do not need Docker.
 
+## Visual baselines
+
+`e2e/visual.spec.ts` compares each page with a PNG in
+`e2e/visual.spec.ts-snapshots`. A shot fails when more than 200 pixels change.
+That budget absorbs the antialiasing of Linux Chromium. It does not absorb a
+changed button, a changed word or a changed space.
+
+Earlier the budget was a ratio of the image. A ratio scales with the page, so
+on the 1440x3245 landing shot it allowed about 140000 changed pixels. A
+baseline that still showed a removed button passed.
+
+### Regenerate the baselines
+
+Change the pages first. Then regenerate in the image that matches the
+Playwright version in `package.json`:
+
+```bash
+docker run --rm --network host -v "$PWD:/w" -w /w \
+  -e DATABASE_URL -e O_GALLERY_ACCESS_CODE -e PUBLIC_APP_URL \
+  mcr.microsoft.com/playwright:v1.64.1-noble \
+  npx playwright test visual --update-snapshots=all
+```
+
+Use `--update-snapshots=all`. Plain `--update-snapshots` keeps each baseline
+that stays inside the budget, so it leaves a stale baseline in place.
+
+Read the diff of the PNG files before you commit them. A baseline that you
+regenerate without a page change hides the next regression.
+
+### Masked regions
+
+Persian text in the staff sign-in panel heading and in the brand subtitle has
+no glyph in Fraunces. Chromium falls back to the system serif, and the system
+serif is not the same on every machine. The spec masks those two elements in
+Persian so the comparison tests the page, not the host. Remove the mask when
+the staff console styles that Persian text with the `--fa` family.
+
 ## Build and run the container
 
 ```bash
