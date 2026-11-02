@@ -191,7 +191,6 @@ export default function InviewLanding({ contact = landingContact }: { contact?: 
               <p>{words.proofIntro}</p>
               {lang === 'en' && <p>{words.persianDemo}</p>}
             </div>
-            <Link className="btn btn-outline" to={DEMO_PATH}>{words.demo}</Link>
           </div>
           <div className="landing-screens" tabIndex={0} role="region" aria-label={words.screensLabel}>
             {screens.map((screen, index) => (
