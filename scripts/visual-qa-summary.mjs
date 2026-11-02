@@ -18,7 +18,7 @@ const diffs = existsSync(`${dir}/diffs`)
   : []
 const visualFailed = new Set(diffs.map((f) => f.split('/').pop().replace(/-diff\.png$/, '')))
 
-// Rules the design owner accepted as the paper-and-ink look. They are listed, not failed.
+// Rules accepted in HAD-91 as the paper-and-ink look. They are listed, not failed.
 // Advisory findings from impeccable (straggler, unbalanced-heading) are also listed, not failed.
 // Any other finding fails the verdict.
 const acceptedRules = {

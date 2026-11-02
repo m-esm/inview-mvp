@@ -979,7 +979,7 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; }
 .sample-note {
   display: block;
   margin: 4px 0 0;
-  color: #A4562F;
+  color: var(--warn);
   font-size: 13px;
   font-weight: 600;
 }
