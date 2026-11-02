@@ -485,8 +485,12 @@ test('repeated bad access codes return 429', async () => {
       assert.equal(one.status, 401)
       assert.equal(two.status, 429)
       assert.equal(three.status, 429)
-      assert.equal(three.body.error, 'Too many requests. Try again later.')
-      assert.ok(Number(three.headers['retry-after']) > 0)
+      // The access-code path builds its own 429 body. Both messages have to survive the route.
+      for (const blocked of [two, three]) {
+        assert.equal(blocked.body.error, 'Too many requests. Try again later.')
+        assert.equal(blocked.body.errorFa, 'درخواست‌ها زیاد است. کمی بعد دوباره تلاش کنید.')
+        assert.ok(Number(blocked.headers['retry-after']) > 0)
+      }
     })
   } finally {
     if (previous === undefined) delete process.env.RATE_LIMIT_ACCESS_FAIL_IP_MAX

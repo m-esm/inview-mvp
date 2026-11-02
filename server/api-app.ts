@@ -3,7 +3,7 @@ import type { ErrorRequestHandler, Express, Request } from 'express'
 import { media } from '../database/schema'
 import { clearPublicRecordCache, loadStaffRecord, publishGalleryRecordForSession, tenantBySlug } from './gallery-record'
 import { displayVariant, processAndStoreImage, UploadError } from './images'
-import { beginUpload, clientIpFrom, principalFromCode, runPilotRequest, writeApiResult } from './rate-limit'
+import { beginUpload, clientIpFrom, principalFromCode, runPilotRequest, writeApiResult, type ApiResult } from './rate-limit'
 import { requestIsSecure } from './staff-session'
 import type { ObjectStorage } from './storage'
 import { isMultipart, readMultipart } from './upload-body'
@@ -31,6 +31,14 @@ function sendJson(res: express.Response, status: number, body: unknown) {
   res.status(status).json(body)
 }
 
+// A thrown Response reaches apiFailure without its body, which drops the Persian message a
+// limiter result carries. Limiter results travel in this error instead.
+class ApiResultError extends Error {
+  constructor(readonly result: ApiResult) {
+    super(`api ${result.status}`)
+  }
+}
+
 async function apiTenant(db: Db, req: Request, slug: unknown, action: Action, code?: unknown) {
   if (typeof slug !== 'string' || !slug) throw new Response('A gallery slug is required.', { status: 400 })
   const tenant = await tenantBySlug(db, slug)
@@ -38,7 +46,7 @@ async function apiTenant(db: Db, req: Request, slug: unknown, action: Action, co
   let principal = await principalFor(db, req.get('cookie'))
   if (!principal && typeof code === 'string' && code) {
     const authenticated = await principalFromCode(db, slug, code, clientKey(req))
-    if (authenticated.result) throw new Response('Too many requests', { status: authenticated.result.status, headers: { 'Retry-After': String(authenticated.result.retryAfterSeconds ?? 1) } })
+    if (authenticated.result) throw new ApiResultError(authenticated.result)
     principal = authenticated.principal
   }
   if (!principal) throw new Response('Sign in to continue.', { status: 401 })
@@ -48,6 +56,11 @@ async function apiTenant(db: Db, req: Request, slug: unknown, action: Action, co
 }
 
 function apiFailure(res: express.Response, error: unknown): boolean {
+  if (error instanceof ApiResultError) {
+    res.setHeader('Cache-Control', 'no-store')
+    writeApiResult(res, error.result)
+    return true
+  }
   if (!(error instanceof Response)) return false
   const retry = error.headers.get('Retry-After')
   if (retry) res.setHeader('Retry-After', retry)
