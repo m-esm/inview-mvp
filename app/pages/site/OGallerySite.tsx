@@ -1,10 +1,11 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router'
+import { LangSwitch } from '../../components/LangSwitch'
 import { useT } from '../../lib/i18n'
 import { oCopy, pick, type PilotRecord, type PilotWork } from '../../lib/pilot'
 
 export default function OGallerySite({ record }: { record: PilotRecord }) {
-  const { lang, dir } = useT()
+  const { t, lang, dir } = useT()
   const name = pick(lang, record.name, record.nameFa)
   const copy = oCopy(lang, name)
   const title = pick(lang, record.showTitle, record.showTitleFa)
@@ -28,10 +29,13 @@ export default function OGallerySite({ record }: { record: PilotRecord }) {
         {record.logo
           ? <img className="o-site-logo" src={record.logo} alt={name} />
           : <span className="site-brand">{name}</span>}
-        <nav aria-label="Website">
-          <a href="#works">{copy.seeWorks}</a>
-          <Link to={`/g/${record.slug}/prices`}>{copy.priceList}</Link>
-        </nav>
+        <div className="row gap wrap">
+          <nav aria-label={t.siteNav}>
+            <a href="#works">{copy.seeWorks}</a>
+            <Link to={`/g/${record.slug}/prices`}>{copy.priceList}</Link>
+          </nav>
+          <LangSwitch />
+        </div>
       </header>
       <main>
         <section className="o-site-intro" id="current">

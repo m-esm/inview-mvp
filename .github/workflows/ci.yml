@@ -44,6 +44,7 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run check:tenants
+      - run: npm run check:strings
       - run: npm test
       - name: Server coverage
         run: |
