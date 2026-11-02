@@ -167,7 +167,13 @@ logo, so the image bytes never go in the JSON body. The JSON limit is 256 KB.
 
 Decision: use `Intl.DateTimeFormat('fa-IR-u-ca-persian')` and
 `Intl.NumberFormat('fa-IR')`. Set `dir="rtl"` and `lang="fa"` on the server for Persian.
-Store dates in UTC. Add a Jalali library only for date input in the editor.
+Store dates in UTC.
+
+The editor takes the show days in the calendar of the staff language. `Intl` also converts
+between the two calendars, so a Jalali library is not necessary. `app/lib/format.ts` reads
+the Jalali parts of an ISO day with `Intl.DateTimeFormat`. For the other direction it
+builds a day near the wanted one, then moves one day at a time until the parts agree. ICU
+decides which years are leap years. A day that the month does not have returns `null`.
 
 The server reads the language from the `inview-lang` cookie. When the cookie is absent, the
 O Gallery pages start in Persian and the demo pages start in English. The language switcher

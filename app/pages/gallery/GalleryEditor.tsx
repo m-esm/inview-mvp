@@ -2,7 +2,9 @@ import { useEffect, useId, useMemo, useState } from 'react'
 import { OLandingPreview } from '../visitor/OGalleryPages'
 import { parseToman } from '../../lib/price'
 import { type PilotRecord, type PilotWork } from '../../lib/pilot'
+import { asciiDigits, dayToParts, localDigits, monthLength, monthNames, partsToDay } from '../../lib/format'
 import { useStaffT, type StaffDict } from '../../lib/i18n-staff'
+import type { Lang } from '../../lib/lang'
 import {
   fetchStaffReport,
   LEADS_CSV_PATH,
@@ -113,6 +115,116 @@ function ImageField({
   )
 }
 
+type DayDraft = { year: string; month: string; day: string }
+
+const EMPTY_DAY: DayDraft = { year: '', month: '', day: '' }
+
+function dayDraft(lang: Lang, value: string | null | undefined): DayDraft {
+  const parts = dayToParts(lang, value)
+  if (!parts) return EMPTY_DAY
+  return { year: String(parts.year), month: String(parts.month), day: String(parts.day) }
+}
+
+function draftDay(lang: Lang, draft: DayDraft): string | null {
+  const year = Number(draft.year)
+  const month = Number(draft.month)
+  const day = Number(draft.day)
+  if (!year || !month || !day) return null
+  return partsToDay(lang, { year, month, day })
+}
+
+function DayField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string
+  value: string | null
+  onChange: (day: string | null) => void
+}) {
+  const { t, lang, format } = useStaffT()
+  const id = useId()
+  const [draft, setDraft] = useState<DayDraft>(() => dayDraft(lang, value))
+
+  useEffect(() => {
+    setDraft((current) => (draftDay(lang, current) === value ? current : dayDraft(lang, value)))
+  }, [lang, value])
+
+  const months = monthNames(lang)
+  const year = Number(draft.year)
+  const month = Number(draft.month)
+  const days = year && month ? monthLength(lang, year, month) : 31
+  const filled = draft.year !== '' && draft.month !== '' && draft.day !== ''
+  const bad = filled && draftDay(lang, draft) === null
+
+  function edit(patch: Partial<DayDraft>) {
+    const next = { ...draft, ...patch }
+    setDraft(next)
+    const day = draftDay(lang, next)
+    if (day !== value) onChange(day)
+  }
+
+  return (
+    <fieldset className="day-field">
+      <legend>{label}</legend>
+      <div className="day-field-row">
+        <div className="day-part">
+          <label htmlFor={`${id}-year`}>{t.dateYear}</label>
+          <input
+            id={`${id}-year`}
+            className="day-year"
+            inputMode="numeric"
+            autoComplete="off"
+            value={localDigits(lang, draft.year)}
+            aria-invalid={bad || undefined}
+            aria-describedby={`${id}-note`}
+            onChange={(e) => edit({ year: asciiDigits(e.target.value).replace(/\D/g, '').slice(0, 4) })}
+          />
+        </div>
+        <div className="day-part">
+          <label htmlFor={`${id}-month`}>{t.dateMonth}</label>
+          <select
+            id={`${id}-month`}
+            value={draft.month}
+            aria-invalid={bad || undefined}
+            aria-describedby={`${id}-note`}
+            onChange={(e) => edit({ month: e.target.value })}
+          >
+            <option value="" />
+            {months.map((name, index) => (
+              <option key={name} value={index + 1}>{name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="day-part">
+          <label htmlFor={`${id}-day`}>{t.dateDay}</label>
+          <select
+            id={`${id}-day`}
+            className="day-number"
+            value={draft.day}
+            aria-invalid={bad || undefined}
+            aria-describedby={`${id}-note`}
+            onChange={(e) => edit({ day: e.target.value })}
+          >
+            <option value="" />
+            {Array.from({ length: days }, (_, index) => (
+              <option key={index + 1} value={index + 1}>{localDigits(lang, String(index + 1))}</option>
+            ))}
+          </select>
+        </div>
+        {value && (
+          <button className="btn-text day-clear" type="button" onClick={() => { setDraft(EMPTY_DAY); onChange(null) }}>
+            {t.dateClear}
+          </button>
+        )}
+      </div>
+      <p id={`${id}-note`} className={bad ? 'error tiny' : 'muted tiny'}>
+        {bad ? t.dateBad : value ? <span dir="ltr">{format.otherDay(value)}</span> : t.dateEmpty}
+      </p>
+    </fieldset>
+  )
+}
+
 export default function GalleryEditor({ initialRecord, initialReport = null, reportOnly = false, canExport = false }: { initialRecord: PilotRecord; initialReport?: StaffReport | null; reportOnly?: boolean; canExport?: boolean }) {
   const qrAddress = `/g/${initialRecord.slug}`
   const { t, lang, format } = useStaffT()
@@ -133,6 +245,7 @@ export default function GalleryEditor({ initialRecord, initialReport = null, rep
     () => new Set(Object.entries(prices).filter(([, raw]) => parseToman(raw) === 'invalid').map(([id]) => id)),
     [prices],
   )
+  const backwards = !!draft.startsOn && !!draft.endsOn && draft.endsOn < draft.startsOn
   const dirty = JSON.stringify(draft) !== published || badPrices.size > 0
 
   function adopt(record: PilotRecord) {
@@ -194,6 +307,10 @@ export default function GalleryEditor({ initialRecord, initialReport = null, rep
     setMessage('')
     if (badPrices.size > 0) {
       setError(t.priceHint)
+      return
+    }
+    if (backwards) {
+      setError(t.dateOrder)
       return
     }
     setPublishing(true)
@@ -339,6 +456,11 @@ export default function GalleryEditor({ initialRecord, initialReport = null, rep
             <div className="editor-grid">
               <label>{t.showTitle}<input dir="ltr" value={draft.showTitle} onChange={(e) => setField('showTitle', e.target.value)} /></label>
               <label>{t.showTitleFa}<input dir="rtl" value={draft.showTitleFa} onChange={(e) => setField('showTitleFa', e.target.value)} /></label>
+              <div className="span-2 day-fields">
+                <DayField label={t.startsOn} value={draft.startsOn ?? null} onChange={(day) => setField('startsOn', day)} />
+                <DayField label={t.endsOn} value={draft.endsOn ?? null} onChange={(day) => setField('endsOn', day)} />
+                {backwards && <p className="error tiny day-fields-note" role="alert">{t.dateOrder}</p>}
+              </div>
               <label>{t.dates}<input dir="ltr" value={draft.dates} onChange={(e) => setField('dates', e.target.value)} /></label>
               <label>{t.datesFa}<input dir="rtl" value={draft.datesFa} onChange={(e) => setField('datesFa', e.target.value)} /></label>
               <label>{t.hours}<input dir="ltr" value={draft.hours} onChange={(e) => setField('hours', e.target.value)} /></label>
