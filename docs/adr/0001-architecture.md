@@ -177,8 +177,8 @@ decides which years are leap years. A day that the month does not have returns `
 The server reads the language from the `inview-lang` cookie. When the cookie is absent, the
 O Gallery pages start in Persian and the demo pages start in English. The language switcher
 writes the cookie and revalidates, so the server renders `lang` and `dir` on `<html>` for
-every request. The O Gallery staff editor uses the same cookie and has English and Persian text.
-The Rooz Gallery demo dashboard is in English only.
+every request. The staff editor reads the same cookie. It has English text and Persian text.
+The Rooz demo dashboard has English text only.
 
 ### D10. Login, sessions and roles
 
